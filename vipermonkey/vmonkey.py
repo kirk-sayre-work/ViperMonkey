@@ -365,7 +365,7 @@ def _get_shapes_text_values(fname, stream):
         for shape_text in strs:
 
             # Access value with .TextFrame.TextRange.Text accessor.
-            shape_text = shape_text[1:-1].replace("\x00", "")
+            shape_text = shape_text[1:].replace("\x00", "")
             var = "Shapes('" + str(pos) + "').TextFrame.TextRange.Text"
             r.append((var, shape_text))
             
