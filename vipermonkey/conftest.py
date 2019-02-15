@@ -7,5 +7,5 @@ def pytest_addoption(parser):
 def path(request):
     path_value = request.config.option.path
     if path_value is None:
-        pytest.skip()
+        pytest.skip("path to maldocs not specified")
     return path_value
