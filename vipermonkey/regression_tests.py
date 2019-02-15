@@ -22,7 +22,10 @@ like VirusTotal, app.any.run, etc.   We've named the samples by their sha256 has
 
 class maldoc(object):
 	def __init__(self,filename):
-		f=open(filename)
+		try:
+			f=open(filename)
+		except:
+			pytest.skip("cannot open source file")
 		self.data=f.read()
 		f.close()
 
