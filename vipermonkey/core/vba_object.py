@@ -82,7 +82,7 @@ def limits_exceeded(throw_error=False):
 
     # Check to see if we are approaching the recursion limit.
     level = len(getouterframes(currentframe(1)))
-    recursion_exceeded = (level > (sys.getrecursionlimit() * .75))
+    recursion_exceeded = (level > (sys.getrecursionlimit() * .50))
     time_exceeded = False
 
     # Check to see if we have exceeded the time limit.
@@ -502,7 +502,7 @@ def eval_arg(arg, context, treat_as_var_name=False):
 
                     # ActiveDocument.Variables("ER0SNQAWT").Value
                     # Try to pull the result from the document variables.
-                    log.debug("eval_arg: look for '")
+                    log.debug("eval_arg: handle expression as doc var lookup '" + tmp + "'")
                     var = tmp.replace("activedocument.variables(", "").\
                           replace(")", "").\
                           replace("'","").\

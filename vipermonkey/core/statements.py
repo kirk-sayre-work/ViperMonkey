@@ -57,6 +57,8 @@ from vba_object import int_convert
 import procedures
 from var_in_expr_visitor import *
 
+import traceback
+import string
 from logger import log
 import sys
 import re
@@ -328,7 +330,6 @@ class TaggedBlock(VBA_Object):
         # Exit if an exit function statement was previously called.
         if (context.exit_func):
             return
-        #print "START TAGGED BLOCK: " + str(self.label)
         for s in self.block:
             s.eval(context, params=params)
 
@@ -346,7 +347,6 @@ class TaggedBlock(VBA_Object):
         # Run the error handler if we have one and we broke out of the statement
         # loop with an error.
         context.handle_error(params)
-        #print "END TAGGED BLOCK: " + str(self.label)
 
 tagged_block = Forward()
 label_statement = Forward()
@@ -463,7 +463,7 @@ class Dim_Statement(VBA_Object):
                     curr_type += " Array"
                     curr_init_val = []
                     if ((var[3] is not None) and
-                        ((curr_type == "Byte Array")) or (curr_type == "Integer Array")):
+                        ((curr_type == "Byte Array") or (curr_type == "Integer Array"))):
                         curr_init_val = [0] * (var[3] + 1)
                     if ((var[3] is not None) and (curr_type == "String Array")):
                         curr_init_val = [''] * var[3]
@@ -593,7 +593,9 @@ class Let_Statement(VBA_Object):
         self.name = tokens.name
         string_ops = set(["mid"])
         self.string_op = None
-        if ((len(self.name) > 0) and (self.name[0].lower() in string_ops)):
+        if (hasattr(self.name, "__len__") and
+            (len(self.name) > 0) and
+            (self.name[0].lower() in string_ops)):
             self.string_op = {}
             self.string_op["op"] = self.name[0].lower()
             self.string_op["args"] = self.name[1:]
@@ -673,12 +675,12 @@ class Let_Statement(VBA_Object):
             if (type(the_str) != type(rhs)):
                 log.error("Assigning " + str(self.name) + " failed. " + str(type(the_str)) + " != " + str(type(rhs)))
                 return False
-            if ((start + size) > len(the_str)):
+            if (((start-1 + size) > len(the_str)) or (start < 1)):
                 log.error("Assigning " + str(self.name) + " failed. " + str(start + size) + " out of range.")
                 return False
             
             # Modify the string.
-            mod_str = the_str[:start] + rhs + the_str[start + size:]
+            mod_str = the_str[:start-1] + rhs + the_str[(start-1 + size):]
 
             # Set the string in the context.
             context.set(str(the_str_var), mod_str)
@@ -706,6 +708,9 @@ class Let_Statement(VBA_Object):
         log.debug('try eval expression: %s' % self.expression)
         rhs_type = context.get_type(str(self.expression))
         value = eval_arg(self.expression, context=context)
+        if (context.have_error()):
+            log.warn('Short circuiting assignment %s due to thrown VB error.' % str(self))
+            return
         log.debug('eval expression: %s = %s' % (self.expression, value))
 
         # Doing base64 decode with VBA? Maybe?
@@ -735,13 +740,51 @@ class Let_Statement(VBA_Object):
 
                 # Do we have an actual value to assign?
                 if (value != "NULL"):
+
+                    """
+                    # This is trying to handle converting non-english unicode strings to
+                    # byte arrays properly. It needs work.
+
+                    # Do we have a unicode string in a non-english character set?
+                    if (isinstance(value, from_unicode_str)):
+
+                        # Is the 1st byte in the string a non-printable character?
+                        # This assumes UTF-16 and assumes that the character set byte
+                        # is not ASCII printable.
+                        if ((value[0] not in string.printable) and
+                            (value.count(value[0]) == len(value)/2)):
+
+                            # Now do a tighter check and see if every other character
+                            # is equal to the potential character set byte.
+                            new_value = ""
+                            pos = 0
+                            got_it = True
+                            while (pos < len(value)):
+                                if (value[pos] != value[0]):
+                                    got_it = False
+                                    break
+                                new_value += value[pos + 1]
+                                pos += 2
+                            if (got_it):
+                                value = from_unicode_str(new_value)
+                    """
+
+                    # Generate the byte array for the string.
                     tmp = []
+                    pos = 0
                     for c in value:
+
+                        # Append the byte value of the character.
                         tmp.append(ord(c))
+
+                        # Append padding 0 bytes for wide char strings.
+                        #
                         # TODO: Figure out how VBA figures out if this is a wide string (0 padding added)
                         # or not (no padding).
                         if (not isinstance(value, from_unicode_str)):
                             tmp.append(0)
+
+                    # Got the byte array.
                     value = tmp
 
                 # We are dealing with an unsassigned variable. Don't update
@@ -940,6 +983,66 @@ class For_Statement(VBA_Object):
         return 'For %s = %r to %r step %r' % (self.name,
                                               self.start_value, self.end_value, self.step_value)
 
+    def _handle_medium_loop(self, context, params, end, step):
+
+        # Handle loops used purely for obfuscation that just do the same
+        # repeated assignment.
+        #
+        # For j = 0 To 190
+        # .TextBox1 = s1
+        # .TextBox1 = s2
+        # Next j
+
+        # Do we just do assignments to simple name expressions that are not
+        # the loop counter in the body?
+        all_static_assigns = True
+        for s in self.statements:
+
+            # Is asignment?
+            if (not isinstance(s, Let_Statement)):
+                all_static_assigns = False
+                break
+
+            # Is a variable on the rhs? Or a constant?
+            # TODO: Add other constant types.
+            is_constant = (str(s.expression).isdigit())
+            if ((not isinstance(s.expression, SimpleNameExpression)) and (not is_constant)):
+                all_static_assigns = False
+                break
+
+            # Is the variable the loop index variable?
+            if (str(s.expression).strip().lower() == str(self.name).strip().lower()):
+                all_static_assigns = False
+                break
+
+            # Does the loop body do the same thing repeatedly?
+            if (not all_static_assigns):
+                return False
+
+            # Emulate the loop body once.
+            log.info("Short circuited loop. " + str(self))
+            for s in self.statements:
+
+                # Emulate the statement.
+                log.debug('FOR loop eval statement: %r' % s)
+                if (not isinstance(s, VBA_Object)):
+                    continue
+                s.eval(context=context)
+                
+                # Was there an error that will make us jump to an error handler?
+                if (context.must_handle_error()):
+                    break
+                context.clear_error()
+
+            # Run the error handler if we have one and we broke out of the statement
+            # loop with an error.
+            context.handle_error(params)
+
+            # Set the loop index.
+            context.set(self.name, end + step)
+                     
+            return True
+                
     def _handle_simple_loop(self, context, start, end, step):
 
         # Handle simple loops used purely for obfuscation.
@@ -1117,6 +1220,11 @@ class For_Statement(VBA_Object):
             context.set(var, val)
             return
 
+        # See if we have a more complicated style loop put in purely for obfuscation.
+        do_body_once = self._handle_medium_loop(context, params, end, step)
+        if (do_body_once):
+            return
+
         # Set end to valid values.
         if ((VBA_Object.loop_upper_bound > 0) and (end > VBA_Object.loop_upper_bound)):
             end = VBA_Object.loop_upper_bound
@@ -1126,7 +1234,6 @@ class For_Statement(VBA_Object):
         context.loop_stack.append(True)
 
         # Loop until the loop is broken out of or we hit the last index.
-        #print "START FOR LOOP: " + str(self)
         while (((step > 0) and (context.get(self.name) <= end)) or
                ((step < 0) and (context.get(self.name) >= end))):
 
@@ -1169,7 +1276,6 @@ class For_Statement(VBA_Object):
         
         # Remove tracking of this loop.
         context.loop_stack.pop()
-        #print "DONE FOR LOOP: " + str(self)
         log.debug('FOR loop: end.')
 
         # Run the error handler if we have one and we broke out of the statement
@@ -2051,7 +2157,8 @@ class If_Statement(VBA_Object):
                 for stmt in piece["body"]:
                     if (not isinstance(stmt, VBA_Object)):
                         continue
-                    stmt.eval(context)
+                    if (hasattr(stmt, "eval")):
+                        stmt.eval(context)
 
                 # We have emulated the if.
                 break
@@ -2214,7 +2321,8 @@ class Call_Statement(VBA_Object):
                         tmp_call_params.append(p.replace("\x00", ""))
                     else:
                         tmp_call_params.append(p)
-            context.report_action('Object.Method Call', tmp_call_params, func_name, strip_null_bytes=True)
+            if (func_name != "Debug.Print"):
+                context.report_action('Object.Method Call', tmp_call_params, func_name, strip_null_bytes=True)
         try:
 
             # Emulate the function body.
@@ -2265,6 +2373,7 @@ class Call_Statement(VBA_Object):
                         pass
                 log.error('Procedure %r not found' % func_name)
             except Exception as e:
+                traceback.print_exc(file=sys.stdout)
                 log.debug("General error: " + str(e))
                 raise e
                 
@@ -2380,10 +2489,14 @@ class With_Statement(VBA_Object):
             context.with_prefix += "." + str(self.env)
         else:
             context.with_prefix = str(self.env)
+        if (context.with_prefix.startswith(".")):
+            context.with_prefix = context.with_prefix[1:]
             
         # Evaluate each statement in the with block.
         log.debug("START WITH")
-        if (not isinstance(self.body, list)):
+        try:
+            tmp1 = iter(self.body)
+        except TypeError:
             self.body = [self.body]
         for s in self.body:
 
@@ -2409,6 +2522,7 @@ class With_Statement(VBA_Object):
         if ("." not in context.with_prefix):
             context.with_prefix = ""
         else:
+            # Pop back to previous With context.
             end = context.with_prefix.rindex(".")
             context.with_prefix = context.with_prefix[:end]
 
@@ -2630,7 +2744,7 @@ doevents_statement = Suppress(CaselessKeyword("DoEvents"))
 #                   exit_func_statement | redim_statement | goto_statement | on_error_statement | file_open_statement | doevents_statement | \
 #                   rem_statement | print_statement | resume_statement
 simple_statement = NotAny(Regex(r"End\s+Sub")) + \
-                   (dim_statement | option_statement | (prop_assign_statement ^ expression ^ (let_statement | call_statement)) | exit_loop_statement | \
+                   (dim_statement | option_statement | (prop_assign_statement ^ (let_statement | call_statement) ^ expression) | exit_loop_statement | \
                     exit_func_statement | redim_statement | goto_statement | on_error_statement | file_open_statement | doevents_statement | \
                     rem_statement | print_statement | resume_statement)
 simple_statements_line <<= (simple_statement + OneOrMore(Suppress(':') + simple_statement)) ^ \

@@ -610,7 +610,16 @@ class StrComp(VbaLibraryFunc):
         if (s1 < s2):
             return -1
         return 1
-                
+
+class StrPtr(VbaLibraryFunc):
+    """
+    External StrPtr() string function.
+    """
+
+    def eval(self, context, params=None):
+        assert len(params) > 0
+        return ("&" + str(params[0]))
+    
 class StrConv(VbaLibraryFunc):
     """
     StrConv() string function.
@@ -735,7 +744,10 @@ class Int(VbaLibraryFunc):
         # TODO: Actually implement this properly.
         val = params[0]
         try:
-            if (isinstance(val, str) and (("e" in val) or ("E" in val))):
+            if (isinstance(val, str) and (val.startswith("&H"))):
+                val = val.replace("&H", "0x")
+                r = int(val, 16)
+            elif (isinstance(val, str) and (("e" in val) or ("E" in val))):
                 r = int(decimal.Decimal(val))
             else:
                 r = int_convert(val)
@@ -777,9 +789,9 @@ class StrReverse(VbaLibraryFunc):
     def eval(self, context, params=None):
         assert len(params) > 0
         # TODO: Actually implement this properly.
-        string = params[0]
-        if (string is None):
-            string = ''
+        string =''
+        if (params[0] is not None):
+            string = str(params[0])
         r = string[::-1]
         log.debug("StrReverse: return %r" % r)
         return r
@@ -810,8 +822,17 @@ class Replace(VbaLibraryFunc):
         rep = params[2]
         if ((rep is None) or (rep == 0)):
             rep = ''
-        #r = string.replace(pat, rep)
-        r = re.sub(pat, rep, string)
+
+        # Don't do a regex replacement of everything.
+        if (pat.strip() != "."):
+            try:
+                r = re.sub(pat, rep, string)
+            except:
+                r = string.replace(pat, rep)
+        else:
+            r = string.replace(pat, rep)
+
+        # Done.
         log.debug("Replace: return %r" % r)
         return r
 
@@ -1098,11 +1119,18 @@ class CLng(VbaLibraryFunc):
 
     def eval(self, context, params=None):
         assert (len(params) == 1)
+
+        # Handle abstracted pointers to memory.
+        val = params[0]
+        if (isinstance(val, str) and (val.startswith("&"))):
+            return val
+
+        # Actually try to convert to a number.
         r = ''
         try:
-            tmp = params[0]
+            tmp = val
             if (isinstance(tmp, str)):
-                tmp = params[0].upper()
+                tmp = val.upper()
                 if (tmp.startswith("&H")):
                     tmp = tmp.replace("&H", "0x")
                     tmp = int(tmp, 16)
@@ -2465,7 +2493,8 @@ class CreateTextFile(VbaLibraryFunc):
     """
 
     def eval(self, context, params=None):
-        assert (len(params) >= 1)
+        if (len(params) < 2):
+            return "NULL"
 
         # Get the name of the file being opened.
         fname = str(params[0])
@@ -2629,7 +2658,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Format, Range, Switch, WeekDay, ShellExecute, OpenTextFile, GetTickCount,
                Month, ExecQuery, ExpandEnvironmentStrings, Execute, Eval, ExecuteGlobal,
                Unescape, FolderExists, IsArray, FileExists, Debug, GetExtensionName,
-               AddCode):
+               AddCode, StrPtr):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
