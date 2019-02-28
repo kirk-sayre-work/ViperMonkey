@@ -386,6 +386,9 @@ class Shell(VbaLibraryFunc):
         context.report_action('Execute Command', command, 'Shell function', strip_null_bytes=True)
         return 0
 
+class ExecuteStatement(Shell):
+    pass
+    
 class ShellExecute(Shell):
     """
     shell.application.ShellExecute() function.
@@ -586,6 +589,25 @@ class AscW(VbaLibraryFunc):
 class AscB(AscW):
     pass
 
+class International(VbaLibraryFunc):
+    """
+    application.international() Function.
+    """
+
+    def eval(self, context, params=None):
+        if (len(params) == 0):
+            return "NULL"
+        val = params[0]
+
+        # xlCountrySetting
+        if (val == 2):
+
+            # Act like we are in the USA.
+            return 1
+
+        # Not emulated.
+        return "NULL"
+
 class StrComp(VbaLibraryFunc):
     """
     StrComp() string function.
@@ -703,6 +725,17 @@ class Shapes(VbaLibraryFunc):
         # Just return the string representation of the access. This is used in
         # vba_object._read_from_object_text()
         return "Shapes('" + str(params[0]) + "')"
+
+class InlineShapes(VbaLibraryFunc):
+    """
+    InlineShapes() object reference. Stubbed.
+    """
+
+    def eval(self, context, params=None):
+
+        # Just return the string representation of the access. This is used in
+        # vba_object._read_from_object_text()
+        return "InlineShapes('" + str(params[0]) + "')"
     
 class Split(VbaLibraryFunc):
     """
@@ -2278,7 +2311,7 @@ class Cells(VbaLibraryFunc):
                 r = str(sheet.cell(col, row)).replace("text:", "").replace("'", "")
                 if (r.startswith('u')):
                     r = r[1:]
-                log.debug("Cell(" + str(col) + ", " + str(row) + ") = " + str(r))
+                log.debug("Excel Read: Cell(" + str(col) + ", " + str(row) + ") = '" + str(r) + "'")
                 return r
 
             except Exception as e:
@@ -2658,7 +2691,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Format, Range, Switch, WeekDay, ShellExecute, OpenTextFile, GetTickCount,
                Month, ExecQuery, ExpandEnvironmentStrings, Execute, Eval, ExecuteGlobal,
                Unescape, FolderExists, IsArray, FileExists, Debug, GetExtensionName,
-               AddCode, StrPtr):
+               AddCode, StrPtr, International, ExecuteStatement, InlineShapes):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
