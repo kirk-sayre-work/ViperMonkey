@@ -198,7 +198,6 @@ def test_557fa52bd3a82cf97414e245bca68bb82ba94ee476892a0cca07cf31c0910000(path):
 @pytest.mark.slowest
 @pytest.mark.cdf2
 @pytest.mark.application_mailsystem
-@pytest.mark.skip(reason="This is unbearably slow")
 @pytest.mark.func_CopyFolder
 @pytest.mark.func_CreateObject
 @pytest.mark.func_Environ
