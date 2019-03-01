@@ -433,7 +433,7 @@ def _get_inlineshapes_text_values(data):
 
         # See if we can read Shapes() info from an XML file.
         if ("not an OLE2 structured storage file" in str(e)):
-            r = _get_shapes_text_values_xml(fname)
+            r = _get_shapes_text_values_xml(data)
 
     return r
 
