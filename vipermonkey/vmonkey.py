@@ -1174,7 +1174,7 @@ def parse_stream(subfilename,
 
     # Strip out code that does not affect the end result of the program.
     if (strip_useless):
-        vba_code = strip_useless_code(vba_code, local_funcs)
+        vba_code = strip_lines.strip_useless_code(vba_code, local_funcs)
     print '-'*79
     print 'VBA MACRO %s ' % vba_filename
     print 'in file: %s - OLE stream: %s' % (subfilename, repr(stream_path))
