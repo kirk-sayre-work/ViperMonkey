@@ -2183,7 +2183,7 @@ single_line_if_statement = Group( CaselessKeyword("If").suppress() + boolean_exp
                                   Optional(
                                       Group(CaselessKeyword("Else").suppress() + \
                                             Group(simple_statements_line('statements')))
-                                  )
+                                  ) + Suppress(Optional(CaselessKeyword("End") + CaselessKeyword("If")))
 simple_if_statement = multi_line_if_statement ^ single_line_if_statement
 
 simple_if_statement.setParseAction(If_Statement)
@@ -2318,6 +2318,7 @@ class Call_Statement(VBA_Object):
                         tmp_call_params.append(p)
             if ((func_name != "Debug.Print") and
                 (not func_name.endswith("Add")) and
+                (not func_name.endswith("Write")) and
                 (len(tmp_call_params) > 0)):
                 context.report_action('Object.Method Call', tmp_call_params, func_name, strip_null_bytes=True)
         try:
@@ -2378,18 +2379,11 @@ class Call_Statement(VBA_Object):
 # a call statement is similar to a function call, except it is a statement on its own, not part of an expression
 # call statement params may be surrounded by parentheses or not
 call_params = (Suppress('(') + Optional(expr_list('params')) + Suppress(')')) ^ expr_list('params')
-"""
-call_statement = NotAny(known_keywords_statement_start) + \
-                 Optional(CaselessKeyword('Call').suppress()) + \
-                 (member_access_expression_limited('name') | TODO_identifier_or_object_attrib_loose('name')) + \
-                 Suppress(Optional(NotAny(White()) + '$') + Optional(NotAny(White()) + '#') + Optional(NotAny(White()) + '!')) + \
-                 Optional(call_params)
-"""
 call_statement = NotAny(known_keywords_statement_start) + \
                  Optional(CaselessKeyword('Call').suppress()) + \
                  (member_access_expression('name') | TODO_identifier_or_object_attrib_loose('name')) + \
                  Suppress(Optional(NotAny(White()) + '$') + Optional(NotAny(White()) + '#') + Optional(NotAny(White()) + '!')) + \
-                 Optional(call_params)
+                 Optional(call_params) + Suppress(Optional("," + (CaselessKeyword("true") | CaselessKeyword("true"))))
 call_statement.setParseAction(Call_Statement)
 
 # --- EXIT FOR statement ----------------------------------------------------------
@@ -2474,6 +2468,7 @@ redim_statement.setParseAction(Redim_Statement)
 # --- WITH statement ----------------------------------------------------------
 
 class With_Statement(VBA_Object):
+
     def __init__(self, original_str, location, tokens):
         super(With_Statement, self).__init__(original_str, location, tokens)
         log.debug("tokens = " + str(tokens))
@@ -2489,12 +2484,17 @@ class With_Statement(VBA_Object):
         # Exit if an exit function statement was previously called.
         if (context.exit_func):
             return
-        
+
+        # Evaluate the with prefix value. This calls any functions that appear in the
+        # with prefix.
+        prefix_val = eval_arg(self.env, context)
+
         # Track the with prefix.
         if (len(context.with_prefix) > 0):
             context.with_prefix += "." + str(self.env)
+            #context.with_prefix += "." + str(prefix_val)
         else:
-            context.with_prefix = str(self.env)
+            context.with_prefix = str(prefix_val)
         if (context.with_prefix.startswith(".")):
             context.with_prefix = context.with_prefix[1:]
             
@@ -2864,6 +2864,7 @@ class External_Function(VBA_Object):
             return 0
         else:
             call_str = str(self.alias_name) + "(" + str(params) + ")"
+            call_str = call_str.replace('\x00', "")
             context.report_action('External Call', call_str, str(self.lib_name) + " / " + str(self.alias_name))
         
         # Simulate certain external calls of interest.
