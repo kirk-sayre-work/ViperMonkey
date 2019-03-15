@@ -41,8 +41,6 @@ __version__ = '0.02'
 
 # --- IMPORTS ------------------------------------------------------------------
 
-import xlrd
-
 import array
 import os
 from hashlib import sha256
@@ -605,7 +603,7 @@ class Context(object):
         # Misc.
         self.globals["ActiveDocument.Scripts.Count".lower()] = 0
         self.globals["TotalPhysicalMemory".lower()] = 2097741824
-        self.globals["WSCRIPT.SCRIPTFULLNAME".lower()] = self.filename
+        self.globals["WSCRIPT.SCRIPTFULLNAME".lower()] = "C:\\" + self.filename
         self.globals["OSlanguage".lower()] = "**MATCH ANY**"
         self.globals["Selection".lower()] = "**SELECTED TEXT IN DOC**"
 
