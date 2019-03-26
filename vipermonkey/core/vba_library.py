@@ -516,6 +516,30 @@ class AddCode(Execute):
     """
     pass
 
+class Add(VbaLibraryFunc):
+    """
+    Add() VB object method. Currently only adds to Scripting.Dictionary objects is supported.
+    """
+
+    def eval(self, context, params=None):
+        """
+        params[0] = object
+        params[1] = key
+        params[2] = value
+        """
+
+        # Sanity check.
+        if (len(params) != 3):
+            return
+
+        # Get the object (dict), key, and value.
+        obj = params[0]
+        key = params[1]
+        val = params[2]
+        if (not isinstance(obj, dict)):
+            return
+        obj[key] = val
+
 class Array(VbaLibraryFunc):
     """
     Create an array.
@@ -539,8 +563,8 @@ class UBound(VbaLibraryFunc):
         assert len(params) > 0
         arr = params[0]
         # TODO: Handle multidimensional arrays.
-        if (arr is None):
-            log.error("UBound(None) cannotbe computed.")
+        if ((arr is None) or (not hasattr(arr, '__len__'))):
+            log.error("UBound(" + str(arr) + ") cannot be computed.")
             return 0
         r = len(arr) - 1
         log.debug("UBound: return %r" % r)
@@ -771,7 +795,75 @@ class InlineShapes(VbaLibraryFunc):
         # Just return the string representation of the access. This is used in
         # vba_object._read_from_object_text()
         return "InlineShapes('" + str(params[0]) + "')"
-    
+
+class GetByteCount_2(VbaLibraryFunc):
+    """
+    String encoder object method.
+    """
+
+    def eval(self, context, params=None):
+        if ((len(params) == 0) or (not isinstance(params[0], str))):
+            return 0
+        return len(params[0])
+
+class GetBytes_4(VbaLibraryFunc):
+    """
+    String encoder object method.
+    """
+
+    def eval(self, context, params=None):
+        if ((len(params) == 0) or (not isinstance(params[0], str))):
+            return []
+        r = []
+        for c in params[0]:
+            r.append(ord(c))
+        return r
+
+class TransformFinalBlock(VbaLibraryFunc):
+    """
+    Base64 encoder object method.
+    """
+
+    def eval(self, context, params=None):
+        if ((len(params) != 3) or (not isinstance(params[0], list))):
+            return "NULL"
+
+        # Pull out the byte values and start/end of the bytes to decode.
+        vals = params[0]
+        start = 0
+        try:
+            start = int(params[1])
+        except:
+            pass
+        end = len(vals) - 1
+        try:
+            end = int(params[2])
+        except:
+            pass
+        if (end > len(vals) - 1):
+            end = len(vals) - 1
+        if (start > end):
+            start = end - 1
+
+        # Reconstruct the base64 encoded string.
+        base64_str = ""
+        end += 1
+        for b in vals[start : end]:
+            base64_str += chr(b)
+
+        # Decode the base64 encoded string.
+        r = "NULL"
+        try:
+            log.debug("eval_arg: Try base64 decode of '" + base64_str + "'...")
+            r = base64.b64decode(base64_str).replace(chr(0), "")
+            log.debug("eval_arg: Base64 decode success.")
+        except Exception as e:
+            log.debug("eval_arg: Base64 decode fail. " + str(e))
+
+        # Return the decoded string.
+        log.debug("Decoded string: " + r)
+        return r
+            
 class Split(VbaLibraryFunc):
     """
     Split() string function.
@@ -1253,7 +1345,9 @@ class CLng(VbaLibraryFunc):
 
         # Handle abstracted pointers to memory.
         val = params[0]
-        if (isinstance(val, str) and (val.startswith("&"))):
+        if (isinstance(val, str) and
+            (not val.startswith("&H")) and
+            (val.startswith("&"))):
             return val
 
         # Actually try to convert to a number.
@@ -1385,11 +1479,12 @@ class Log(VbaLibraryFunc):
 
     def eval(self, context, params=None):
         assert (len(params) == 1)
-        r = ''
+        r = params[0]
         try:
             num = float(params[0])
             r = math.log(num)
-        except ValueError:
+        except ValueError as e:
+            log.error("Log(" + str(params[0]) + ") failed. " + str(e))
             pass
         log.debug("Log: %r returns %r" % (self, r))
         return r
@@ -1456,11 +1551,12 @@ class Exp(VbaLibraryFunc):
 
     def eval(self, context, params=None):
         assert (len(params) == 1)
-        r = ''
+        r = params[0]
         try:
             num = float(params[0])
             r = math.exp(num)
-        except:
+        except Exception as e:
+            log.error("Exp(" + str(params[0]) + ") failed. " + str(e))
             pass
         log.debug("Exp: %r returns %r" % (self, r))
         return r
@@ -1906,7 +2002,8 @@ class CallByName(VbaLibraryFunc):
         if (("Run" in cmd) or ("WScript.Shell" in obj)):
             context.report_action("Run", args, 'Interesting Function Call', strip_null_bytes=True)
         # CallByName("['WinHttp.WinHttpRequest.5.1', 'Open', 1, 'GET', 'http://deciodc.org/bin/office1...")
-        if (("Open" in cmd) and ("WinHttpRequest" in obj)):
+        if ((("Open" in cmd) and ("WinHttpRequest" in obj)) or
+            ((len(params) > 5) and (params[3] == "GET"))):
             context.report_action("GET", params[4], 'Interesting Function Call', strip_null_bytes=True)
         # CallByName(([DoBas, 'Arguments', VbLet, aas], {}))
         if ((cmd == "Arguments") or (cmd == "Path")):
@@ -2305,6 +2402,10 @@ class CreateObject(VbaLibraryFunc):
         if (obj_type == 'ADODB.Stream'):
             context.open_file('ADODB.Stream')
 
+        # Handle certain object types.
+        if (obj_type == "Scripting.Dictionary"):
+            return {}
+            
         # Just return a string representation of the name of the object
         # being created.
         return str(obj_type)
@@ -2837,6 +2938,7 @@ class Write(VbaLibraryFunc):
 
         # Get the ID of the file.
         file_id = context.open_files.keys()[0]
+        log.info("Writing data to " + str(file_id) + " .")
 
         # Get the data.
         data = params[0]
@@ -2873,7 +2975,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Unescape, FolderExists, IsArray, FileExists, Debug, GetExtensionName,
                AddCode, StrPtr, International, ExecuteStatement, InlineShapes,
                RegWrite, QBColor, LoadXML, SaveToFile, InternetGetConnectedState, InternetOpenA,
-               FreeFile):
+               FreeFile, GetByteCount_2, GetBytes_4, TransformFinalBlock, Add):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 

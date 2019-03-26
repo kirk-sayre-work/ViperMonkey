@@ -201,6 +201,13 @@ class MemberAccessExpression(VBA_Object):
             r += "." + str(self.rhs1)
         return r
 
+    def _handle_paragraphs(self, context):
+        """
+        Handle references to the .Paragraphs field of the current doc.
+        """
+        if (str(self).lower().endswith(".paragraphs")):
+            return context.get("ActiveDocument.Paragraphs".lower())
+    
     def _handle_oslanguage(self, context):
         """
         Handle references to the OSlanguage field.
@@ -341,6 +348,22 @@ class MemberAccessExpression(VBA_Object):
         # Don't know what we are getting.
         return None
 
+    def _handle_file_close(self, context, lhs, rhs):
+        """
+        Handle close of file object foo like foo.Close().
+        """
+
+        # Pull out proper RHS.
+        if ((isinstance(rhs, list)) and (len(rhs) > 0)):
+            rhs = rhs[0]
+        if (str(rhs) != "Close"):
+            return None
+        from vba_library import Close
+        file_close = Close()
+            
+        # File closed.
+        return file_close.eval(context, [str(lhs)])
+    
     def _handle_replace(self, context, lhs, rhs):
         """
         Handle string replaces of the form foo.Replace(bar, baz). foo is a RegExp object.
@@ -375,14 +398,45 @@ class MemberAccessExpression(VBA_Object):
         r = new_replace.eval(context)
         return r
 
+    def _handle_add(self, context, lhs, rhs):
+        """
+        Handle Add() object method calls like foo.Replace(bar, baz). 
+        foo is (currently) a Scripting.Dictionary object.
+        """
+
+        # Sanity check.
+        log.debug("_handle_add(): lhs = " + str(lhs) + ", rhs = " + str(rhs))
+        if ((isinstance(rhs, list)) and (len(rhs) > 0)):
+            rhs = rhs[0]
+        if (not isinstance(rhs, Function_Call)):
+            return None
+        if (rhs.name != "Add"):
+            return None
+        if (not isinstance(lhs, dict)):
+            return None
+
+        # Run the dictionary add.
+        # dict, key, value
+        new_add = Function_Call(None, None, None, old_call=rhs)
+        tmp = [lhs]
+        for p in new_add.params:
+            tmp.append(p)
+        new_add.params = tmp
+        log.debug("Add() func = " + str(new_add))
+        
+        # Evaluate the dictionary add.
+        new_add.eval(context)
+        return "updated dict"
+
     def _handle_adodb_writes(self, lhs_orig, lhs, rhs, context):
         """
         Handle expressions like "foo.Write(...)" where foo = "ADODB.Stream".
         """
 
         # Is this a .Write() call?
+        log.debug("_handle_adodb_writes(): lhs_orig = " + str(lhs_orig) + ", lhs = " + str(lhs) + ", rhs = " + str(rhs))
         rhs_str = str(rhs).strip()
-        if ("Write(" not in rhs_str):
+        if ("write(" not in rhs_str.lower()):
             return False
         
         # Is this a Write() being called on an ADODB.Stream object?
@@ -520,8 +574,15 @@ class MemberAccessExpression(VBA_Object):
     
     def eval(self, context, params=None):
 
+        log.debug("MemberAccess eval of " + str(self))
+        
         # See if this is reading the OSlanguage.
         call_retval = self._handle_oslanguage(context)
+        if (call_retval is not None):
+            return call_retval
+
+        # See if this is reading the doc paragraphs.
+        call_retval = self._handle_paragraphs(context)
         if (call_retval is not None):
             return call_retval
         
@@ -590,6 +651,11 @@ class MemberAccessExpression(VBA_Object):
             if (call_retval is not None):
                 return call_retval
 
+            # Handle things like foo.Add(bar, baz).
+            call_retval = self._handle_add(context, tmp_lhs, self.rhs)
+            if (call_retval is not None):
+                return call_retval
+
             # Handle Excel cells() references.
             call_retval = self._handle_excel_read(context, self.rhs)
             if (call_retval is not None):
@@ -613,13 +679,22 @@ class MemberAccessExpression(VBA_Object):
         elif (str(self.lhs) != str(tmp_lhs)):
 
             # Is this a read from an Excel cell?
-            if (isinstance(tmp_lhs, str)):
+            # TODO: Need to do this logic based on what IS an Excel read rather
+            # than what IS NOT an Excel read.
+            if ((isinstance(tmp_lhs, str)) and
+                (not "Shapes(" in tmp_lhs) and
+                (not "Close" in str(self.rhs))):
 
                 # Just work with the returned string value.
                 return tmp_lhs
 
             # See if this is reading a doc var name or item.
             call_retval = self._handle_docvar_value(tmp_lhs, self.rhs)
+            if (call_retval is not None):
+                return call_retval
+
+            # See if this is closing a file.
+            call_retval = self._handle_file_close(context, tmp_lhs, self.rhs)
             if (call_retval is not None):
                 return call_retval
 
@@ -856,8 +931,22 @@ class Function_Call(VBA_Object):
         if (save):
             context.report_action(self.name, params, 'Interesting Function Call', strip_null_bytes=True)
         try:
+
+            # Get the (possible) function.
             f = context.get(self.name)
 
+            # Is this actually a hash lookup?
+            if (isinstance(f, dict)):
+
+                # Are we accessing an element?
+                if (len(params) > 0):
+                    log.debug('Dict Access: %r[%r]' % (f, params[0]))
+                    index = params[0]
+                    if (index in f):
+                        return f[index]
+                    else:
+                        return "NULL"
+            
             # Is this actually an array access?
             if (isinstance(f, list)):
 

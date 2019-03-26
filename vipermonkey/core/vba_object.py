@@ -356,10 +356,10 @@ def eval_arg(arg, context, treat_as_var_name=False):
             poss_shape_txt = str(r)
         except:
             pass
-        if (poss_shape_txt.startswith("Shapes(")):
+        if ((poss_shape_txt.startswith("Shapes(")) or (poss_shape_txt.startswith("InlineShapes("))):
             log.debug("eval_arg: Handling intermediate Shapes() access for " + str(r))
             return eval_arg(r, context)
-
+        
         # Regular VBA object.
         return r
 
@@ -571,7 +571,11 @@ def eval_arg(arg, context, treat_as_var_name=False):
             # We did not resolve the variable. Treat it as unitialized.
             log.debug("eval_arg: return 'NULL'")
             return "NULL"
-                
+
+        # Are we referring to a form tag element that we cannot find?
+        if (str(arg).lower().endswith(".tag")):
+            return ""
+        
         # The .text hack did not work.
         log.debug("eval_arg: return " + str(arg))
         return arg
@@ -641,10 +645,12 @@ def coerce_args_to_int(args):
     """
     return [coerce_to_int(arg) for arg in args]
 
-def coerce_args(orig_args):
+def coerce_args(orig_args, preferred_type=None):
     """
     Coerce all of the arguments to either str or int based on the most
     common arg type.
+
+    preferred_type = Preferred type to coerce things if possible.
     """
 
     # Sanity check.
@@ -663,6 +669,7 @@ def coerce_args(orig_args):
     first_type = None
     have_other_type = False
     all_null = True
+    all_types = set()
     for arg in args:
 
         # Skip NULL values since they can be int or str based on context.
@@ -670,10 +677,12 @@ def coerce_args(orig_args):
             continue
         all_null = False
         if (isinstance(arg, str)):
+            all_types.add("str")
             if (first_type is None):
                 first_type = "str"
             continue
         elif (isinstance(arg, int)):
+            all_types.add("int")
             if (first_type is None):
                 first_type = "int"
             continue
@@ -692,6 +701,11 @@ def coerce_args(orig_args):
     # Leave things alone if we cannot figure out the type to which to coerce.
     if (first_type is None):
         return args
+
+    # If we have more than 1 possible type and one of these types is the
+    # preferred type, use that type.
+    if (preferred_type in all_types):
+        first_type = preferred_type
     
     # Do conversion based on type of 1st arg in the list.
     if (first_type == "str"):

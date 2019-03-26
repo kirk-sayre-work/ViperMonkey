@@ -233,7 +233,11 @@ def strip_useless_code(vba_code, local_funcs):
 
     # Clear out lines broken up on multiple lines.
     vba_code = re.sub(r" _ *\r?\n", "", vba_code)
+    vba_code = re.sub(r"\(_ *\r?\n", "(", vba_code)
     vba_code = re.sub(r":\s*[Ee]nd\s+[Ss]ub", r"\nEnd Sub", vba_code)
+
+    # Clear out some garbage characters.
+    vba_code = vba_code.replace('\x0b', '')
     
     # Track data change callback function names.
     change_callbacks = set()    

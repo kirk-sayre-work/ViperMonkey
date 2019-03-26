@@ -160,12 +160,14 @@ class ViperMonkey(object):
         self.entry_points = ['autoopen', 'document_open', 'autoclose',
                              'document_close', 'auto_open', 'autoexec',
                              'autoexit', 'document_beforeclose', 'workbook_open',
-                             'workbook_activate', 'auto_close', 'workbook_close']
+                             'workbook_activate', 'auto_close', 'workbook_close',
+                             'workbook_deactivate']
 
         # List of suffixes of the names of callback functions that provide alternate
         # methods for running things on document (approximately) open.
         # See https://www.greyhathacker.net/?m=201609
-        self.callback_suffixes = ['_BeforeNavigate2',
+        self.callback_suffixes = ['_Activate',
+                                  '_BeforeNavigate2',
                                   '_BeforeScriptExecute',
                                   '_Change',
                                   '_DocumentComplete',
@@ -395,7 +397,8 @@ class ViperMonkey(object):
                           filename=self.filename)
 
         # Save the document text in the proper variable in the context.
-        context.globals["ActiveDocument.Content.Text".lower()] = self.doc_text
+        context.globals["ActiveDocument.Content.Text".lower()] = "\n".join(self.doc_text)
+        context.globals["ActiveDocument.Paragraphs".lower()] = self.doc_text
         
         # reset the actions list, in case it is called several times
         self.actions = []
