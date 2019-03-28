@@ -178,12 +178,13 @@ type_expression = lex_identifier + Optional('.' + lex_identifier)
 
 type_declaration_composite = (CaselessKeyword('Public') | CaselessKeyword('Private')) + CaselessKeyword('Type') + \
                              lex_identifier + Suppress(EOS) + \
-                             OneOrMore(lex_identifier + CaselessKeyword('As') + reserved_type_identifier + Suppress(Optional("*" + decimal_literal)) + Suppress(EOS)) + \
+                             OneOrMore(lex_identifier + CaselessKeyword('As') + reserved_type_identifier + \
+                                       Suppress(Optional("*" + (decimal_literal | lex_identifier))) + Suppress(EOS)) + \
                              CaselessKeyword('End') + CaselessKeyword('Type') + \
                              ZeroOrMore( Literal(':') + (CaselessKeyword('Public') | CaselessKeyword('Private')) + CaselessKeyword('Type') + \
-                             lex_identifier + Suppress(EOS) + \
-                             OneOrMore(lex_identifier + CaselessKeyword('As') + reserved_type_identifier + Suppress(EOS)) + \
-                             CaselessKeyword('End') + CaselessKeyword('Type') )
+                                         lex_identifier + Suppress(EOS) + \
+                                         OneOrMore(lex_identifier + CaselessKeyword('As') + reserved_type_identifier + Suppress(EOS)) + \
+                                         CaselessKeyword('End') + CaselessKeyword('Type') )
 
 type_declaration = type_declaration_composite
 
@@ -213,6 +214,10 @@ class Parameter(VBA_Object):
         # Is this an array parameter?
         if (('(' in str(tokens)) and (')' in str(tokens))):
             # Arrays are always passed by reference.
+            self.mechanism = 'ByRef'
+        # The default parameter passing mechanism is ByRef.
+        # See https://www.bettersolutions.com/vba/macros/byval-or-byref.htm
+        if (len(self.mechanism) == 0):
             self.mechanism = 'ByRef'
         log.debug('parsed %r' % self)
 
@@ -1180,7 +1185,9 @@ class For_Statement(VBA_Object):
 
                     # Looks like this Chr() should be an int.
                     end = ord(end[0])
-                
+
+        if (isinstance(end, float)):
+            end = int(end)
         if (not isinstance(end, int)):
             end = 0
         log.debug('FOR loop - end: %r = %r' % (self.end_value, end))
@@ -2876,7 +2883,11 @@ class External_Function(VBA_Object):
             # return 0 when no error occurred:
             return 0
         elif function_name.startswith('shellexecute'):
-            cmd = str(params[2]) + str(params[3])
+            cmd = None
+            if (len(params) >= 4):
+                cmd = str(params[2]) + " " + str(params[3])
+            else:
+                cmd = str(params[1]) + " " + str(params[2])
             context.report_action('Run Command', cmd, function_name, strip_null_bytes=True)
             # return 0 when no error occurred:
             return 0
