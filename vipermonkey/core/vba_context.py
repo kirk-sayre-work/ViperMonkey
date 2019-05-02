@@ -51,6 +51,7 @@ import re
 import random
 import string
 import codecs
+from curses.ascii import isascii
 
 def is_procedure(vba_object):
     """
@@ -88,7 +89,8 @@ class Context(object):
                  engine=None,
                  doc_vars=None,
                  loaded_excel=None,
-                 filename=None):
+                 filename=None,
+                 copy_globals=False):
 
         # Track the current call stack. This is used to detect simple cases of
         # infinite recursion.
@@ -137,10 +139,15 @@ class Context(object):
         # globals should be a pointer to the globals dict from the core VBA engine (ViperMonkey)
         # because each statement should be able to change global variables
         if _globals is not None:
-            # direct copy of the pointer to globals:
-            self.globals = _globals
+            if (copy_globals):
+                self.globals = dict(_globals)
+            else:
+                self.globals = _globals
         elif context is not None:
-            self.globals = context.globals
+            if (copy_globals):
+                self.globals = dict(context.globals)
+            else:
+                self.globals = context.globals
             self.open_files = context.open_files
             self.closed_files = context.closed_files
             self.loaded_excel = context.loaded_excel
@@ -2925,6 +2932,18 @@ class Context(object):
         self.globals["xlYMDFormat".lower()] = 5
         self.globals["xlZero".lower()] = 2
         
+    def __eq__(self, other):
+        if isinstance(other, Context):
+            return ((self.call_stack == other.call_stack) and
+                    (self.globals == other.globals) and
+                    (self.locals == other.locals))
+        return NotImplemented
+
+    def __ne__(self, other):
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return result
+        return not result
         
     def add_key_macro(self,key,value):
         namespaces = ['', 'VBA', 'KeyCodeConstants', 'VBA.KeyCodeConstants', 'VBA.vbStrConv', 'vbStrConv']
@@ -2943,6 +2962,32 @@ class Context(object):
             glbl = (namespace+key).lower()
             self.globals[ glbl ] = value
 
+    def get_error_handler(self):
+        """
+        Get the onerror goto error handler.
+        """
+        if (hasattr(self, "error_handler")):
+            return self.error_handler
+        return None
+
+    def do_next_iter_on_error(self):
+        """
+        See if the error handler just calls Next to advance to next loop iteration.
+        """
+
+        # Do we have an error handler?
+        handler = self.get_error_handler()
+        if (handler is None):
+            return False
+
+        # See if the 1st statement in the handler is Next.
+        if (len(handler.block) == 0):
+
+            # If it looks like no commands, let's just go to the next loop iteration.
+            return True
+        first_cmd = str(handler.block[0]).strip()
+        return (first_cmd == "Next")
+    
     def have_error(self):
         """
         See if Visual Basic threw an error.
@@ -2986,7 +3031,24 @@ class Context(object):
         if (name in self.dll_func_true_names):
             return self.dll_func_true_names[name]
         return None
-        
+
+    def delete(self, name):
+        """
+        Delete a variable from the context.
+        """
+
+        # Punt if we don't have the variable.
+        if (not self.contains(name)):
+            return self
+
+        # Delete the variable
+        if name in self.locals:
+            del self.locals[name]
+        elif name in self.globals:
+            del self.globals[name]
+
+        return self
+            
     def open_file(self, fname):
         """
         Simulate opening a file.
@@ -3061,14 +3123,12 @@ class Context(object):
                     start = short_name.rindex('/') + 1
                 short_name = out_dir + short_name[start:].strip()
                 try:
-                    print "Try save to: " + short_name
                     f = open(short_name, 'r')
                     # Already exists. Get a unique name.
                     f.close()
                     file_count += 1
                     short_name += " (" + str(file_count) + ")"
                 except Exception as e:
-                    print e
                     pass
                     
                 # Write out the dropped file.
@@ -3330,7 +3390,11 @@ class Context(object):
                     try:
 
                         # Set the typed vale of the node to the decoded value.
-                        conv_val = base64.b64decode(str(value).strip())
+                        tmp_str = filter(isascii, str(value).strip())
+                        missing_padding = len(tmp_str) % 4
+                        if missing_padding:
+                            tmp_str += b'='* (4 - missing_padding)
+                        conv_val = base64.b64decode(tmp_str)
                         val_name = name.replace(".text", ".nodetypedvalue")
                         self.set(val_name, conv_val)
                     except Exception as e:

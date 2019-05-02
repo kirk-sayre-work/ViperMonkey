@@ -53,6 +53,7 @@ from literals import *
 from operators import *
 import procedures
 from vba_object import eval_arg
+from vba_object import coerce_to_int
 from vba_object import int_convert
 from vba_object import VbaLibraryFunc
 import vba_context
@@ -349,6 +350,10 @@ class MemberAccessExpression(VBA_Object):
         if (not isinstance(read_call, Function_Call)):
             return None
         read_file = str(eval_arg(read_call.params[0], context))
+
+        # Fix the file name for emulation if needed.
+        if (read_file.startswith("C:\\")):
+            read_file = read_file.replace("C:\\", "./")
         
         # Read the file contents.
         try:
@@ -566,7 +571,7 @@ class MemberAccessExpression(VBA_Object):
 
         # Is this a call to SaveToFile()?
         memb_str = str(self)
-        if (".SaveToFile(" not in memb_str):
+        if (".savetofile(" not in memb_str.lower()):
             return False
 
         # We have a call to SaveToFile(). Get the value to save from .ReadText
@@ -609,6 +614,15 @@ class MemberAccessExpression(VBA_Object):
         
         # Done.
         return True
+
+    def _handle_path_access(self):
+        """
+        See if this is accessing the Path field of a file/folder object.
+        """
+        if (str(self.rhs).lower() == "path"):
+
+            # Fake a path.
+            return "C:\\Users\\admin\\"
     
     def eval(self, context, params=None):
 
@@ -682,6 +696,11 @@ class MemberAccessExpression(VBA_Object):
         # Handle writes of text to ADODB.Stream variables.
         if (self._handle_adodb_writes(self.lhs, tmp_lhs, rhs, context)):
             return "NULL"
+
+        # See if this is accessing the Path field of a file/folder object.
+        call_retval = self._handle_path_access()
+        if (call_retval is not None):
+            return call_retval
         
         # If the final element in the member expression is a function call,
         # the result should be the result of the function call. Otherwise treat
@@ -1111,10 +1130,17 @@ class Function_Call(VBA_Object):
 # comma-separated list of parameters, each of them can be an expression:
 boolean_expression = Forward()
 expr_list_item = expression ^ boolean_expression ^ member_access_expression_loose
-#expr_list_item = expression ^ boolean_expression
+
+# Parse large array expressions quickly with a regex.
+expr_list_fast = Regex("(?:\s*[0-9a-zA-Z_]+\s*,\s*){10,}\s*[0-9a-zA-Z_]+\s*")
+expr_list_fast.setParseAction(lambda t: [expression.parseString(i, parseAll=True)[0] for i in t[0].split(",")])
+
+# Parse general expression lists more completely but more slowly.
+expr_list_slow = delimitedList(Optional(expr_list_item, default=""))
+
 # WARNING: This may break parsing in function calls when the 1st argument is skipped.
 #expr_list = Suppress(Optional(",")) + expr_list_item + NotAny(':=') + Optional(Suppress(",") + delimitedList(Optional(expr_list_item, default="")))
-expr_list = expr_list_item + NotAny(':=') + Optional(Suppress(",") + delimitedList(Optional(expr_list_item, default="")))
+expr_list = expr_list_item + NotAny(':=') + Optional(Suppress(",") + (expr_list_fast | expr_list_slow))
 
 # TODO: check if parentheses are optional or not. If so, it can be either a variable or a function call without params
 function_call <<= CaselessKeyword("nothing") | \
@@ -1158,7 +1184,7 @@ class Function_Call_Array_Access(VBA_Object):
         # Evaluate the value of the function returing the array.
         array_val = eval_arg(self.array, context=context)
         # Evaluate the index to read.
-        array_index = eval_arg(self.index, context=context)
+        array_index = coerce_to_int(eval_arg(self.index, context=context))
 
         # Do we have a list to read from?
         if (not isinstance(array_val, list)):
@@ -1342,8 +1368,12 @@ class BoolExprItem(VBA_Object):
                 pass
                 
         # Evaluate the expression.
-        if ((self.op == "=") or (self.op.lower() == "is")):
-            if ((lhs == "**MATCH ANY**") or (rhs == "**MATCH ANY**")):
+        if ((self.op.lower() == "=") or
+            (self.op.lower() == "like") or
+            (self.op.lower() == "is")):
+            rhs_str = str(rhs)
+            lhs_str = str(lhs)
+            if (("**MATCH ANY**" in lhs_str) or ("**MATCH ANY**" in rhs_str)):
                 return True
             return lhs == rhs
         elif (self.op == ">"):
@@ -1357,19 +1387,17 @@ class BoolExprItem(VBA_Object):
         elif (self.op == "<>"):
             return lhs != rhs
         elif (self.op.lower() == "like"):
-            
+
             # Try as a Python regex.
+            rhs = str(rhs)
+            lhs = str(lhs)
             try:
-                rhs = str(rhs)
-                lhs = str(lhs)
                 r = (re.match(rhs, lhs) is not None)
                 log.debug("'" + lhs + "' Like '" + rhs + "' == " + str(r))
                 return r
             except Exception as e:
 
                 # Not a valid Pyhton regex. Just check string equality.
-                rhs = str(rhs)
-                lhs = str(lhs)
                 return (rhs == lhs)
         else:
             log.error("BoolExprItem: Unknown operator %r" % self.op)

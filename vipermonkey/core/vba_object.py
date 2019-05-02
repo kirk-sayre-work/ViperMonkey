@@ -54,6 +54,7 @@ __version__ = '0.02'
 import base64
 from logger import log
 import re
+from curses.ascii import isprint
 
 from inspect import getouterframes, currentframe
 import sys
@@ -121,6 +122,7 @@ class VBA_Object(object):
         self.location = location
         self.tokens = tokens
         self._children = None
+        self.is_useless = False
         
     def eval(self, context, params=None):
         """
@@ -396,6 +398,7 @@ def eval_arg(arg, context, treat_as_var_name=False):
                     # It looks like maybe this magically does base64 decode? Try that.
                     try:
                         log.debug("eval_arg: Try base64 decode of '" + val + "'...")
+                        base64_str = filter(isprint, str(base64_str).strip())
                         val_decode = base64.b64decode(str(val)).replace(chr(0), "")
                         log.debug("eval_arg: Base64 decode success: '" + val_decode + "'...")
                         return val_decode
@@ -643,7 +646,12 @@ def coerce_to_int(obj):
         # Do we have a null byte string?
         if (obj.count('\x00') == len(obj)):
             return 0
-            
+
+        # Hex string?
+        if ((obj.startswith("&H")) and (len(obj) <= 4)):
+            return int(obj.replace("&H", "0x"), 16)
+
+    # Try regular int.
     return int(obj)
 
 def coerce_args_to_int(args):

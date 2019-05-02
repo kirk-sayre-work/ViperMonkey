@@ -104,7 +104,8 @@ def is_interesting_call(line, external_funcs, local_funcs):
 
     # Is this an interesting function call?
     log_funcs = ["CreateProcessA", "CreateProcessW", ".run", "CreateObject",
-                 "Open", ".Open", "GetObject", "Create", ".Create", "Environ",
+                 "Open", "CreateMutex", "CreateRemoteThread", "InternetOpen",
+                 ".Open", "GetObject", "Create", ".Create", "Environ",
                  "CreateTextFile", ".CreateTextFile", "Eval", ".Eval", "Run",
                  "SetExpandedStringValue", "WinExec", "URLDownloadToFile", "Print",
                  "Split"]
@@ -238,7 +239,10 @@ def strip_useless_code(vba_code, local_funcs):
 
     # Clear out some garbage characters.
     vba_code = vba_code.replace('\x0b', '')
-    vba_code = vba_code.replace('\x88', '')
+    #vba_code = vba_code.replace('\x88', '')
+
+    # Fix function calls with a skipped 1st argument.
+    vba_code = re.sub(r"([0-9a-zA-Z_])\(\s*,", r"\1(SKIPPED_ARG,", vba_code)
     
     # Track data change callback function names.
     change_callbacks = set()    
@@ -251,6 +255,11 @@ def strip_useless_code(vba_code, local_funcs):
     external_funcs = []
     for line in vba_code.split("\n"):
 
+        # Skip comment lines.
+        if (line.strip().startswith("'")):
+            log.debug("SKIP: Comment. Keep it.")
+            continue
+        
         # Save external function declarations lines so we can avoid stripping
         # calls to external functions.
         if (("Declare" in line) and ("Lib" in line)):
@@ -270,11 +279,14 @@ def strip_useless_code(vba_code, local_funcs):
         
         # Is there an assignment on this line?
         line_num += 1
-        match = assign_re.findall(line)
+        tmp_line = line
+        if ("=" in line):
+            tmp_line = line[:line.index("=") + 1]
+        match = assign_re.findall(tmp_line)
         if (len(match) > 0):
 
             log.debug("SKIP: Assign line: " + line)
-
+                
             # Skip starts of while loops.
             if (line.strip().startswith("While ")):
                 log.debug("SKIP: While loop. Keep it.")
@@ -388,7 +400,7 @@ def strip_useless_code(vba_code, local_funcs):
                 continue
 
             # Could the current variable be used on this line?
-            if (var in line):
+            if (var.lower() in line.lower()):
 
                 # Maybe. Count this as a reference.
                 log.debug("STRIP: Var '" + str(var) + "' referenced in line '" + line + "'.")

@@ -53,6 +53,7 @@ import os
 import random
 from from_unicode_str import *
 import decimal
+from curses.ascii import isprint
 
 from pyparsing import *
 
@@ -75,6 +76,17 @@ from logger import log
 # TODO: Word 2013 object model reference: https://msdn.microsoft.com/EN-US/library/office/ff837519.aspx
 # TODO: Excel
 # TODO: other MS Office apps?
+
+def strip_nonvb_chars(s):
+    """
+    Strip invalid VB characters from a string.
+    """
+
+    r = ""
+    for c in s:
+        if ((ord(c) > 8) and (ord(c) < 127)):
+            r += c
+    return r
 
 class WeekDay(VbaLibraryFunc):
     """
@@ -303,6 +315,11 @@ class Left(VbaLibraryFunc):
             params = params[-2:]
         assert len(params) == 2
         s = params[0]
+
+        # Don't modify the "**MATCH ANY**" special value.
+        if (s == "**MATCH ANY**"):
+            return s
+        
         # "If String contains the data value Null, Null is returned."
         if s == None: return None
         if not isinstance(s, basestring):
@@ -336,6 +353,11 @@ class Right(VbaLibraryFunc):
             params = params[-2:]
         assert len(params) == 2
         s = params[0]
+
+        # Don't modify the "**MATCH ANY**" special value.
+        if (s == "**MATCH ANY**"):
+            return s
+        
         # "If String contains the data value Null, Null is returned."
         if s == None: return None
         if not isinstance(s, basestring):
@@ -446,7 +468,7 @@ class Eval(VbaLibraryFunc):
         # Pull out the expression to eval.
         if (len(params) < 1):
             return 0
-        expr = str(params[0])
+        expr = strip_nonvb_chars(str(params[0]))
 
         try:
 
@@ -472,7 +494,7 @@ class Execute(VbaLibraryFunc):
     def eval(self, context, params=None):
 
         # Save the command.
-        command = str(params[0])
+        command = strip_nonvb_chars(str(params[0]))
         context.report_action('Execute Command', command, 'Execute() String', strip_null_bytes=True)
         command += "\n"
 
@@ -548,7 +570,7 @@ class Array(VbaLibraryFunc):
     def eval(self, context, params=None):
         r = []
         if ((len(params) == 1) and (params[0] == "NULL")):
-            return []
+            return []        
         for v in params:
             r.append(v)
         log.debug("Array: return %r" % r)
@@ -654,18 +676,9 @@ class International(VbaLibraryFunc):
     """
 
     def eval(self, context, params=None):
-        if (len(params) == 0):
-            return "NULL"
-        val = params[0]
 
-        # xlCountrySetting
-        if (val == 2):
-
-            # Act like we are in the USA.
-            return 1
-
-        # Not emulated.
-        return "NULL"
+        # Match anything compared to this result.
+        return "**MATCH ANY**"
 
 class StrComp(VbaLibraryFunc):
     """
@@ -855,6 +868,7 @@ class TransformFinalBlock(VbaLibraryFunc):
         r = "NULL"
         try:
             log.debug("eval_arg: Try base64 decode of '" + base64_str + "'...")
+            base64_str = filter(isprint, str(base64_str).strip())
             r = base64.b64decode(base64_str).replace(chr(0), "")
             log.debug("eval_arg: Base64 decode success.")
         except Exception as e:
@@ -1583,7 +1597,8 @@ class Str(VbaLibraryFunc):
     """
 
     def eval(self, context, params=None):
-        assert (len(params) == 1)
+        if ((params is None) or (len(params[0]) == 0)):
+            return ""
         r = str(params[0])
         log.debug("Str: %r returns %r" % (self, r))
         return r
@@ -2003,7 +2018,7 @@ class CallByName(VbaLibraryFunc):
             context.report_action("Run", args, 'Interesting Function Call', strip_null_bytes=True)
         # CallByName("['WinHttp.WinHttpRequest.5.1', 'Open', 1, 'GET', 'http://deciodc.org/bin/office1...")
         if ((("Open" in cmd) and ("WinHttpRequest" in obj)) or
-            ((len(params) > 5) and (params[3] == "GET"))):
+            ((len(params) > 5) and (params[3].lower() == "get"))):
             context.report_action("GET", params[4], 'Interesting Function Call', strip_null_bytes=True)
         # CallByName(([DoBas, 'Arguments', VbLet, aas], {}))
         if ((cmd == "Arguments") or (cmd == "Path")):
@@ -2020,6 +2035,15 @@ class CallByName(VbaLibraryFunc):
 
         # Do nothing.
         return None
+
+class Raise(VbaLibraryFunc):
+    """
+    Raise() exception/error function.
+    """
+
+    def eval(self, context, params=None):
+        context.got_error = True
+        log.warning("Raise exception " + str(params))
             
 class Close(VbaLibraryFunc):
     """
@@ -2726,7 +2750,11 @@ class Print(VbaLibraryFunc):
     """
 
     def eval(self, context, params=None):
-        assert (len(params) == 1)
+
+        # Regular Debug.Print() ?
+        if (len(params) != 1):
+            log.warning("Wrong # of arguments for Print " + str(params))
+            return
 
         # Save writes that look like they are writing URLs.
         data_str = str(params[0])
@@ -2738,6 +2766,12 @@ class Print(VbaLibraryFunc):
 class Debug(Print):
     """
     Debug() debugging function.
+    """
+    pass
+
+class Echo(Print):
+    """
+    WScript.Echo() debugging function.
     """
     pass
         
@@ -2975,7 +3009,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Unescape, FolderExists, IsArray, FileExists, Debug, GetExtensionName,
                AddCode, StrPtr, International, ExecuteStatement, InlineShapes,
                RegWrite, QBColor, LoadXML, SaveToFile, InternetGetConnectedState, InternetOpenA,
-               FreeFile, GetByteCount_2, GetBytes_4, TransformFinalBlock, Add):
+               FreeFile, GetByteCount_2, GetBytes_4, TransformFinalBlock, Add, Raise, Echo):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 

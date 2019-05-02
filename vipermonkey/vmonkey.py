@@ -1228,7 +1228,7 @@ def get_vb_contents(vba_code):
     """
 
     # Pull out the VB code.
-    pat = r"<\s*[Ss][Cc][Rr][Ii][Pp][Tt]\s+[Ll][Aa][Nn][Gg][Uu][Aa][Gg][Ee]\s*=\s*\"VBScript\"\s*>(.{20,})</\s*[Ss][Cc][Rr][Ii][Pp][Tt][^>]*>"
+    pat = r"<\s*[Ss][Cc][Rr][Ii][Pp][Tt]\s+(?:(?:[Ll][Aa][Nn][Gg][Uu][Aa][Gg][Ee])|(?:[Tt][Yy][Pp][Ee]))\s*=\s*\".{0,10}[Vv][Bb][Ss][Cc][Rr][Ii][Pp][Tt]\"\s*>(.{20,})</\s*[Ss][Cc][Rr][Ii][Pp][Tt][^>]*>"
     code = re.findall(pat, vba_code, re.DOTALL)
 
     # Did we find any VB code in a script block?
@@ -1277,7 +1277,7 @@ def parse_stream(subfilename,
     print 'VBA MACRO %s ' % vba_filename
     print 'in file: %s - OLE stream: %s' % (subfilename, repr(stream_path))
     print '- '*39
-
+    
     # Parse the macro.
     m = None
     if vba_code.strip() == '':
@@ -1553,7 +1553,8 @@ def _process_file (filename, data,
     # Set the emulation time limit.
     if (time_limit is not None):
         vba_object.max_emulation_time = datetime.now() + timedelta(minutes=time_limit)
-    
+
+    # Create the emulator.
     vm = ViperMonkey(filename)
     orig_filename = filename
     if (entry_points is not None):
@@ -1572,8 +1573,8 @@ def _process_file (filename, data,
                 meta.metadata = ole.get_metadata()
                 vba_object.meta = meta.metadata
             except Exception as e:
-                log.error("Reading in metadata failed. " + str(e))
-                meta.metadata = {}
+                log.warning("Reading in metadata failed. Trying fallback. " + str(e))
+                meta.metadata = meta.get_metadata_exif(orig_filename)
 
             # If this is an Excel spreadsheet, read it in.
             vm.loaded_excel = load_excel(data)
