@@ -1574,7 +1574,10 @@ def _process_file (filename, data,
                 vba_object.meta = meta.metadata
             except Exception as e:
                 log.warning("Reading in metadata failed. Trying fallback. " + str(e))
-                meta.metadata = meta.get_metadata_exif(orig_filename)
+                try:
+                    meta.metadata = meta.get_metadata_exif(orig_filename)
+                except Exception as e:
+                    log.error("get_metadata_exif failed as well." + str(e))
 
             # If this is an Excel spreadsheet, read it in.
             vm.loaded_excel = load_excel(data)
