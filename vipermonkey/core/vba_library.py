@@ -67,7 +67,7 @@ from vba_object import excel_col_letter_to_index
 import expressions
 import meta
 import modules
-from strip_lines import strip_useless_code
+import strip_lines
 
 from logger import log
 
@@ -469,7 +469,6 @@ class Eval(VbaLibraryFunc):
         if (len(params) < 1):
             return 0
         expr = strip_nonvb_chars(str(params[0]))
-
         try:
 
             # Parse it. Assume this is an expression.
@@ -495,11 +494,13 @@ class Execute(VbaLibraryFunc):
 
         # Save the command.
         command = strip_nonvb_chars(str(params[0]))
+        # Why am I doing this?
+        #command = command.replace('""', '"')
         context.report_action('Execute Command', command, 'Execute() String', strip_null_bytes=True)
         command += "\n"
 
-        # Strip useless lines and fix up the code to emulate.
-        command = strip_useless_code(command, [])
+        # Fix invalid string assignments.
+        command = strip_lines.fix_vba_code(command)
         
         # Parse it.
         obj = None
@@ -889,7 +890,7 @@ class Split(VbaLibraryFunc):
         assert len(params) > 0
         # TODO: Actually implement this properly.
         string = str(params[0])
-        sep = ","
+        sep = " "
         if ((len(params) > 1) and
             (isinstance(params[1], str)) and
             (len(params[1]) > 0)):
@@ -918,8 +919,8 @@ class Int(VbaLibraryFunc):
         # TODO: Actually implement this properly.
         val = params[0]
         try:
-            if (isinstance(val, str) and (val.startswith("&H"))):
-                val = val.replace("&H", "0x")
+            if (isinstance(val, str) and (val.lower().startswith("&h"))):
+                val = "0x" + val[2:]
                 r = int(val, 16)
             elif (isinstance(val, str) and (("e" in val) or ("E" in val))):
                 r = int(decimal.Decimal(val))
@@ -2072,12 +2073,15 @@ class Close(VbaLibraryFunc):
             if ((context.open_files is None) or (len(context.open_files) == 0)):
                 log.error("Cannot process Close(). No open files.")
                 return
+            file_id = None
             if (len(context.open_files) > 1):
-                log.error("Cannot process Close(). Too many open files.")
-                return
+                log.warning("More than 1 file is open. Closing an arbitrary file.")
+                file_id = context.get_interesting_fileid()
+                log.warning("Closing '" + str(file_id) + "' .")
+            else:
 
-            # Get the ID of the file.
-            file_id = context.open_files.keys()[0]
+                # Get the ID of the file.
+                file_id = context.open_files.keys()[0]
 
         # We are actually closing a file.
         context.dump_file(file_id)
@@ -2142,12 +2146,15 @@ class WriteLine(VbaLibraryFunc):
         if ((context.open_files is None) or (len(context.open_files) == 0)):
             log.error("Cannot process WriteLine(). No open files.")
             return
+        file_id = None
         if (len(context.open_files) > 1):
-            log.error("Cannot process WriteLine(). Too many open files.")
-            return
-        
-        # Get the ID of the file.
-        file_id = context.open_files.keys()[0]
+            log.warning("More than 1 file is open. Writing to an arbitrary file.")
+            file_id = context.get_interesting_fileid()
+            log.warning("Writing to '" + str(file_id) + "' .")
+        else:        
+
+            # Get the ID of the file.
+            file_id = context.open_files.keys()[0]
         
         # TODO: Handle writing at a given file position.
 

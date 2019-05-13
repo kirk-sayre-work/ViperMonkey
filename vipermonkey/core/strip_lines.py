@@ -225,11 +225,35 @@ def collapse_macro_if_blocks(vba_code):
 
     # Return the stripped VBA.
     return r
-    
-def strip_useless_code(vba_code, local_funcs):
+
+def fix_unbalanced_quotes(vba_code):
     """
-    Strip statements that have no usefull effect from the given VB. The
-    stripped statements are commented out.
+    Fix lines with missing double quotes.
+    """
+
+    # Fix invalid string assignments.
+    vba_code = re.sub(r"(\w+)\s+=\s+\"\r?\n", r'\1 = ""\n', vba_code)
+    vba_code = re.sub(r"(\w+\s+=\s+\")(:[^\"]+)\r?\n", r'\1"\2\n', vba_code)
+    vba_code = re.sub(r"([=>])\s*\"\s+[Tt][Hh][Ee][Nn]", r'\1 "" Then', vba_code)
+    
+    # See if we have lines with unbalanced double quotes.
+    r = ""
+    for line in vba_code.split("\n"):
+        num_quotes = 0
+        for c in line:
+            if (c == '"'):
+                num_quotes += 1
+        if ((num_quotes % 2) != 0):
+            last_quote = line.rindex('"')
+            line = line[:last_quote] + '"' + line[last_quote:]
+        r += line + "\n"
+
+    # Return the balanced code.
+    return r
+
+def fix_vba_code(vba_code):
+    """
+    Fix up some substrings that ViperMonkey has problems parsing.
     """
 
     # Clear out lines broken up on multiple lines.
@@ -240,10 +264,62 @@ def strip_useless_code(vba_code, local_funcs):
     # Clear out some garbage characters.
     vba_code = vba_code.replace('\x0b', '')
     #vba_code = vba_code.replace('\x88', '')
-
+    
     # Fix function calls with a skipped 1st argument.
     vba_code = re.sub(r"([0-9a-zA-Z_])\(\s*,", r"\1(SKIPPED_ARG,", vba_code)
+
+    # Fix lines with missing double quotes.
+    vba_code = fix_unbalanced_quotes(vba_code)
+
+    # Change things like 'If+foo > 12 ..." to "If foo > 12 ...".
+    r = ""
+    for line in vba_code.split("\n"):
+        
+        # Do we have an "if+..."?
+        if ("if+" not in line.lower()):
+            
+            # No. No change.
+            r += line + "\n"
+            continue
+
+        # Yes we do. Figure out if it is in a string.
+        in_str = False
+        window = "   "
+        new_line = ""
+        for c in line:
+
+            # Start/End of string?
+            if (c == '"'):
+                in_str = not in_str
+
+            # Have we seen an if+ ?
+            if ((not in_str) and (c == "+") and (window.lower() == " if")):
+
+                # Replace the '+' with a ' '.
+                new_line += " "
+
+            # No if+ .
+            else:
+                new_line += c
+                
+            # Advance the viewing window.
+            window = window[1:] + c
+
+        # Save the updated line.
+        r += new_line + "\n"
     
+    # Return the updated code.
+    return r
+    
+def strip_useless_code(vba_code, local_funcs):
+    """
+    Strip statements that have no usefull effect from the given VB. The
+    stripped statements are commented out.
+    """
+
+    # Preprocess the code to make it easier to parse.
+    vba_code = fix_vba_code(vba_code)
+        
     # Track data change callback function names.
     change_callbacks = set()    
     
