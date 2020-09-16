@@ -109,6 +109,7 @@ from datetime import timedelta
 import subprocess
 import zipfile
 import io
+import distutils.spawn
 
 import prettytable
 from oletools.thirdparty.xglob import xglob
@@ -134,6 +135,23 @@ from core.logger import log
 from core.logger import CappedFileHandler
 from logging import LogRecord
 from logging import FileHandler
+
+tempdir = tempfile.gettempdir()
+
+if os.name == "nt":
+    if ("Python3") in distutils.spawn.find_executable("python.exe"):
+        python = distutils.spawn.find_executable("python.exe")
+    elif ("Python2") in distutils.spawn.find_executable("python.exe"):
+        print("Can't find python3 - make sure it's installed, then try again.")
+        sys.exit()
+elif os.name == "posix":
+    if ("python3") in distutils.spawn.find_executable("python3"):
+        python = distutils.spawn.find_executable("python3")
+    elif ("python3") in distutils.spawn.find_executable("python"):
+        python = distutils.spawn.find_executable("python3")
+    elif ("python3") not in distutils.spawn.find_executable("python") and ("python3") not in distutils.spawn.find_executable("python3"):
+        print("Can't find python3 - make sure it's installed, then try again.")
+        sys.exit()
 
 # === MAIN (for tests) ===============================================================================================
 
