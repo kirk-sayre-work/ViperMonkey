@@ -36,7 +36,10 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from visitor import *
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
+from vipermonkey.core.visitor import *
 
 class let_statement_visitor(visitor):
     """
@@ -49,7 +52,7 @@ class let_statement_visitor(visitor):
         self.var_name = var_name
     
     def visit(self, item):
-        from statements import Let_Statement
+        from vipermonkey.core.statements import Let_Statement
         if (item in self.visited):
             return False
         self.visited.add(item)        

@@ -37,6 +37,8 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
 
 # ------------------------------------------------------------------------------
 # CHANGELOG:
@@ -53,9 +55,7 @@ __version__ = '0.08'
 
 import logging
 import base64
-from logger import log
 import re
-from curses_ascii import isprint
 import traceback
 import string
 import gc
@@ -65,14 +65,17 @@ from inspect import getouterframes, currentframe
 import sys
 from datetime import datetime
 import pyparsing
+from six import text_type, string_types, iteritems
 
-import expressions
-from var_in_expr_visitor import *
-from lhs_var_visitor import *
-from utils import safe_print
-import utils
-from let_statement_visitor import *
-from vba_context import *
+from vipermonkey.core.logger import log
+from vipermonkey.core.curses_ascii import isprint
+from vipermonkey.core import expressions
+from vipermonkey.core.var_in_expr_visitor import *
+from vipermonkey.core.lhs_var_visitor import *
+from vipermonkey.core.utils import safe_print
+from vipermonkey.core import utils
+from vipermonkey.core.let_statement_visitor import *
+from vipermonkey.core.vba_context import *
 
 max_emulation_time = None
 
@@ -105,7 +108,7 @@ def limits_exceeded(throw_error=False):
     """
 
     # Check to see if we are approaching the recursion limit.
-    level = len(getouterframes(currentframe(1)))
+    level = len(getouterframes(currentframe()))
     recursion_exceeded = (level > (sys.getrecursionlimit() * .50))
     time_exceeded = False
 
@@ -175,7 +178,7 @@ class VBA_Object(object):
         if ((hasattr(self, "_children")) and (self._children is not None)):
             return self._children
         r = []
-        for _, value in self.__dict__.iteritems():
+        for _, value in iteritems(self.__dict__):
             if (isinstance(value, VBA_Object)):
                 r.append(value)
             if ((isinstance(value, list)) or
@@ -204,8 +207,8 @@ class VBA_Object(object):
             hasattr(visitor, "in_loop") and
             visitor.in_loop and
             self.is_loop):
-            #print "SKIPPING LOOP!!"
-            #print self
+            #print("SKIPPING LOOP!!")
+            #print(self)
             return
 
         # Set initial in loop status of visitor if needed.
@@ -458,11 +461,11 @@ def is_constant_math(arg):
     paren_pat = base_pat + "|(?:\\((?:\\s*" + base_pat + "\\s*[+\\-\\*\\\\]\\s*)*\\s*" + base_pat + "\\))"
     arg_str = str(arg).strip()
     try:
-        arg_str = unicode(arg_str)
+        arg_str = text_type(arg_str)
     except UnicodeDecodeError:
         arg_str = filter(isprint, arg_str)
-        arg_str = unicode(arg_str)
-    return (local_re.match(unicode(paren_pat), arg_str) is not None)
+        arg_str = text_type(arg_str)
+    return (local_re.match(text_type(paren_pat), arg_str) is not None)
 
 meta = None
 
@@ -471,14 +474,14 @@ def _boilerplate_to_python(indent):
     Get starting boilerplate code for VB to Python JIT code.
     """
     indent_str = " " * indent
-    boilerplate = indent_str + "import core.vba_library\n"
-    boilerplate += indent_str + "from core.utils import safe_print\n"
-    boilerplate += indent_str + "import core.utils\n"
-    boilerplate += indent_str + "from core.vba_object import update_array\n"
-    boilerplate += indent_str + "from core.vba_object import coerce_to_num\n"
-    boilerplate += indent_str + "from core.vba_object import coerce_to_int\n"
-    boilerplate += indent_str + "from core.vba_object import coerce_to_str\n"
-    boilerplate += indent_str + "from core.vba_object import coerce_to_int_list\n\n"
+    boilerplate = indent_str + "from vipermonkey.core import vba_library\n"
+    boilerplate += indent_str + "from vipermonkey.core.utils import safe_print\n"
+    boilerplate += indent_str + "from vipermonkey.core import utils\n"
+    boilerplate += indent_str + "from vipermonkey.core.vba_object import update_array\n"
+    boilerplate += indent_str + "from vipermonkey.core.vba_object import coerce_to_num\n"
+    boilerplate += indent_str + "from vipermonkey.core.vba_object import coerce_to_int\n"
+    boilerplate += indent_str + "from vipermonkey.core.vba_object import coerce_to_string\n"
+    boilerplate += indent_str + "from vipermonkey.core.vba_object import coerce_to_int_list\n\n"
     boilerplate += indent_str + "try:\n"
     boilerplate += indent_str + " " * 4 + "vm_context\n"
     boilerplate += indent_str + "except NameError:\n"
@@ -490,11 +493,11 @@ def _infer_type_of_expression(expr):
     Try to determine if a given expression is an "INTEGER" or "STRING" expression.
     """
 
-    import operators
-    import vba_library
+    from vipermonkey.core import operators
+    from vipermonkey.core import vba_library
 
-    #print expr
-    #print type(expr)
+    #print(expr)
+    #print(type(expr))
 
     # Function with a hard coded type?
     if (hasattr(expr, "return_type")):
@@ -583,7 +586,7 @@ def _get_var_vals(item, context, global_only=False):
     Returns a dict mapping var names to values.
     """
 
-    import procedures
+    from vipermonkey.core import procedures
 
     # Get all the variables.
 
@@ -663,7 +666,7 @@ def _get_var_vals(item, context, global_only=False):
                 val = None
 
             # Weird bug.
-            if ("core.vba_library.run_function" in str(val)):
+            if ("fvba_library.run_function" in str(val)):
                 val = 0
             
         # Unedfined variable.
@@ -731,9 +734,9 @@ def to_python(arg, context, params=None, indent=0, statements=False):
     Call arg.to_python() if arg is a VBAObject, otherwise just return arg as a str.
     """
 
-    #print "--- to_python() ---"
-    #print arg
-    #print type(arg)
+    #print("--- to_python() ---")
+    #print(arg)
+    #print(type(arg))
         
     # VBA Object?
     r = None
@@ -789,8 +792,8 @@ def to_python(arg, context, params=None, indent=0, statements=False):
             try:
                 r += to_python(statement, context, indent=indent+4) + "\n"
             except Exception as e:
-                #print statement
-                #print e
+                #print(statement)
+                #print(e)
                 #traceback.print_exc(file=sys.stdout)
                 #sys.exit(0)
                 return "ERROR! to_python failed! " + str(e)
@@ -850,8 +853,8 @@ def _updated_vars_to_python(loop, context, indent):
     save_vals += indent_str + " " * 4 + "var_updates = " + var_dict_str + "\n"
     save_vals = indent_str + "# Save the updated variables for reading into ViperMonkey.\n" + save_vals
     if (log.getEffectiveLevel() == logging.DEBUG):
-        save_vals += indent_str + "print \"UPDATED VALS!!\"\n"
-        save_vals += indent_str + "print var_updates\n"
+        save_vals += indent_str + "print(\"UPDATED VALS!!\")\n"
+        save_vals += indent_str + "print(var_updates)\n"
     return save_vals
 
 def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=None):
@@ -919,7 +922,7 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
         if (namespace is None):
             # Magic. For some reason exec'ing in locals() makes the dynamically generated
             # code recognize functions defined in the dynamic code. I don't know why.
-            exec code_python in locals()
+            exec(code_python, locals())
         else:
             exec(code_python, namespace)
             var_updates = namespace["var_updates"]
@@ -1132,10 +1135,10 @@ def eval_arg(arg, context, treat_as_var_name=False):
                         log.debug("eval_arg: Try to run as function '" + func_name + "'...")
                     func = context.get(func_name)
                     r = func
-                    import procedures
+                    from vipermonkey.core import procedures
                     if (isinstance(func, procedures.Function) or
                         isinstance(func, procedures.Sub) or
-                        ('vipermonkey.core.vba_library.' in str(type(func)))):
+                        ('fvba_library.' in str(type(func)))):
                         r = eval_arg(func, context, treat_as_var_name=True)
                         
                     # Did the function resolve to a value?
@@ -1295,7 +1298,7 @@ def eval_args(args, context, treat_as_var_name=False):
             got_vba_objects = True
     if (not got_vba_objects):
         return args
-    r = map(lambda arg: eval_arg(arg, context=context, treat_as_var_name=treat_as_var_name), args)
+    r = list(map(lambda arg: eval_arg(arg, context=context, treat_as_var_name=treat_as_var_name), args))
     return r
 
 def update_array(old_array, index, val):
@@ -1325,7 +1328,7 @@ def coerce_to_int_list(obj):
         return obj
     
     # Make sure we have a string.
-    s = coerce_to_str(obj)
+    s = coerce_to_string(obj)
 
     # Convert this to a list of ASCII char codes.
     r = []
@@ -1333,7 +1336,7 @@ def coerce_to_int_list(obj):
         r.append(ord(c))
     return r
 
-def coerce_to_str(obj):
+def coerce_to_string(obj):
     """
     Coerce a constant VBA object (integer, Null, etc) to a string.
     :param obj: VBA object
@@ -1341,21 +1344,20 @@ def coerce_to_str(obj):
     """
 
     # in VBA, Null/None is equivalent to an empty string
-    if ((obj is None) or (obj == "NULL")):
+    if obj in (None, 'NULL', b'NULL'):
         return ''
 
     # Not NULL. We have data.
 
     # Easy case. Is this already a string?
-    if (isinstance(obj, basestring)):
+    if (isinstance(obj, string_types)):
 
         # Try to convert unicode to str.
-        if (isinstance(obj, unicode)):
-            try:
-                return obj.encode('utf-8')
-            except:
-                # Conversion failed. Just leave the unicode string as-is and hope for the best.
-                pass
+        try:
+            return ensure_str(obj)
+        except:
+            # Conversion failed. Just leave the unicode string as-is and hope for the best.
+            pass
             
         return obj
     
@@ -1393,7 +1395,7 @@ def coerce_args_to_str(args):
     Return the list of evaluated arguments.
     """
     # TODO: None should be converted to "", not "None"
-    return [coerce_to_str(arg) for arg in args]
+    return [coerce_to_string(arg) for arg in args]
     # return map(lambda arg: str(arg), args)
 
 def coerce_to_int(obj):
@@ -1632,7 +1634,7 @@ def str_convert(arg):
     try:
         return str(arg)
     except Exception as e:
-        if (isinstance(arg, unicode)):
+        if (isinstance(arg, text_type)):
             return ''.join(filter(lambda x:x in string.printable, arg))
         log.error("Cannot convert given argument to str. Defaulting to ''. " + str(e))
         return ''

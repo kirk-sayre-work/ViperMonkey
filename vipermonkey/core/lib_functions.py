@@ -37,6 +37,9 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
 __version__ = '0.02'
 
 # --- IMPORTS ------------------------------------------------------------------
@@ -44,11 +47,11 @@ __version__ = '0.02'
 import logging
 from pyparsing import *
 
-from vba_object import *
-from literals import *
-import vb_str
+from vipermonkey.core.vba_object import *
+from vipermonkey.core.literals import *
+from vipermonkey.core import vb_str
 
-from logger import log
+from vipermonkey.core.logger import log
 
 # --- VBA Expressions ---------------------------------------------------------
 
@@ -75,7 +78,7 @@ class Chr(VBA_Object):
 
     def to_python(self, context, params=None, indent=0):
         arg_str = to_python(self.arg, context)
-        r = "core.vba_library.run_function(\"_Chr\", vm_context, [" + arg_str + "])"
+        r = "vba_library.run_function(\"_Chr\", vm_context, [" + arg_str + "])"
         return r
 
     def return_type(self):
@@ -84,7 +87,7 @@ class Chr(VBA_Object):
     def eval(self, context, params=None):
 
         # This is implemented in the common vba_library._Chr handler class.
-        import vba_library
+        from vipermonkey.core import vba_library
         chr_handler = vba_library._Chr()
         param = eval_arg(self.arg, context)
         return chr_handler.eval(context, [param])

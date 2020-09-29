@@ -12,10 +12,13 @@ Project Repository:
 https://github.com/decalage2/ViperMonkey
 """
 
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
 import logging
 import subprocess
 
-from logger import log
+from vipermonkey.core.logger import log
 
 class FakeMeta(object):
     pass

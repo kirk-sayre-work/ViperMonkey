@@ -37,6 +37,9 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
 # ------------------------------------------------------------------------------
 # CHANGELOG:
 # 2015-02-12 v0.01 PL: - first prototype
@@ -49,38 +52,37 @@ __version__ = '0.08'
 # --- IMPORTS ------------------------------------------------------------------
 
 import logging
-
-from comments_eol import *
-from expressions import *
-from vba_context import *
-from reserved import *
-from from_unicode_str import *
-from vba_object import int_convert
-from vba_object import to_python
-from vba_object import _eval_python
-from vba_object import _boilerplate_to_python
-from vba_object import _updated_vars_to_python
-from vba_object import _loop_vars_to_python
-from vba_object import _get_var_vals
-import procedures
-from let_statement_visitor import *
-from var_in_expr_visitor import *
-from function_call_visitor import *
-from lhs_var_visitor import *
-from function_call_visitor import *
-import vb_str
-import loop_transform
-from utils import safe_print
-import utils
-
 import traceback
 import string
-from logger import log
 import sys
 import re
 import base64
-from curses_ascii import isprint
 import hashlib
+
+from vipermonkey.core import loop_transform
+from vipermonkey.core import procedures
+from vipermonkey.core import utils
+from vipermonkey.core import vb_str
+from vipermonkey.core.comments_eol import *
+from vipermonkey.core.curses_ascii import isprint
+from vipermonkey.core.expressions import *
+from vipermonkey.core.from_unicode_str import *
+from vipermonkey.core.function_call_visitor import *
+from vipermonkey.core.function_call_visitor import *
+from vipermonkey.core.let_statement_visitor import *
+from vipermonkey.core.lhs_var_visitor import *
+from vipermonkey.core.logger import log
+from vipermonkey.core.reserved import *
+from vipermonkey.core.utils import safe_print
+from vipermonkey.core.var_in_expr_visitor import *
+from vipermonkey.core.vba_context import *
+from vipermonkey.core.vba_object import _boilerplate_to_python
+from vipermonkey.core.vba_object import _eval_python
+from vipermonkey.core.vba_object import _get_var_vals
+from vipermonkey.core.vba_object import _loop_vars_to_python
+from vipermonkey.core.vba_object import _updated_vars_to_python
+from vipermonkey.core.vba_object import int_convert
+from vipermonkey.core.vba_object import to_python
 
 def is_simple_statement(s):
     """
@@ -811,7 +813,7 @@ class Let_Statement(VBA_Object):
 
             # Handle conversion of byte arrays to strings, if needed.
             elif (context.get_type(self.name) == "String"):
-                val = "coerce_to_str(" + to_python(self.expression, context, params=params) + ")"
+                val = "coerce_to_string(" + to_python(self.expression, context, params=params) + ")"
                 r = utils.fix_python_overlap(str(self.name)) + " " + str(self.op) + " " + val
 
             # Basic assignment.
@@ -1505,7 +1507,7 @@ class For_Statement(VBA_Object):
 
         # Get the start index. If this is a string, convert to an int.
         start = eval_arg(self.start_value, context=context)
-        if (isinstance(start, basestring)):
+        if (isinstance(start, string_types)):
             start = int_convert(start)
 
         if (log.getEffectiveLevel() == logging.DEBUG):
@@ -1513,7 +1515,7 @@ class For_Statement(VBA_Object):
 
         # Get the end index. If this is a string, convert to an int.
         end = eval_arg(self.end_value, context=context)
-        if (isinstance(end, basestring)):
+        if (isinstance(end, string_types)):
             end = int_convert(end)
         if (end is None):
             log.warning("Not emulating For loop. Loop end '" + str(self.end_value) + "' evaluated to None.")
@@ -1525,7 +1527,7 @@ class For_Statement(VBA_Object):
         # Get the loop step value.
         if self.step_value != 1:
             step = eval_arg(self.step_value, context=context)
-            if (isinstance(step, basestring)):
+            if (isinstance(step, string_types)):
                 step = int_convert(step)
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug('FOR loop - step: %r = %r' % (self.step_value, step))
@@ -3541,8 +3543,8 @@ class If_Statement(VBA_Object):
             r += body + " "
 
         if (full_str):
-            print guard
-            print body
+            print(guard)
+            print(body)
             sys.exit(0)
         return r
 
@@ -3761,7 +3763,7 @@ class Call_Statement(VBA_Object):
         func_name = str(self.name)
         if ("." in func_name):
             func_name = func_name[func_name.index(".") + 1:]
-        import vba_library
+        from vipermonkey.core import vba_library
         if (func_name.lower() in vba_library.VBA_LIBRARY):
 
             # Make the Python parameter list.
@@ -3781,7 +3783,7 @@ class Call_Statement(VBA_Object):
                 (str(func_name) == "AddFromString")):
                 args += ", locals(), \"__JIT_EXEC__\""
             args += "]"
-            r = indent_str + "core.vba_library.run_function(\"" + str(func_name) + "\", vm_context, " + args + ")"
+            r = indent_str + "vba_library.run_function(\"" + str(func_name) + "\", vm_context, " + args + ")"
             return r
                 
         # Generate the Python function call to a local function.
@@ -3831,7 +3833,7 @@ class Call_Statement(VBA_Object):
             return
 
         # Save the unresolved argument values.
-        import vba_library
+        from vipermonkey.core import vba_library
         vba_library.var_names = self.params
         
         # Reset the called function name if this is an alias for an imported external
@@ -4758,13 +4760,13 @@ class External_Function(VBA_Object):
         self.params = tokens.params
         self.lib_name = str(tokens.lib_info.lib_name)
         # normalize lib name: remove quotes, lowercase, add .dll if no extension
-        if isinstance(self.lib_name, basestring):
+        if isinstance(self.lib_name, string_types):
             self.lib_name = str(tokens.lib_name).strip('"').lower()
             if '.' not in self.lib_name:
                 self.lib_name += '.dll'
         self.lib_name = str(self.lib_name)
         self.alias_name = str(tokens.lib_info.alias_name)
-        if isinstance(self.alias_name, basestring):
+        if isinstance(self.alias_name, string_types):
             # TODO: this might not be necessary if alias is parsed as quoted string
             self.alias_name = self.alias_name.strip('"')
         if (len(self.alias_name.strip()) == 0):
@@ -5082,7 +5084,7 @@ def extend_statement_grammar():
                   name_statement | stop_statement
     statement_no_orphan <<= try_catch | type_declaration | simple_for_statement | real_simple_for_each_statement | simple_if_statement | \
                             line_input_statement | simple_if_statement_macro | simple_while_statement | simple_do_statement | simple_select_statement | \
-                            with_statement| simple_statement | rem_statement | procedures.simple_function | procedures.simple_sub | name_statement | stop_statement 
+                            with_statement| simple_statement | rem_statement | procedures.simple_function | procedures.simple_sub | name_statement | stop_statement
     statement_restricted <<= try_catch | type_declaration | simple_for_statement | real_simple_for_each_statement | simple_if_statement | \
                              line_input_statement | simple_if_statement_macro | simple_while_statement | simple_do_statement | simple_select_statement | name_statement | \
                              with_statement| simple_statement_restricted | rem_statement | \

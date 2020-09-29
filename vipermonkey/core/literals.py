@@ -37,6 +37,9 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
 __version__ = '0.02'
 
 # --- IMPORTS ------------------------------------------------------------------
@@ -46,8 +49,8 @@ import re
 
 from pyparsing import *
 
-from logger import log
-from vba_object import VBA_Object
+from vipermonkey.core.logger import log
+from vipermonkey.core.vba_object import VBA_Object
 
 # --- BOOLEAN ------------------------------------------------------------
 

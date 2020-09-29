@@ -36,11 +36,13 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
 import logging
 import re
 
-from logger import log
-import statements
+from vipermonkey.core.logger import log
 
 def _transform_dummy_loop1(loop):
     """
@@ -103,7 +105,7 @@ def _transform_dummy_loop1(loop):
         loop_repl += run_statement + "\n"
 
     # Parse and return the loop replacement.
-    import statements
+    from vipermonkey.core import statements
     obj = statements.statement_block.parseString(loop_repl, parseAll=True)[0]
     return obj
 
@@ -120,6 +122,7 @@ def _transform_wait_loop(loop):
         return loop
 
     # Is the loop body a function call?
+    from vipermonkey.core import statements
     if ((len(loop.body) > 1) or (len(loop.body) == 0) or
         (not isinstance(loop.body[0], statements.Call_Statement))):
         return loop
@@ -134,7 +137,7 @@ def transform_loop(loop):
     """
 
     # Sanity check.
-    import statements
+    from vipermonkey.core import statements
     if (not isinstance(loop, statements.While_Statement)):
         return loop
     

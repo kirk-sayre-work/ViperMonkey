@@ -36,8 +36,11 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from visitor import *
-from statements import *
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
+from vipermonkey.core.visitor import *
+from vipermonkey.core.statements import *
 
 class var_defn_visitor(visitor):
     """

@@ -46,14 +46,14 @@ __version__ = '0.02'
 
 import logging
 
-from comments_eol import *
-from procedures import *
-from statements import *
-import vba_context
-from function_defn_visitor import *
-from vba_object import to_python
+from vipermonkey.core.comments_eol import *
+from vipermonkey.core.procedures import *
+from vipermonkey.core.statements import *
+from vipermonkey.core import vba_context
+from vipermonkey.core.function_defn_visitor import *
+from vipermonkey.core.vba_object import to_python
 
-from logger import log
+from vipermonkey.core.logger import log
 
 # === VBA MODULE AND STATEMENTS ==============================================
 

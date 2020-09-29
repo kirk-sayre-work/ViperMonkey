@@ -36,6 +36,10 @@ https://github.com/decalage2/ViperMonkey
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
 import operator
 
 __version__ = '0.03'
@@ -46,11 +50,13 @@ import logging
 import sys
 from collections import Iterable
 
-from vba_object import *
+from six.moves import reduce
 
-from logger import log
-from vba_object import int_convert
-from vba_object import to_python
+from vipermonkey.core.logger import log
+from vipermonkey.core.vba_object import VBA_Object
+from vipermonkey.core.vba_object import *
+from vipermonkey.core.vba_object import int_convert, eval_args, to_python, coerce_args, coerce_args_to_str, coerce_to_int
+
 
 def debug_repr(op, args):
     r = "("
@@ -742,7 +748,7 @@ class Concatenation(VBA_Object):
             if (not first):
                 r += " + "
             first = False
-            r += "coerce_to_str(" + to_python(arg, context, params=params) + ")"
+            r += "coerce_to_string(" + to_python(arg, context, params=params) + ")"
         return "(" + r + ")"
 
 # --- MOD OPERATOR -----------------------------------------------------------
