@@ -38,7 +38,7 @@ https://github.com/decalage2/ViperMonkey
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # For Python 2+3 support:
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 # ------------------------------------------------------------------------------
 # CHANGELOG:
@@ -98,15 +98,15 @@ import string
 
 import subprocess
 
-from logger import log
-from procedures import Function
-from procedures import Sub
-from function_call_visitor import *
-from function_defn_visitor import *
-from function_import_visitor import *
-from var_defn_visitor import *
-import filetype
-import read_ole_fields
+from vipermonkey.core.logger import log
+from vipermonkey.core.procedures import Function
+from vipermonkey.core.procedures import Sub
+from vipermonkey.core.function_call_visitor import *
+from vipermonkey.core.function_defn_visitor import *
+from vipermonkey.core.function_import_visitor import *
+from vipermonkey.core.var_defn_visitor import *
+from vipermonkey.core import filetype
+from vipermonkey.core import read_ole_fields
 
 # === FUNCTIONS ==============================================================
 
@@ -131,13 +131,13 @@ def list_startswith(_list, lstart):
 
 # === VBA GRAMMAR ============================================================
 
-from vba_lines import *
-from modules import *
+from vipermonkey.core.vba_lines import *
+from vipermonkey.core.modules import *
 
 # Make sure we populate the VBA Library:
-from vba_library import *
+from vipermonkey.core import vba_library
 
-from stubbed_engine import StubbedEngine
+from vipermonkey.core.stubbed_engine import StubbedEngine
 
 # === ViperMonkey class ======================================================
 
@@ -523,7 +523,7 @@ class ViperMonkey(StubbedEngine):
         context.globals["['ThisDocument'].Paragraphs".lower()] = self.doc_text
         context.globals["['ActiveDocument'].Characters".lower()] = list("\n".join(self.doc_text))
         context.globals["ActiveDocument.Characters".lower()] = list("\n".join(self.doc_text))
-        context.globals["ActiveDocument.Characters.Count".lower()] = long(len(self.doc_text))
+        context.globals["ActiveDocument.Characters.Count".lower()] = len(self.doc_text)
         context.globals["Count".lower()] = 1
         context.globals[".Pages.Count".lower()] = 1
         context.globals["me.Pages.Count".lower()] = 1

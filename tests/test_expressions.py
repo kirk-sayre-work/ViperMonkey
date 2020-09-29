@@ -133,7 +133,7 @@ def test_adodb_writes():
     """Tests expression like "foo.Write(...)" where foo = "ADODB.Stream" """
     context = vipermonkey.Context()
     vipermonkey.eval('CreateObject("ADODB.Stream").Write("this is test data")', context)
-    assert context.open_files == {'ADODB.Stream': 'this is test data'}
+    assert context.open_files == {'ADODB.Stream': b'this is test data'}
 
     # FIXME: This method fails.
     # context = vipermonkey.Context()

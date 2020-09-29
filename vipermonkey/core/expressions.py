@@ -37,6 +37,9 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
 __version__ = '0.03'
 
 # --- IMPORTS ------------------------------------------------------------------
@@ -49,25 +52,27 @@ import array
 from hashlib import sha256
 import string
 
+from six import string_types, ensure_str
+
 import unidecode
 
-from identifiers import *
-from reserved import *
-from lib_functions import *
-from literals import *
-from operators import *
-import procedures
-from vba_object import eval_arg
-from vba_object import to_python
-from vba_object import coerce_to_int
-from vba_object import coerce_to_str
-from vba_object import strip_nonvb_chars
-from vba_object import int_convert
-from vba_object import VbaLibraryFunc
-import vba_context
-import utils
+from vipermonkey.core.identifiers import *
+from vipermonkey.core.reserved import *
+from vipermonkey.core.lib_functions import *
+from vipermonkey.core.literals import *
+from vipermonkey.core.operators import *
+# from vipermonkey.core import procedures
+from vipermonkey.core.vba_object import eval_arg
+from vipermonkey.core.vba_object import to_python
+from vipermonkey.core.vba_object import coerce_to_int
+from vipermonkey.core.vba_object import coerce_to_string
+from vipermonkey.core.vba_object import strip_nonvb_chars
+from vipermonkey.core.vba_object import int_convert
+from vipermonkey.core.vba_object import VbaLibraryFunc
+from vipermonkey.core import vba_context
+from vipermonkey.core import utils
 
-from logger import log
+from vipermonkey.core.logger import log
 
 def _vba_to_python_op(op):
     """
@@ -124,7 +129,7 @@ class SimpleNameExpression(VBA_Object):
 
         # VB regex object?
         if (self.name == "RegExp"):
-            return "core.utils.vb_RegExp()"
+            return "vipermonkey.core.utils.vb_RegExp()"
 
         # Get the value of the variable/function.
         value = None
@@ -141,14 +146,14 @@ class SimpleNameExpression(VBA_Object):
         
         # Is this a 0 argument builtin function call? Make sure this is not a
         # local variable shadowing the name of a VBA builtin.
-        import vba_library
+        from vipermonkey.core import vba_library
         if ((self.name.lower() in vba_library.VBA_LIBRARY) and
             (isinstance(value, VbaLibraryFunc)) and
             (value.num_args() == 0)):
 
             # Call the function in python.
             args = "[]"
-            r = "core.vba_library.run_function(\"" + str(self.name) + "\", vm_context, " + args + ")"
+            r = "vba_library.run_function(\"" + str(self.name) + "\", vm_context, " + args + ")"
             return r
 
         # Rename some vars that overlap with python builtins.
@@ -792,9 +797,13 @@ class MemberAccessExpression(VBA_Object):
 
         # TODO: Should we be actually reading files from the system?
         # Read the file contents.
+        # iomode: TristateUseDefault (-2), TristateTrue (-1, utf-16le), TristateFalse (0, ascii)
+        otf_iomode = 'ascii'
         try:
             f = open(read_file, 'rb')
             r = f.read()
+            if not isinstance(r, str):
+                r = r.decode(otf_iomode, errors='ignore')
             f.close()
             return r
         except Exception as e:
@@ -850,7 +859,7 @@ class MemberAccessExpression(VBA_Object):
             rhs = rhs[0]
         if (str(rhs) != "Close"):
             return None
-        from vba_library import Close
+        from vipermonkey.core.vba_library import Close
         file_close = Close()
             
         # File closed.
@@ -963,7 +972,7 @@ class MemberAccessExpression(VBA_Object):
         txt = None
         rhs_val = eval_arg(rhs.params[0], context)
         try:
-            txt = str(rhs_val)
+            txt = ensure_str(rhs_val, errors='ignore')
         except UnicodeEncodeError:
             txt = ''.join(filter(lambda x:x in string.printable, rhs_val))
             
@@ -976,7 +985,9 @@ class MemberAccessExpression(VBA_Object):
             context.set(var_name, "", force_global=True)
         final_txt = context.get(var_name) + txt
         context.set(var_name, final_txt, force_global=True)
-        
+        if 'ADODB.Stream' in context.open_files:
+            # TODO - Discriminate between stream types for read and write
+            context.open_files['ADODB.Stream'] += ensure_binary(final_txt)
         # We handled the write.
         return True
 
@@ -1058,7 +1069,7 @@ class MemberAccessExpression(VBA_Object):
         if (".savetofile(" not in memb_str.lower()):
             return False
 
-        # We have a call to SaveToFile(). Get the value to save from .ReadText
+        # We have a call to SaveToFile(). Get the value to save from vipermonkey.core.ReadText
         var_name = memb_str[:memb_str.lower().index(".savetofile")] + ".ReadText"
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("var_name = " + var_name)
@@ -1284,7 +1295,7 @@ class MemberAccessExpression(VBA_Object):
                     param = int(param)
                 if (isinstance(param, int)):
                     param = "'" + str(param) + "'"
-                func_str += coerce_to_str(param)
+                func_str += coerce_to_string(param)
             func_str += ")"
             memb_str += func_str
                         
@@ -1320,13 +1331,13 @@ class MemberAccessExpression(VBA_Object):
         # 0 argument call to local function?
         r = self._handle_0_arg_call(context)
         if (r is not None):
-            #print "OUT: 1"
+            #print("OUT: 1")
             return r
             
         # Easy case. Do we have this saved as a variable?
         r = self._read_member_expression_as_var(context)
         if (r is not None):
-            #print "OUT: 2"
+            #print("OUT: 2")
             return r
 
         # TODO: Need to actually have some sort of object model. For now
@@ -1355,68 +1366,68 @@ class MemberAccessExpression(VBA_Object):
         # Handle reading the caption of a Pages() object accessed by index.
         call_retval = self._handle_indexed_pages_access(context)
         if (call_retval is not None):
-            #print "OUT: 3"
+            #print("OUT: 3")
             return call_retval
             
         # Handle accessing control values from a form by index.
         call_retval = self._handle_indexed_form_access(context)
         if (call_retval is not None):
-            #print "OUT: 4"
+            #print("OUT: 4")
             return call_retval
         
         # See if this is reading form text by index.
         call_retval = self._handle_control_read(context)
         if (call_retval is not None):
-            #print "OUT: 5"
+            #print("OUT: 5")
             return call_retval        
         
         # See if this is reading the OSlanguage.
         call_retval = self._handle_oslanguage(context)
         if (call_retval is not None):
-            #print "OUT: 6"
+            #print("OUT: 6")
             return call_retval
 
         # See if this is reading the doc paragraphs.
         call_retval = self._handle_paragraphs(context)
         if (call_retval is not None):
-            #print "OUT: 7"
+            #print("OUT: 7")
             return call_retval
 
         # See if this is reading the doc comments.
         call_retval = self._handle_comments(context)
         if (call_retval is not None):
-            #print "OUT: 8"
+            #print("OUT: 8")
             return call_retval
         
         # See if this is a function call like Application.Run("foo", 12, 13).
         call_retval = self._handle_application_run(context)
         if (call_retval is not None):
-            #print "OUT: 9"
+            #print("OUT: 9")
             return call_retval
 
         # See if this is a function call like ActiveDocument.BuiltInDocumentProperties("foo").
         call_retval = self._handle_docprops_read(context)
         if (call_retval is not None):
-            #print "OUT: 10"
+            #print("OUT: 10")
             return call_retval
         
         # Handle accessing document variables as a special case.
         if (not calling_func):
             call_retval = self._handle_docvars_read(context)
             if (call_retval is not None):
-                #print "OUT: 11"
+                #print("OUT: 11")
                 return call_retval
 
         # Handle setting the clipboard text.
         call_retval = self._handle_set_clipboard(context)
         if (call_retval is not None):
-            #print "OUT: 12"
+            #print("OUT: 12")
             return call_retval
 
         # Handle getting the clipboard text.
         call_retval = self._handle_get_clipboard(context)
         if (call_retval is not None):
-            #print "OUT: 13"
+            #print("OUT: 13")
             return call_retval
         
         # Pull out the left hand side of the member access.
@@ -1431,7 +1442,7 @@ class MemberAccessExpression(VBA_Object):
         # See if this is reading a table cell value.
         call_retval = self._handle_table_cell(context)
         if (call_retval is not None):
-            #print "OUT: 14"
+            #print("OUT: 14")
             return call_retval
             
         # Is the LHS a python dict and are we looking for a field?
@@ -1442,50 +1453,50 @@ class MemberAccessExpression(VBA_Object):
             if (key in tmp_lhs.keys()):
 
                 # Return the field value.
-                #print "OUT: 15"
+                #print("OUT: 15")
                 return tmp_lhs[key]
             
         # Handle getting the .Count of a data collection..
         call_retval = self._handle_count(context, tmp_lhs)
         if (call_retval is not None):
-            #print "OUT: 16"
+            #print("OUT: 16")
             return call_retval
 
         # Handle reading an item from a data collection.
         call_retval = self._handle_item(context, tmp_lhs)
         if (call_retval is not None):
-            #print "OUT: 17"
+            #print("OUT: 17")
             return call_retval
 
         # Handle Regex object applications.
         call_retval = self._handle_regex_execute(context, tmp_lhs)
         if (call_retval is not None):
-            #print "OUT: 18"
+            #print("OUT: 18")
             return call_retval
 
         # Handle simple 0-argument function calls.
         call_retval = self._handle_0_arg_call(context, rhs)
         if (call_retval is not None):
-            #print "OUT: 19"
+            #print("OUT: 19")
             return call_retval
-        
+
         # Handle reading the contents of a text file.
         call_retval = self._handle_text_file_read(context)
         if (call_retval is not None):
-            #print "OUT: 20"
+            #print("OUT: 20")
             return call_retval
 
         # Handle writes of text to ADODB.Stream variables.
         if (self._handle_adodb_writes(self.lhs, tmp_lhs, rhs, context)):
-            #print "OUT: 21"
+            #print("OUT: 21")
             return "NULL"
 
         # See if this is accessing the Path field of a file/folder object.
         call_retval = self._handle_path_access()
         if (call_retval is not None):
-            #print "OUT: 22"
+            #print("OUT: 22")
             return call_retval
-        
+
         # If the final element in the member expression is a function call,
         # the result should be the result of the function call. Otherwise treat
         # it as a fancy variable access.
@@ -1500,42 +1511,42 @@ class MemberAccessExpression(VBA_Object):
             if (context.contains_user_defined(rhs_name)):
                 for func in Function_Call.log_funcs:
                     if (rhs_name.lower() == func.lower()):
-                        #print "OUT: 23"
+                        #print("OUT: 23")
                         return str(self)
 
             # Handle things like foo.Replace(bar, baz).
             call_retval = self._handle_replace(context, tmp_lhs, self.rhs)
             if (call_retval is not None):
-                #print "OUT: 24"
+                #print("OUT: 24")
                 return call_retval
 
             # Handle things like foo.Add(bar, baz).
             call_retval = self._handle_add(context, tmp_lhs, self.rhs)
             if (call_retval is not None):
-                #print "OUT: 25"
+                #print("OUT: 25")
                 return call_retval
 
             # Handle Excel cells() references.
             call_retval = self._handle_excel_read(context, self.rhs)
             if (call_retval is not None):
-                #print "OUT: 26"
+                #print("OUT: 26")
                 return call_retval
-                    
+
             # This is not a builtin. Evaluate it
             tmp_rhs = eval_arg(rhs, context)
 
             # Was this a call to LoadXML()?
             if (self._handle_loadxml(context, tmp_rhs)):
-                #print "OUT: 27"
+                #print("OUT: 27")
                 return "NULL"
 
             # Was this a call to SaveToFile()?
             if (self._handle_savetofile(context, tmp_rhs)):
-                #print "OUT: 28"
+                #print("OUT: 28")
                 return "NULL"
 
             # It was a regular call.
-            #print "OUT: 29"
+            #print("OUT: 29")
             return tmp_rhs
 
         # Arracy access of function call as the RHS?
@@ -1545,9 +1556,9 @@ class MemberAccessExpression(VBA_Object):
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug('rhs {!r} is a Function_Call_Array_Access'.format(rhs))
             tmp_rhs = eval_arg(rhs, context)
-            #print "OUT: 30"
+            #print("OUT: 30")
             return tmp_rhs
-            
+
         # Did the lhs resolve to something new?
         elif (str(self.lhs) != str(tmp_lhs)):
 
@@ -1561,19 +1572,19 @@ class MemberAccessExpression(VBA_Object):
                 (not context.contains(self.lhs))):
 
                 # Just work with the returned string value.
-                #print "OUT: 31"
+                #print("OUT: 31")
                 return tmp_lhs
 
             # See if this is reading a doc var name or item.
             call_retval = self._handle_docvar_value(tmp_lhs, self.rhs)
             if (call_retval is not None):
-                #print "OUT: 32"
+                #print("OUT: 32")
                 return call_retval
 
             # See if this is closing a file.
             call_retval = self._handle_file_close(context, tmp_lhs, self.rhs)
             if (call_retval is not None):
-                #print "OUT: 33"
+                #print("OUT: 33")
                 return call_retval
 
             # Is the LHS a 0 argument function?
@@ -1583,25 +1594,25 @@ class MemberAccessExpression(VBA_Object):
                 # The LHS is actually a function call. Emulate the function
                 # in the current context.
                 r = tmp_lhs.eval(context)
-                #print "OUT: 34"
+                #print("OUT: 34")
                 return r
 
             # Are we reading the text of an object that we resolved?
             if (((str(self.rhs) == "['Text']") or (str(self.rhs).lower() == "['value']")) and (isinstance(tmp_lhs, str))):
                 if (log.getEffectiveLevel() == logging.DEBUG):
                     log.debug("Returning .Text value.")
-                #print "OUT: 35"
+                #print("OUT: 35")
                 return tmp_lhs
-            
+
             # Construct a new partially resolved member access object.
             r = MemberAccessExpression(None, None, None, raw_fields=(tmp_lhs, self.rhs, self.rhs1))
-            
+
             # See if we can now resolve this to a doc var read.
             call_retval = r._handle_docvars_read(context)
             if (call_retval is not None):
                 if (log.getEffectiveLevel() == logging.DEBUG):
-                    log.debug("MemberAccess: Found " + str(r) + " = '" + str(call_retval) + "'") 
-                #print "OUT: 36"
+                    log.debug("MemberAccess: Found " + str(r) + " = '" + str(call_retval) + "'")
+                #print("OUT: 36")
                 return call_retval
 
             # Do we know what the RHS variable evaluates to?
@@ -1611,28 +1622,28 @@ class MemberAccessExpression(VBA_Object):
                 ((re.match(var_pat, str(tmp_lhs)) is not None) or
                  (str(tmp_lhs).lower().endswith(".application"))) and
                 (tmp_rhs != "NULL") and
-                ("vipermonkey.core.vba_library" not in str(type(tmp_rhs)))):
+                ("vba_library" not in str(type(tmp_rhs)))):
                 if (log.getEffectiveLevel() == logging.DEBUG):
                     log.debug("Resolved member access variable.")
-                #print "OUT: 37"
-                return tmp_rhs        
-            
+                #print("OUT: 37")
+                return tmp_rhs
+
             # Cannot resolve directly. Return the member access object.
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug("MemberAccess: Return new access object " + str(r))
-            #print "OUT: 38"
+            #print("OUT: 38")
             return r
 
         # Try reading as variable.
         elif (context.contains(rhs)):
-            #print "OUT: 39"
+            #print("OUT: 39")
             return context.get(rhs)
-        
+
         # Punt and just try to eval this as a string.
         else:
-            #print "OUT: 40"
+            #print("OUT: 40")
             return eval_arg(self.__repr__(), context)
-        
+
 # need to use Forward(), because the definition of l-expression is recursive:
 l_expression = Forward()
 
@@ -1742,7 +1753,7 @@ class NamedArgument(VBA_Object):
         except:
             log.error("NamedArgument: Cannot eval " + self.__repr__() + ".")
             return ''
-    
+
 named_argument = unrestricted_name('name') + Suppress(":=") + argument_expression('value')
 named_argument.setParseAction(NamedArgument)
 named_argument_list = delimitedList(named_argument)
@@ -1794,7 +1805,7 @@ dictionary_access_expression = l_expression + Suppress("!") + unrestricted_name
 # MS-GRAMMAR: with-dictionary-access-expression = "!" unrestricted-name
 
 class With_Member_Expression(VBA_Object):
-    
+
     def __init__(self, original_str, location, tokens, old_call=None):
         super(With_Member_Expression, self).__init__(original_str, location, tokens)
         self.expr = tokens.expr
@@ -1806,11 +1817,11 @@ class With_Member_Expression(VBA_Object):
 
     def to_python(self, context, params=None, indent=0):
         return to_python(self.expr, context)
-    
+
     def eval(self, context, params=None):
         return self.expr.eval(context, params)
 
-with_member_access_expression = Suppress(".") + (simple_name_expression("expr") ^ function_call_limited("expr") ^ member_access_expression("expr")) 
+with_member_access_expression = Suppress(".") + (simple_name_expression("expr") ^ function_call_limited("expr") ^ member_access_expression("expr"))
 with_member_access_expression.setParseAction(With_Member_Expression)
 with_dictionary_access_expression = Suppress("!") + unrestricted_name
 with_expression = with_member_access_expression | with_dictionary_access_expression
@@ -1834,7 +1845,7 @@ with_expression = with_member_access_expression | with_dictionary_access_express
 
 new_expression = Forward()
 l_expression << (with_expression ^ member_access_expression ^ new_expression ^ member_access_expression_loose) | instance_expression | \
-    dictionary_access_expression | simple_name_expression 
+    dictionary_access_expression | simple_name_expression
 
 # --- FUNCTION CALL ---------------------------------------------------------
 
@@ -1849,7 +1860,7 @@ class Function_Call(VBA_Object):
                  "CreateTextFile", ".CreateTextFile", ".Eval", "Run",
                  "SetExpandedStringValue", "WinExec", "FileExists", "SaveAs",
                  "FileCopy", "Load", "ShellExecute"]
-    
+
     def __init__(self, original_str, location, tokens, old_call=None):
         super(Function_Call, self).__init__(original_str, location, tokens)
 
@@ -1863,7 +1874,7 @@ class Function_Call(VBA_Object):
         self.name = str(tokens.name)
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug('Function_Call.name = %r' % self.name)
-        assert isinstance(self.name, basestring)
+        assert isinstance(self.name, string_types)
         self.params = tokens.params
 
         # Do some special handling of calls to MultiByteToWideChar. It looks like the
@@ -1908,9 +1919,9 @@ class Function_Call(VBA_Object):
     def eval(self, context, params=None):
 
         # Save the unresolved argument values.
-        import vba_library
+        from vipermonkey.core import vba_library
         vba_library.var_names = self.params
-        
+
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("Function_Call: eval params: " + str(self.params))
 
@@ -1932,7 +1943,7 @@ class Function_Call(VBA_Object):
         str_params = repr(params)[1:-1]
         if (len(str_params) > 80):
             str_params = str_params[:80] + "..."
-            
+
         # Would Visual Basic have thrown an error when evaluating the arguments?
         if (context.have_error()):
             log.warn('Short circuiting function call %s(%s) due to thrown VB error.' % (self.name, str_params))
@@ -1943,7 +1954,7 @@ class Function_Call(VBA_Object):
         if (str(self.name).lower() not in skip_report_functions):
             if (not context.throttle_logging):
                 log.info('calling Function: %s(%s)' % (self.name, str_params))
-        
+
         # Actually emulate the function call.
         if (is_external):
 
@@ -1962,7 +1973,7 @@ class Function_Call(VBA_Object):
             except KeyError:
                 log.warning("External function " + str(self.name) + " not found.")
                 return "NULL"
-            
+
         if self.name.lower() in context._log_funcs \
                 or any(self.name.lower().endswith(func.lower()) for func in Function_Call.log_funcs):
             context.report_action(self.name, params, 'Interesting Function Call', strip_null_bytes=True)
@@ -1970,7 +1981,7 @@ class Function_Call(VBA_Object):
 
             # Get the (possible) function.
             f = context.get(self.name)
-            
+
             # Is this actually a hash lookup?
             if (isinstance(f, dict)):
 
@@ -1983,7 +1994,7 @@ class Function_Call(VBA_Object):
                         return f[index]
                     else:
                         return "NULL"
-            
+
             # Is this actually an array access?
             if (isinstance(f, list)):
 
@@ -2022,7 +2033,7 @@ class Function_Call(VBA_Object):
 
                     # Return whole array result.
                     return f
-                    
+
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug('Calling: %r' % f)
 
@@ -2036,12 +2047,13 @@ class Function_Call(VBA_Object):
             if (f is not None):
                 if (isinstance(f, procedures.Function) or
                     isinstance(f, procedures.Sub) or
+                    (".api.CustomVBALibraryFunc" in str(type(f))) or
                     ("vba_library." in str(type(f)))):
                     try:
 
                         # Call function.
-                        r = f.eval(context=context, params=params)                        
-                        
+                        r = f.eval(context=context, params=params)
+
                         # Set the values of the arguments passed as ByRef parameters.
                         if (hasattr(f, "byref_params")):
                             for byref_param_info in f.byref_params.keys():
@@ -2061,7 +2073,7 @@ class Function_Call(VBA_Object):
                         # We are out of the called function, so if we exited the called function early
                         # it does not apply to the current function.
                         context.exit_func = False
-                                    
+
                         # Return result.
                         return r
 
@@ -2160,8 +2172,8 @@ class Function_Call(VBA_Object):
 
                     # Treat this as a misparsed int addition.
                     return (var_val + params[0])
-                
-            # Return result.                
+
+            # Return result.
             context.increase_general_errors()
             log.warning('Function %r not found' % self.name)
             return None
@@ -2174,7 +2186,7 @@ class Function_Call(VBA_Object):
             py_params.append(to_python(p, context, params))
 
         # Is this a VBA internal function?
-        import vba_library
+        from vipermonkey.core import vba_library
         if (self.name.lower() in vba_library.VBA_LIBRARY):
             first = True
             args = "["
@@ -2184,7 +2196,7 @@ class Function_Call(VBA_Object):
                 first = False
                 args += p
             args += "]"
-            r = "core.vba_library.run_function(\"" + str(self.name) + "\", vm_context, " + args + ")"
+            r = "vba_library.run_function(\"" + str(self.name) + "\", vm_context, " + args + ")"
             return r
 
         # Is this an array access? We tell if this is an array access based on the
@@ -2207,7 +2219,7 @@ class Function_Call(VBA_Object):
                     acc_str += "[" + p + "]"
                 r = str(self.name) + acc_str
                 return r
-        
+
         # Generate the Python function call to a local function.
         r = str(self.name) + "("
         first = True
@@ -2220,7 +2232,7 @@ class Function_Call(VBA_Object):
 
         # Done.
         return r
-        
+
 # comma-separated list of parameters, each of them can be an expression:
 boolean_expression = Forward()
 expr_item = Forward()
@@ -2242,7 +2254,7 @@ def quick_parse_int_or_var(text):
 
     # Integer?
     if (text.isdigit()):
-        return int(text)        
+        return int(text)
 
     # Variable?
     if (re.match(r"[_a-zA-Z][_a-zA-Z\d]*", text) is not None):
@@ -2252,7 +2264,7 @@ def quick_parse_int_or_var(text):
     # Non-special case. Parse it.
     r = expression.parseString(text, parseAll=True)[0]
     return r
-    
+
 # Parse large array expressions quickly with a regex.
 # language=PythonRegExp
 # No newlines in whitespace.
@@ -2369,7 +2381,7 @@ class Function_Call_Array_Access(VBA_Object):
 
         # Everything is valid. Return the array element.
         return array_val[array_index]
-            
+
 func_call_array_access = function_call("array") + Suppress("(") + expression("index") + Suppress(")")
 func_call_array_access.setParseAction(Function_Call_Array_Access)
 
@@ -2511,7 +2523,7 @@ class BoolExprItem(VBA_Object):
         self.rhs = None
         if (len(tokens) == 3):
             self.op = tokens[1]
-            self.rhs = tokens[2]        
+            self.rhs = tokens[2]
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug('parsed %r as BoolExprItem' % self)
 
@@ -2534,7 +2546,7 @@ class BoolExprItem(VBA_Object):
             log.error("BoolExprItem: Improperly parsed.")
             return ""
         return r
-        
+
     def eval(self, context, params=None):
 
         # We always have a LHS. Evaluate that in the current context.
@@ -2599,12 +2611,12 @@ class BoolExprItem(VBA_Object):
         if (isinstance(rhs, float) and isinstance(lhs, int)):
             lhs = lhs + 0.0
 
-        # Convert unicode to str by stripping non-ASCII chars. Not ideal.
-        if (isinstance(lhs, unicode)):
-            lhs = ''.join(filter(lambda x:x in string.printable, lhs))
-        if (isinstance(rhs, unicode)):
-            rhs = ''.join(filter(lambda x:x in string.printable, rhs))
-            
+        # Convert to string
+        if (isinstance(lhs, string_types) and not isinstance(lhs, str)):
+            lhs = lhs.encode('utf-8', errors='ignore')
+        if (isinstance(rhs, string_types) and not isinstance(rhs, str)):
+            rhs = rhs.encode('utf-8', errors='ignore')
+
         # Handle unexpected types.
         if (((not isinstance(rhs, int)) and (not isinstance(rhs, str)) and (not isinstance(rhs, float))) or
             ((not isinstance(lhs, int)) and (not isinstance(lhs, str)) and (not isinstance(lhs, float)))):
@@ -2625,7 +2637,7 @@ class BoolExprItem(VBA_Object):
 
         # Evaluate the expression.
         if ((self.op.lower() == "=") or
-            (self.op.lower() == "is")):            
+            (self.op.lower() == "is")):
             return lhs == rhs
         elif (self.op == ">"):
             return lhs > rhs
@@ -2711,7 +2723,7 @@ class BoolExpr(VBA_Object):
         else:
             log.error("BoolExpr: Improperly parsed.")
             return ""
-        
+
     def to_python(self, context, params=None, indent=0):
         r = " " * indent + "("
         if (self.op is not None):
@@ -2728,7 +2740,7 @@ class BoolExpr(VBA_Object):
         # Done.
         r += ")"
         return r
-        
+
     def eval(self, context, params=None):
 
         # Unary operator?
@@ -2751,14 +2763,14 @@ class BoolExpr(VBA_Object):
                 else:
                     log.error("BoolExpr: Unknown bitwise unary op " + str(self.op))
                     return 0
-                
+
             # Evalue the unary expression.
             if (self.op.lower() == "not"):
                 return (not rhs)
             else:
                 log.error("BoolExpr: Unknown boolean unary op " + str(self.op))
                 return ''
-                
+
         # If we get here we always have a LHS. Evaluate that in the current context.
         lhs = self.lhs
         try:
@@ -2794,7 +2806,7 @@ class BoolExpr(VBA_Object):
             else:
                 log.error("BoolExpr: Unknown bitwise operator %r" % self.op)
                 return 0
-            
+
         # Evaluate the expression.
         if ((self.op.lower() == "and") or (self.op.lower() == "andalso")):
             return lhs and rhs
@@ -2805,7 +2817,7 @@ class BoolExpr(VBA_Object):
         else:
             log.error("BoolExpr: Unknown operator boolean %r" % self.op)
             return False
-    
+
 boolean_expression <<= infixNotation(bool_expr_item,
                                      [
                                          (CaselessKeyword("Not"), 1, opAssoc.RIGHT),
@@ -2834,11 +2846,11 @@ class New_Expression(VBA_Object):
 
         # We can fake RegEx objects.
         if (str(self.obj).strip().lower() == "regexp"):
-            return "core.utils.vb_RegExp()"
+            return "vipermonkey.core.utils.vb_RegExp()"
 
         # Not faking other objects at this point.
         return "ERROR: Not emulating " + str(self)
-    
+
     def eval(self, context, params=None):
         # TODO: Not sure how to handle this. For now just return what is being created.
         return self.obj

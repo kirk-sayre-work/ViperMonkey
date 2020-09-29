@@ -324,12 +324,12 @@ class VbStr(object):
                     pos = 0
                     for bval in bts:
                         chars += chr(bval)
-                    #print tmp_str
-                    #print type(tmp_str)
-                    #print code
-                    #print type(code)
-                    #print pos
-                    #print type(pos)
+                    #print(tmp_str)
+                    #print(type(tmp_str))
+                    #print(code)
+                    #print(type(code))
+                    #print(pos)
+                    #print(type(pos))
                     tmp_str = tmp_str.replace(chars, "MARK!@#$%%$#@!:.:.:.:.:.:." + str(code) + "_" + str(pos) + "MARK!@#$%%$#@!")
 
             # Split the string up into ASCII char chunks and individual wide chars.

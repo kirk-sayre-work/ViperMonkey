@@ -40,6 +40,7 @@ import collections
 import inspect
 
 import pyparsing
+from six import iteritems
 
 # Enable PackRat for better performance:
 # (see https://pythonhosted.org/pyparsing/pyparsing.ParserElement-class.html#enablePackrat)
@@ -382,16 +383,16 @@ class Module(CodeBlock):
     @property
     def procedures(self):
         """Returns subs and functions combined."""
-        return self.functions + self.subs
+        return list(self.functions) + list(self.subs)
 
     @property
     def entry_points(self):
         """Yields the entry points. (or None if not found)."""
         # Since the module VBA_Object stores its elements with case intact we can't just hash.
-        for name, sub in self.obj.subs.iteritems():
+        for name, sub in iteritems(self.obj.subs):
             if name.lower() in self._ENTRY_POINTS:
                 yield sub
-        for name, function in self.obj.functions.iteritems():
+        for name, function in iteritems(self.obj.functions):
             if name.lower() in self._ENTRY_POINTS:
                 yield function
 
@@ -410,7 +411,7 @@ class Module(CodeBlock):
                 # TODO: We are going to consider variables as local when run like this
                 #   We should really have a "global" Context just be considered the parent Context object.
                 #   ... That would make better scoping emulation!
-                # context.global_scope = True  # must set inside encase the code changes it.
+                # context.global_scope = True  # must set inside in case the code changes it.
                 ret = code_block.eval(context, params)
                 # context.global_scope = False
         return ret
@@ -446,8 +447,8 @@ class Module(CodeBlock):
         # (This helps to prevent calling eval() to every code block.)
         if not self._obj:
             # TODO: Instead of blindly processing the obj for every code_block, only
-            # process Sub, Function, External_Function, Attribute_Statement, and Global_Var_Statement
-            # We need to replicate the initialization done in modules.Module but with code_blocks.
+            #  process Sub, Function, External_Function, Attribute_Statement, and Global_Var_Statement
+            #  We need to replicate the initialization done in modules.Module but with code_blocks.
             self._obj = _Module(str(self), 0, list(self.code_blocks))
         return self._obj
 

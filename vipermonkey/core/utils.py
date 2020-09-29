@@ -33,19 +33,22 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
 import re
 
 import logging
 
 # for logging
 try:
+    from vipermonkey.core.logger import log
+except ImportError:
     from core.logger import log
-except ImportError:
-    from logger import log
 try:
-    from core.logger import CappedFileHandler
+    from vipermonkey.core.logger import CappedFileHandler
 except ImportError:
-    from logger import CappedFileHandler
+    from core.logger import CappedFileHandler
 from logging import LogRecord
 from logging import FileHandler
 
@@ -107,9 +110,9 @@ class vb_RegExp(object):
         
     def Test(self, string):
         pat = self._get_python_pattern()
-        #print "PAT: '" + pat + "'"
-        #print "STR: '" + string + "'"
-        #print re.findall(pat, string)
+        #print("PAT: '" + pat + "'")
+        #print("STR: '" + string + "'")
+        #print(re.findall(pat, string))
         if (pat is None):
             return False
         return (re.match(pat, string) is not None)
@@ -117,7 +120,7 @@ class vb_RegExp(object):
     def Replace(self, string, rep):
         pat = self._get_python_pattern()
         if (pat is None):
-            return s
+            return string
         rep = re.sub(r"\$(\d)", r"\\\1", rep)
         r = string
         try:

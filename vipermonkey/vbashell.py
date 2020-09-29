@@ -55,6 +55,7 @@ __version__ = '0.04'
 # --- IMPORTS ------------------------------------------------------------------
 
 import logging, optparse, sys, os
+from six.moves import input
 
 import colorlog
 
@@ -75,7 +76,7 @@ def parse(filename=None):
         code = ''
         line = None
         while True:
-            line = raw_input()
+            line = input()
             if line == '.':
                 break
             code += line + '\n'
@@ -98,10 +99,10 @@ def main():
     Main function, called when vbashell is run from the command line
     """
     # print banner with version
-    print ('vbashell %s - https://github.com/decalage2/ViperMonkey' % __version__)
-    print ('THIS IS WORK IN PROGRESS - Check updates regularly!')
-    print ('Please report any issue at https://github.com/decalage2/ViperMonkey/issues')
-    print ('')
+    print('vbashell %s - https://github.com/decalage2/ViperMonkey' % __version__)
+    print('THIS IS WORK IN PROGRESS - Check updates regularly!')
+    print('Please report any issue at https://github.com/decalage2/ViperMonkey/issues')
+    print('')
 
     DEFAULT_LOG_LEVEL = "info" # Default log level
     LOG_LEVELS = {
@@ -115,11 +116,11 @@ def main():
     usage = 'usage: %prog [options] <filename> [filename2 ...]'
     parser = optparse.OptionParser(usage=usage)
     parser.add_option('-p', '--parse', dest='parse_file',
-         help='VBA text file to be parsed')
+        help='VBA text file to be parsed')
     parser.add_option('-e', '--eval', dest='eval_expr',
         help='VBA expression to be evaluated')
     parser.add_option('-l', '--loglevel', dest="loglevel", action="store", default=DEFAULT_LOG_LEVEL,
-                            help="logging level debug/info/warning/error/critical (default=%default)")
+        help="logging level debug/info/warning/error/critical (default=%default)")
 
     (options, args) = parser.parse_args()
 
@@ -143,7 +144,7 @@ def main():
     while True:
         try:
             print("VBA> ", end='')
-            cmd = raw_input()
+            cmd = input()
 
             if cmd.startswith('exit'):
                 break

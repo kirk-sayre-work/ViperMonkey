@@ -36,14 +36,18 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
 __version__ = '0.02'
 
 # sudo pypy -m pip install unidecode
 import unidecode
 import string
+from six import binary_type, ensure_str
 
 import logging
-from logger import log
+from vipermonkey.core.logger import log
 
 class StubbedEngine(object):
     """
@@ -61,19 +65,19 @@ class StubbedEngine(object):
 
         # store the action for later use:
         try:
-            if (isinstance(action, str)):
+            if (isinstance(action, binary_type)):
                 action = unidecode.unidecode(action.decode('unicode-escape'))
         except UnicodeDecodeError:
             action = ''.join(filter(lambda x:x in string.printable, action))
-        if (isinstance(params, str)):
+        if (isinstance(params, binary_type)):
             try:
-                decoded = params.replace("\\", "#ESCAPED_SLASH#").decode('unicode-escape').replace("#ESCAPED_SLASH#", "\\")
+                decoded = params.replace(b"\\", b"#ESCAPED_SLASH#").decode('unicode-escape').replace("#ESCAPED_SLASH#", "\\")
                 params = unidecode.unidecode(decoded)
             except Exception as e:
                 log.warn("Unicode decode of action params failed. " + str(e))
                 params = ''.join(filter(lambda x:x in string.printable, params))
         try:
-            if (isinstance(description, str)):
+            if (isinstance(description, binary_type)):
                 description = unidecode.unidecode(description.decode('unicode-escape'))
         except UnicodeDecodeError as e:
             log.warn("Unicode decode of action description failed. " + str(e))

@@ -27,7 +27,7 @@ This parses and emulates each lins, returning the result of the last line.
 ```python
 import vipermonkey
 
-print vipermonkey.eval('"w" & Chr(111) & "rl" & Chr(123 Xor 31)')
+print(vipermonkey.eval('"w" & Chr(111) & "rl" & Chr(123 Xor 31)'))
 
 vba_code = '''
 Dim m1, m2, m3 As String
@@ -37,7 +37,7 @@ m3 = "!!!"
 m1 & m2 & m3
 '''
 
-print vipermonkey.eval(vba_code)
+print(vipermonkey.eval(vba_code))
 ```
 ```
 world
@@ -62,8 +62,8 @@ result = m1 & m2 & m3
 context = vipermonkey.Context()
 vipermonkey.eval(vba_code, context=context)
 
-print context.locals
-print context['result']  # same as context.locals['result']
+print(context.locals)
+print(context['result'])  # same as context.locals['result']
 ```
 ```
 {'m1': 'hello ', 'result': 'hello world!!!', 'm3': '!!!', 'm2': 'world'}
@@ -101,9 +101,9 @@ End Function
 
 module = vipermonkey.Module(vba_code)
 
-print 'FUNCTIONS and SUBS: '
+print('FUNCTIONS and SUBS: ')
 for func in module.procedures:
-    print func.name
+    print(func.name)
 ```
 ```
 FUNCTIONS and SUBS: 
@@ -122,11 +122,12 @@ The `Module` object is a type of `CodeBlock` object. A "code block" is any logic
 
 ```python
 for code_block in module.code_blocks:
-    print "TYPE: ", code_block.type
-    print "CODE:\n", str(code_block)
+    print("TYPE: ", code_block.type)
+    print("CODE:\n", str(code_block))
     if code_block.type == vipermonkey.Function:
-        print "Found a function: {}({})".format(
-            code_block.name, ', '.join(p.name for p in code_block.params))
+        print("Found a function: {}({})".format(
+            code_block.name, ', '.join(p.name for p in code_block.params)))
+        
 ```
 ```
 TYPE:  <class 'vipermonkey.core.statements.Attribute_Statement'>
@@ -162,8 +163,9 @@ Notice that none of the code within the functions were parsed. This on purpose t
 for code_block in module.code_blocks:
     if code_block.type == vipermonkey.Function:
         for inner_code_block in code_block.code_blocks:
-            print "TYPE: ", inner_code_block.type
-            print "CODE:\n", str(inner_code_block)
+            print("TYPE: ", inner_code_block.type)
+            print("CODE:\n", str(inner_code_block))
+            
 ```
 ```
 TYPE:  <class 'vipermonkey.core.statements.Dim_Statement'>
@@ -191,7 +193,8 @@ and then evaluate it with your own parameters.
 ```python
 for code_block in module.code_blocks:
     if code_block.type == vipermonkey.Function and code_block.name == 'PrintHello':
-        print code_block.eval(params=['Bob'])
+        print(code_block.eval(params=['Bob']))
+        
 ```
 
 ```
@@ -216,7 +219,8 @@ When using this function on a `Module` object, the functions and subs are declar
 context = vipermonkey.Context()
 module.load_context(context)
 
-print vipermonkey.eval('PrintHello("Bob")', context=context)
+print(vipermonkey.eval('PrintHello("Bob")', context=context))
+
 ```
 ```
 hello Bob
@@ -307,7 +311,8 @@ WriteFile("This " & "is some" & " file data!")
 context = vipermonkey.Context()
 vipermonkey.eval(vba_code, context=context)
 
-print context.closed_files
+print(context.closed_files)
+
 ```
 ```
 {'c:\\users\\public\\documents\\hello.txt': 'This is some file data!'}
@@ -345,7 +350,8 @@ context.globals['Base64Decode'] = replaced_base64
 
 document_open = context['Document_Open']
 document_open.load_context(context)
-print "DECODED DATA: ", context['result']
+print("DECODED DATA: ", context['result'])
+
 ```
 ```
 DECODED DATA:  hello world!
@@ -381,10 +387,11 @@ Execute
 context = vipermonkey.Context()
 vipermonkey.eval(vba_code, context=context)
 
-for description, actions in context.actions.iteritems():
-    print description, '===='
+for description, actions in iteritems(context.actions):
+    print(description, '====')
     for action in actions:
-        print action
+        print(action)
+        
 ```
 ```
 Shell function ====
@@ -399,7 +406,7 @@ You may also provide your own callback function in the `Context` object to repor
 ```python
 def report_shell(action, params=None, description=None):
     if action == 'Execute Command':
-        print "FOUND A COMMAND: ", params
+        print("FOUND A COMMAND: ", params)
 
 context = vipermonkey.Context(report_action=report_shell)
 vipermonkey.eval(vba_code, context=context)
@@ -438,7 +445,7 @@ for code_block in module.code_blocks:
         continue
     code_block.eval(context)
 
-print context['result']
+print(context['result'])
 ```
 ```
 hello world!!!
@@ -464,7 +471,7 @@ ZOOP = ZOOP & Chr(109 Xor 1) + Chr(69) + Chr(81 Xor 2)
 ZOOP = ZOOP & Chr(107 Xor 18)
 '''
 
-print vipermonkey.deobfuscate(vba_code)
+print(vipermonkey.deobfuscate(vba_code))
 ```
 
 ```

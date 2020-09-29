@@ -37,7 +37,7 @@ def test_call_vs_member_access():
     assert type(parsed.name) == MemberAccessExpression
     assert str(parsed.name) == "doc.VBProject.VBComponents('ThisDocument').CodeModule.AddFromString('test')"
     assert parsed.name.lhs == 'doc'
-    assert map(str, parsed.name.rhs) == ['VBProject', "VBComponents('ThisDocument')", 'CodeModule', "AddFromString('test')"]
+    assert list(map(str, parsed.name.rhs)) == ['VBProject', "VBComponents('ThisDocument')", 'CodeModule', "AddFromString('test')"]
     assert type(parsed.name.rhs[1]) == Function_Call
     assert parsed.name.rhs[1].name == 'VBComponents'
     # Params is a pyparsing.ParseResult, so use list() to cast as a list.

@@ -37,7 +37,7 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 #------------------------------------------------------------------------------
 # CHANGELOG:
@@ -110,28 +110,28 @@ import subprocess
 import zipfile
 import io
 
+from six import ensure_str
 import prettytable
 from oletools.thirdparty.xglob import xglob
 from oletools.olevba import VBA_Parser, filter_vba, FileOpenError
 import olefile
 import xlrd
 
-import core.meta
+from vipermonkey.core import meta
 
 # add the vipermonkey folder to sys.path (absolute+normalized path):
 _thismodule_dir = os.path.normpath(os.path.abspath(os.path.dirname(__file__)))
 if not _thismodule_dir in sys.path:
     sys.path.insert(0, _thismodule_dir)
 
-# relative import of core ViperMonkey modules:
-from core import *
-import core.excel as excel
-import core.read_ole_fields as read_ole_fields
-from core.utils import safe_print
+# absolute import of core ViperMonkey modules:
+from vipermonkey.core import *
+from vipermonkey.core import excel, read_ole_fields, strip_lines, vba_object
+from vipermonkey.core.utils import safe_print
 
 # for logging
-from core.logger import log
-from core.logger import CappedFileHandler
+from vipermonkey.core.logger import log
+from vipermonkey.core.logger import CappedFileHandler
 from logging import LogRecord
 from logging import FileHandler
 
@@ -213,7 +213,7 @@ def _read_doc_text_strings(data):
     Use a heuristic to read in the document text. This is used as a fallback if reading
     the text with libreoffice fails.
     """
-
+    data = ensure_str(data, errors='ignore')
     # Pull strings from doc.
     str_list = re.findall("[^\x00-\x1F\x7F-\xFF]{4,}", data)
     r = []
@@ -229,7 +229,7 @@ def _read_doc_text(fname, data=None):
     """
 
     # Read in the file.
-    if data == None:
+    if data is None:
         try:
             f = open(fname, 'rb')
             data = f.read()
@@ -1662,12 +1662,12 @@ def process_file_scanexpr (container, filename, data):
             # Read in document metadata.
             ole = olefile.OleFileIO(filename)
             try:
-                vm.set_metadata(ole.get_metadata())
+                vm.set_metadata(ole.get_metadata())  # Likely broken reference to class like - vm = ViperMonkey()
             except Exception as e:
                 log.warning("Reading in metadata failed. Trying fallback. " + str(e))
                 vm.set_metadata(meta.get_metadata_exif(orig_filename))
             
-            #print 'Contains VBA Macros:'
+            #print('Contains VBA Macros:')
             for (subfilename, stream_path, vba_filename, vba_code) in vba.extract_macros():
                 # hide attribute lines:
                 #TODO: option to disable attribute filtering
@@ -1699,7 +1699,7 @@ def process_file_scanexpr (container, filename, data):
     except: #TypeError:
         #raise
         #TODO: print more info if debug mode
-        #print sys.exc_value
+        #print(sys.exc_value)
         # display the exception with full stack trace for debugging, but do not stop:
         traceback.print_exc()
     safe_print('')

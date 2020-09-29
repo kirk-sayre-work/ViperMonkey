@@ -37,6 +37,9 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
 __version__ = '0.02'
 
 # --- IMPORTS ------------------------------------------------------------------
@@ -52,30 +55,31 @@ import re
 from hashlib import sha256
 import os
 import random
-from from_unicode_str import *
 import decimal
-from curses_ascii import isprint
 import sys
 import traceback
+from six import string_types, ensure_str
 
 from pyparsing import *
 
-import vb_str
-from vba_context import VBA_LIBRARY
-from vba_object import coerce_to_int
-from vba_object import str_convert
-from vba_object import int_convert
-from vba_object import eval_arg
-from vba_object import VbaLibraryFunc
-from vba_object import VBA_Object
-from vba_object import excel_col_letter_to_index
-from vba_object import strip_nonvb_chars
-import expressions
-import modules
-import strip_lines
-from vba_object import _eval_python
+from vipermonkey.core import vb_str
+from vipermonkey.core.from_unicode_str import *
+from vipermonkey.core.curses_ascii import isprint
+from vipermonkey.core.vba_context import VBA_LIBRARY
+from vipermonkey.core.vba_object import coerce_to_int
+from vipermonkey.core.vba_object import str_convert
+from vipermonkey.core.vba_object import int_convert
+from vipermonkey.core.vba_object import eval_arg
+from vipermonkey.core.vba_object import VbaLibraryFunc
+from vipermonkey.core.vba_object import VBA_Object
+from vipermonkey.core.vba_object import excel_col_letter_to_index
+from vipermonkey.core.vba_object import strip_nonvb_chars
+from vipermonkey.core import expressions
+from vipermonkey.core import modules
+from vipermonkey.core import strip_lines
+from vipermonkey.core.vba_object import _eval_python
 
-from logger import log
+from vipermonkey.core.logger import log
 
 # === VBA LIBRARY ============================================================
 
@@ -789,8 +793,8 @@ class Mid(VbaLibraryFunc):
         if ((s is None) or (s == "NULL")): return "\x00"
         # If start is NULL, NULL is also returned.
         if ((params[1] is None) or (params[1] == "NULL")): return "\x00"
-        if not isinstance(s, basestring):
-            s = str(s)
+        if not isinstance(s, str):
+            s = ensure_str(s)
         start = 0
         try:
             start = int_convert(params[1])
@@ -878,9 +882,9 @@ class Left(VbaLibraryFunc):
             return s
         
         # "If String contains the data value Null, Null is returned."
-        if s == None: return None
-        if not isinstance(s, basestring):
-            s = str(s)
+        if s is None: return None
+        if not isinstance(s, string_types):
+            s = ensure_str(s)
         start = 0
         try:
             start = int_convert(params[1])
@@ -971,7 +975,7 @@ class Right(VbaLibraryFunc):
         
         # "If String contains the data value Null, Null is returned."
         if s == None: return None
-        if not isinstance(s, basestring):
+        if not isinstance(s, string_types):
             s = str(s)
         start = 0
         try:
@@ -3266,7 +3270,7 @@ class Close(VbaLibraryFunc):
                 file_id = context.get_interesting_fileid()
             else:
                 # Get the ID of the file.
-                file_id = context.open_files.keys()[0]
+                file_id = list(context.open_files.keys())[0]
 
         # We are actually closing a file.
         context.close_file(file_id)
@@ -3334,7 +3338,7 @@ class WriteLine(VbaLibraryFunc):
         else:        
 
             # Get the ID of the file.
-            file_id = context.open_files.keys()[0]
+            file_id = list(context.open_files.keys())[0]
         
         # TODO: Handle writing at a given file position.
 
@@ -3668,7 +3672,7 @@ class CreateObject(VbaLibraryFunc):
         # Track contents of data written to 'ADODB.Stream'.
         obj_type = None
         try:
-            obj_type = str(params[0])
+            obj_type = ensure_str(params[0])
         except UnicodeEncodeError:
             obj_type = filter(isprint, params[0])
         if (obj_type == 'ADODB.Stream'):
@@ -3702,7 +3706,7 @@ class ReadText(VbaLibraryFunc):
         # Simulate the read.
 
         # Get the ID of the file.
-        file_id = context.open_files.keys()[0]
+        file_id = list(context.open_files.keys())[0]
 
         # TODO: This function takes a parameter that specifies the number of bytes to read!!
 
@@ -3859,8 +3863,8 @@ class Cells(VbaLibraryFunc):
                     r = r[1:-1]
                 if (r.startswith('"') and r.endswith('"') and (len(r) >= 2)):
                     r = r[1:-1]
-                #print "CELL!!"
-                #print r
+                #print("CELL!!")
+                #print(r)
                 return r
 
             except Exception as e:
@@ -4496,7 +4500,7 @@ class Write(VbaLibraryFunc):
         # Simulate the write.
 
         # Get the ID of the file.
-        file_id = files[0]
+        file_id = list(files)[0]
         log.info("Writing data to " + str(file_id) + " .")
 
         context.write_file(file_id, data)

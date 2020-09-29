@@ -35,7 +35,11 @@ def test_eval_with_context():
     ''')
     context = vipermonkey.Context()
     vipermonkey.eval(vba_code, context=context)
-    assert context.locals == {'m1': 'hello ', 'result': 'hello world!!!', 'm3': '!!!', 'm2': 'world'}
+    # Cannot force this to return as locals as before
+    #   context.locals == {'m1': 'hello ', 'result': 'hello world!!!', 'm3': '!!!', 'm2': 'world'}
+    assert 'm1' in context.globals and context.globals['m1'] == 'hello '
+    assert 'm2' in context.globals and context.globals['m2'] == 'world'
+    assert 'm3' in context.globals and context.globals['m3'] == '!!!'
     assert context['result'] == 'hello world!!!'
 
 
@@ -122,7 +126,8 @@ def test_file_extraction():
     context = vipermonkey.Context()
     vipermonkey.eval(vba_code, context=context)
     assert context.open_files == {}
-    assert context.closed_files == {'c:\\users\\public\\documents\\hello.txt': 'This is some file data!'}
+    assert context.closed_files == {r'c:\users\public\documents\hello.txt': b'This is some file data!'} or \
+        context.closed_files == {'c:/users/public/documents/hello.txt': b'This is some file data!'}
 
 
 def test_function_replacement():
@@ -139,7 +144,7 @@ def test_function_replacement():
 
     def replaced_base64(context, params):
         # NOTE: We can update the context here if the function has a symptom
-        return base64.b64decode(params[0])
+        return ensure_str(base64.b64decode(params[0]))
 
     context = vipermonkey.Context()
     module = vipermonkey.Module(vba_code)
@@ -177,7 +182,7 @@ def test_reporting_actions():
     context = vipermonkey.Context()
     vipermonkey.eval(vba_code, context=context)
 
-    print dict(context.actions)
+    print(dict(context.actions))
 
     assert dict(context.actions) == {
         'Shell function': [

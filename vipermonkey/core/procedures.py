@@ -37,6 +37,9 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
 __version__ = '0.02'
 
 # --- IMPORTS ------------------------------------------------------------------
@@ -44,16 +47,17 @@ __version__ = '0.02'
 import logging
 import sys
 
-from vba_context import *
-from statements import *
-from identifiers import *
-import utils
+from vipermonkey.core.vba_context import *
+from vipermonkey.core.statements import *
+from vipermonkey.core.identifiers import *
+from vipermonkey.core import utils
 
-from logger import log
-from tagged_block_finder_visitor import *
-from vba_object import to_python
-from vba_object import _get_var_vals
-from vba_object import _check_for_iocs
+from vipermonkey.core.logger import log
+from vipermonkey.core.tagged_block_finder_visitor import *
+from vipermonkey.core.vba_object import to_python
+from vipermonkey.core.vba_object import _get_var_vals
+from vipermonkey.core.vba_object import _check_for_iocs
+from vipermonkey.core.vba_object import eval_arg
 
 # --- SUB --------------------------------------------------------------------
 
@@ -119,7 +123,7 @@ class Sub(VBA_Object):
         r += indent_str + "def " + str(self.name) + func_args + ":\n"
 
         # Init return value.
-        r += indent_str + " " * 4 + "import core.vba_library\n"
+        r += indent_str + " " * 4 + "from vipermonkey.core import vba_library\n"  # TODO - Python3 compatibility
         r += indent_str + " " * 4 + "global vm_context\n\n"
         r += indent_str + " " * 4 + "# Function return value.\n"
         r += indent_str + " " * 4 + str(self.name) + " = 0\n\n"
@@ -206,9 +210,9 @@ class Sub(VBA_Object):
         # TODO: This needs more work and testing.
         if (context.call_stack.count(call_info) > 0):
             log.warn("Recursive infinite loop detected. Aborting call " + str(call_info))
-            #print self
-            #print call_info
-            #print context.call_stack
+            #print(self)
+            #print(call_info)
+            #print(context.call_stack)
             #sys.exit(0)
             return "NULL"
 
@@ -246,7 +250,7 @@ class Sub(VBA_Object):
                 break
             context.clear_error()
 
-            #print "@@@@HERE!!"
+            #print("@@@@HERE!!")
             # Did we just run a GOTO? If so we should not run the
             # statements after the GOTO.
             if (context.goto_executed):
@@ -474,7 +478,7 @@ class Function(VBA_Object):
         r += indent_str + "def " + str(self.name) + func_args + ":\n"
 
         # Init return value.
-        r += indent_str + " " * 4 + "import core.vba_library\n"
+        r += indent_str + " " * 4 + "from vipermonkey.core import vba_library\n"  # TODO - Python3 compatibility
         r += indent_str + " " * 4 + "global vm_context\n\n"
         r += indent_str + " " * 4 + "# Function return value.\n"
         r += indent_str + " " * 4 + str(self.name) + " = 0\n\n"
@@ -589,9 +593,9 @@ class Function(VBA_Object):
         # TODO: This needs more work and testing.
         if (context.call_stack.count(call_info) > 0):
             log.warn("Recursive infinite loop detected. Aborting call " + str(call_info))
-            #print self
-            #print call_info
-            #print context.call_stack
+            #print(self)
+            #print(call_info)
+            #print(context.call_stack)
             #sys.exit(0)
             return "NULL"
 

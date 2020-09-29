@@ -1,4 +1,4 @@
-1#!/usr/bin/env python
+#!/usr/bin/env python
 """
 ViperMonkey: Execution context for global and local variables
 
@@ -37,6 +37,9 @@ https://github.com/decalage2/ViperMonkey
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# For Python 2+3 support:
+from __future__ import print_function, absolute_import
+
 __version__ = '0.08'
 
 # --- IMPORTS ------------------------------------------------------------------
@@ -45,7 +48,8 @@ import logging
 import os
 from hashlib import sha256
 from datetime import datetime
-from logger import log
+from six import string_types, binary_type, ensure_str, ensure_binary
+
 import base64
 import re
 import random
@@ -54,7 +58,8 @@ import codecs
 import copy
 import struct
 
-from curses_ascii import isascii
+from vipermonkey.core.logger import log
+from vipermonkey.core.curses_ascii import isascii
 
 def to_hex(s):
     """
@@ -5849,15 +5854,25 @@ class Context(object):
             else:
                 log.error('File {} not open. Cannot write new data.'.format(fname))
                 return False
-            
+
         # Are we writing a string?
-        if isinstance(data, str):
+        if isinstance(data, string_types):
 
             # Hex string?
             if ((len(data.strip()) == 4) and (re.match('&H[0-9A-F]{2}', data, re.IGNORECASE))):
                 data = chr(int(data.strip()[-2:], 16))
 
-            self.open_files[fname] += data
+            self.open_files[fname] += ensure_binary(data)
+            return True
+
+        # Are we writing bytes?
+        elif isinstance(data, binary_type):
+
+            # Hex string?
+            if ((len(data.strip()) == 4) and (re.match(b'&H[0-9A-F]{2}', data, re.IGNORECASE))):
+                data = chr(int(data.strip()[-2:], 16))
+
+            self.open_files[fname] += ensure_binary(data)
             return True
 
         # Are we writing a list?
@@ -5885,7 +5900,7 @@ class Context(object):
 
             # Write out each byte.
             for b in byte_list:
-                self.open_files[fname] += b
+                self.open_files[fname] += ensure_binary(b)
             return True
         
         # Unhandled.
@@ -6001,7 +6016,7 @@ class Context(object):
 
     def get_lib_func(self, name):
 
-        if (not isinstance(name, basestring)):
+        if (not isinstance(name, string_types)):
             raise KeyError('Object %r not found' % name)
         
         # Search in the global VBA library:
@@ -6019,7 +6034,7 @@ class Context(object):
 
     def __get(self, name, case_insensitive=True, local_only=False, global_only=False):
 
-        if (not isinstance(name, basestring)):
+        if (not isinstance(name, string_types)):
             raise KeyError('Object %r not found' % name)
 
         # Flag if this is a change handler lookup.
@@ -6221,7 +6236,7 @@ class Context(object):
         return ((name in self.locals) or (name in self.globals))
         
     def get_type(self, var):
-        if (not isinstance(var, basestring)):
+        if (not isinstance(var, string_types)):
             return None
         var = var.lower()
         if (var not in self.types):
@@ -6229,7 +6244,7 @@ class Context(object):
         return self.types[var]
 
     def get_doc_var(self, var, search_wildcard=True):
-        if (not isinstance(var, basestring)):
+        if (not isinstance(var, string_types)):
             return None
 
         # Normalize the variable name to lower case.
@@ -6356,7 +6371,7 @@ class Context(object):
 
         # Does the name make sense?
         orig_name = name
-        if (not isinstance(name, basestring)):
+        if (not isinstance(name, string_types)):
             log.warning("context.set() " + str(name) + " is improper type. " + str(type(name)))
             name = str(name)
 
@@ -6488,8 +6503,8 @@ class Context(object):
             try:
 
                 # Is this a Microsoft.XMLDOM object?
-                import expressions
-                import vba_object
+                from vipermonkey.core import expressions
+                from vipermonkey.core import vba_object
                 node_type = orig_name
                 if (isinstance(orig_name, expressions.MemberAccessExpression)):
                     node_type = orig_name.lhs
@@ -6616,7 +6631,7 @@ class Context(object):
         # Strip out bad characters if needed.
         if (strip_null_bytes):
 
-            from vba_object import strip_nonvb_chars
+            from vipermonkey.core.vba_object import strip_nonvb_chars
 
             action = strip_nonvb_chars(action)
             new_params = strip_nonvb_chars(params)
