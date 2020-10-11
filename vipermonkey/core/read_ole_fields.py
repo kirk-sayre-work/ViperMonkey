@@ -133,7 +133,7 @@ def unzip_data(data):
 
 def _clean_2007_text(s):
     """
-    Replace special 2007 formatting strings with actual text,
+    Replace special 2007 formatting strings (HTML/XML escaped) with actual text
     """    
     s = s.replace("&amp;", "&")\
          .replace("&gt;", ">")\
@@ -289,25 +289,26 @@ def get_msftedit_variables_97(data):
     """
     Looks for variable/text value pairs stored in an embedded rich edit control from an Office 97 doc.
     See https://docs.microsoft.com/en-us/windows/win32/controls/about-rich-edit-controls.
+    :type data: bytes
     """
 
     # Pattern for the object data
-    pat = r"'\x01\xff\xff\x03.+?\x5c\x00\x70\x00\x61\x00\x72\x00\x0d\x00\x0a\x00\x7d"
+    pat = b"'\x01\xff\xff\x03.+?\x5c\x00\x70\x00\x61\x00\x72\x00\x0d\x00\x0a\x00\x7d"
     r = []
     for chunk in re.findall(pat, data, re.DOTALL):
 
         # Names and values are wide character strings. Strip out the null bytes.
-        chunk = chunk.replace("\x00", "")
+        chunk = chunk.replace(b"\x00", "")
     
         # Pull out the name of the current thing .
 
         # Marker 1
-        name_pat = r"'\x01\xff\xff\x03\x92\x03\x04([A-Za-z0-9_]+)"
+        name_pat = b"'\x01\xff\xff\x03\x92\x03\x04([A-Za-z0-9_]+)"
         names = re.findall(name_pat, chunk)
 
         # Punt if no names found and just pull out everything that looks like it might be a name.
         if (len(names) != 1):
-            name_pat = r"([A-Za-z0-9_]+)"
+            name_pat = b"([A-Za-z0-9_]+)"
             tmp = re.findall(name_pat, chunk)
             names = []
             for poss_name in tmp:
@@ -315,7 +316,7 @@ def get_msftedit_variables_97(data):
                     names.append(poss_name)
         
         # Pull out the data for the current thing.
-        data_pat = r"\\fs\d{1,3} (.+)\\par"
+        data_pat = b"\\fs\d{1,3} (.+)\\par"
         chunk_data = re.findall(data_pat, chunk, re.DOTALL)
         if (len(chunk_data) != 1):
             continue
@@ -323,7 +324,7 @@ def get_msftedit_variables_97(data):
 
         # Save the variable/value pairs.
         for chunk_name in names:
-            r.append((chunk_name, chunk_data))
+            r.append((ensure_str(chunk_name), ensure_str(chunk_data), ))
 
     # Done.
     return r
@@ -335,7 +336,7 @@ def get_msftedit_variables(obj):
     """
 
     # Figure out if we have been given already read in data or a file name.
-    if obj[0:4] == '\xd0\xcf\x11\xe0':
+    if obj[0:4] == b'\xd0\xcf\x11\xe0':
         #its the data blob
         data = obj
     else:
@@ -378,26 +379,22 @@ def remove_duplicates(lst):
     r.reverse()
     return r
 
-def entropy(text):
+def entropy(data):
     """
-    Compute the entropy of a string.
-    Taken from https://rosettacode.org/wiki/Entropy#Uses_Python_2
+    Compute the entropy of a string. Values higher than 8 can be returned if more that 256 values
+    are possible per entry in the data (lists, numbers, unicode text, etc.)
     """
     import math
-    log2=lambda x:math.log(x)/math.log(2)
-    exr={}
-    infoc=0
-    for each in text:
-        try:
-            exr[each]+=1
-        except:
-            exr[each]=1
-    textlen=len(text)
-    for k,v in exr.items():
-        freq  =  1.0*v/textlen
-        infoc+=freq*log2(freq)
-    infoc*=-1
-    return infoc
+    from collections import Counter
+    counter = Counter(data)
+    l = len(data)
+    ent = 0
+    if l is 0:
+        return ent
+    for c in counter.values():
+        p = 1.0 * c/l
+        ent -= p * math.log(p, 2)
+    return ent
 
 # There is some MS cruft strings that should be eliminated from the
 # strings pulled from the chunk.
@@ -2051,7 +2048,7 @@ def _get_shapes_text_values_xml(fname):
 
     contents = None
     if fname.startswith("<?xml"):
-        contents=fname
+        contents = fname
     else:
 
         # it's probably a filename, not a blob of data..
@@ -2064,8 +2061,11 @@ def _get_shapes_text_values_xml(fname):
             contents = fname
 
     # Is this an XML file?
+    txbx_open = "<w:txbxContent>"
+    txbx_close = "</w:txbxContent>"
     if ((not contents.startswith("<?xml")) or
-        ("<w:txbxContent>" not in contents)):
+        (txbx_open not in contents) or
+        (txbx_close not in contents)):
         return []
 
     # It is an XML file.
@@ -2074,40 +2074,28 @@ def _get_shapes_text_values_xml(fname):
     # Pull out the text surrounded by <w:txbxContent> ... </w:txbxContent>.
     # These big blocks hold the XML for each piece of Shapes() text.
     blocks = []
-    start = contents.index("<w:txbxContent>") + len("<w:txbxContent>")
-    end = contents.index("</w:txbxContent>")
+    start = contents.find(txbx_open) + len(txbx_open)
+    end = contents.find(txbx_close)
     while (start is not None):
+        # Append txbxContent to blocks
         blocks.append(contents[start:end])
-        if ("<w:txbxContent>" in contents[end:]):
-            start = end + contents[end:].index("<w:txbxContent>") + len("<w:txbxContent>")
-            end = end + len("</w:txbxContent>") + contents[end + len("</w:txbxContent>"):].index("</w:txbxContent>")
-        else:
+        # Find if there is more txbxContent after the previous tag
+        start = end + contents.find(txbx_open, end) + len(txbx_open)
+        end = contents.find(txbx_close, start)
+        if start is -1 or end is -1:
             start = None
             end = None
-            break
     cmd_strs = []
     for block in blocks:
 
         # Get all strings surrounded by <w:t> ... </w:t> tags in the block.
-        pat = r"\<w\:t[^\>]*\>([^\<]+)\</w\:t\>"
-        strs = re.findall(pat, block)
+        pat = r"<w:t[^>]*>([^<]+)</w:t>"
+        str_list = re.findall(pat, block)
 
-        # These could be broken up with many <w:t> ... </w:t> tags. See if we need to
-        # reassemble strings.
-        if (len(strs) > 1):
+        # These could be broken up with many <w:t> ... </w:t> tags, so we join the strings.
+        strs = ''.join(str_list)
 
-            # Reassemble command string.
-            curr_str = ""
-            for s in strs:
-
-                # Save current part of command string.
-                curr_str += s
-
-            # Use this as the Shape() strings.
-            strs = [curr_str]
-
-        # Save the string from this block.
-        cmd_strs.append(strs[0])
+        cmd_strs.append(strs)
             
     # Hope that the Shape() object indexing follows the same order as the strings
     # we found.
@@ -2118,18 +2106,18 @@ def _get_shapes_text_values_xml(fname):
         # Skip strings that are too short.
         if (len(shape_text) < 100):
             continue
-        
+
         # Access value with .TextFrame.TextRange.Text accessor.
-        shape_text = shape_text.replace("&amp;", "&")
-        var = "Shapes('" + str(pos) + "').TextFrame.TextRange.Text"
+        shape_text = _clean_2007_text(shape_text)
+        var = "Shapes('{0}').TextFrame.TextRange.Text".format(pos)
         r.append((var, shape_text))
         
         # Access value with .TextFrame.ContainingRange accessor.
-        var = "Shapes('" + str(pos) + "').TextFrame.ContainingRange"
+        var = "Shapes('{0}').TextFrame.ContainingRange".format(pos)
         r.append((var, shape_text))
 
         # Access value with .AlternativeText accessor.
-        var = "Shapes('" + str(pos) + "').AlternativeText"
+        var = "Shapes('{0}').AlternativeText".format(pos)
         r.append((var, shape_text))
         
         # Move to next shape.
@@ -2568,7 +2556,7 @@ def _get_shapes_text_values(fname, stream):
 
         # See if we can read Shapes() info from an XML file.
         if ("not an OLE2 structured storage file" in str(e)):
-            r = _get_shapes_text_values_xml(fname)
+            r = _get_shapes_text_values_xml(ensure_str(fname))
 
     return r
 

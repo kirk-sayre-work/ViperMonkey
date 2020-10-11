@@ -15,6 +15,7 @@ https://github.com/decalage2/ViperMonkey
 # For Python 2+3 support:
 from __future__ import print_function, absolute_import
 
+from six import ensure_str
 import logging
 import subprocess
 
@@ -28,7 +29,7 @@ def get_metadata_exif(filename):
     # Use exiftool to get the document metadata.
     output = None
     try:
-        output = subprocess.check_output(["exiftool", filename])
+        output = ensure_str(subprocess.check_output(["exiftool", filename]))
     except Exception as e:
         log.error("Cannot read metadata with exiftool. " + str(e))
         return {}

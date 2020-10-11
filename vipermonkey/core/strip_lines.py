@@ -753,7 +753,7 @@ def fix_unhandled_array_assigns(vba_code):
 
     uni_vba_code = None
     try:
-        uni_vba_code = vba_code.decode("utf-8")
+        uni_vba_code = ensure_text(vba_code, encoding="utf-8")
     except UnicodeDecodeError:
         # Punt.
         return vba_code

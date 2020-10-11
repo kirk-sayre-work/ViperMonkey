@@ -60,7 +60,7 @@ __version__ = '1.002'
 # - cleanup main, use optionparser
 # - option -e to extract and evaluate constant expressions
 # - option -t to trace execution
-# - option --entrypoint to specify the Sub name to use as entry point
+# - option -i to specify the Sub name to use as entry point
 # - use olevba to get all modules from a file
 # Environ => VBA object
 # vbCRLF, etc => Const (parse to string)
@@ -97,7 +97,7 @@ import tempfile
 import struct
 import string
 import multiprocessing
-import optparse
+import argparse
 import sys
 import os
 import traceback
@@ -117,6 +117,7 @@ from oletools.olevba import VBA_Parser, filter_vba, FileOpenError
 import olefile
 import xlrd
 
+from vipermonkey.core.meta import *
 from vipermonkey.core import meta
 
 # add the vipermonkey folder to sys.path (absolute+normalized path):
@@ -140,6 +141,8 @@ from logging import FileHandler
 def _read_doc_text_libreoffice(data):
     """
     Returns a tuple containing the doc text and a list of tuples containing dumped tables.
+    :param data: Byte content of an Office File
+    :type data: bytes
     """
     
     # Don't try this if it is not an Office file.
@@ -148,19 +151,24 @@ def _read_doc_text_libreoffice(data):
         return None
     
     # Save the Word data to a temporary file.
-    out_dir = "/tmp/tmp_word_file_" + str(random.randrange(0, 10000000000))
-    f = open(out_dir, 'wb')
-    f.write(data)
-    f.close()
-    
+    temp_prefix = 'tmp_word_file_'
+    _, temp_file = tempfile.mkstemp(prefix=temp_prefix, dir=tempfile.tempdir)
+    with open(temp_file, 'wb') as f:
+        f.write(data)
+
+    python3_command = get_python3_command()
+    if python3_command is None:
+        return None
+
     # Dump all the text using soffice.
     output = None
     try:
-        output = subprocess.check_output(["python3", _thismodule_dir + "/export_doc_text.py",
-                                          "--text", "-f", out_dir])
+        output = subprocess.check_output([python3_command, _thismodule_dir + "/export_doc_text.py",
+                                          "--text", "-f", temp_file])
+        output = ensure_str(output)
     except Exception as e:
         log.error("Running export_doc_text.py failed. " + str(e))
-        os.remove(out_dir)
+        os.remove(temp_file)
         return None
 
     # Read the paragraphs from the converted text file.
@@ -192,11 +200,12 @@ def _read_doc_text_libreoffice(data):
     # Dump all the tables using soffice.
     output = None
     try:
-        output = subprocess.check_output(["python3", _thismodule_dir + "/export_doc_text.py",
-                                          "--tables", "-f", out_dir])
+        output = subprocess.check_output([python3_command, _thismodule_dir + "/export_doc_text.py",
+                                          "--tables", "-f", temp_file])
+        output = ensure_str(output)
     except Exception as e:
         log.error("Running export_doc_text.py failed. " + str(e))
-        os.remove(out_dir)
+        os.remove(temp_file)
         return None
 
     # Convert the text to a python list.
@@ -205,13 +214,25 @@ def _read_doc_text_libreoffice(data):
         r1 = json.loads(output)
     
     # Return the paragraph text and table text.
-    os.remove(out_dir)
+    os.remove(temp_file)
     return (r, r1)
+
+def get_python3_command():
+    try:
+        for python_command in ('python3', 'python'):
+            version = subprocess.check_output([python_command, "--version"])
+            if ensure_str(version).startswith('Python 3'):
+                return python_command
+    except OSError as e:
+        log.error("Could not find Python 3 location, . " + str(e))
+        return None
 
 def _read_doc_text_strings(data):
     """
     Use a heuristic to read in the document text. This is used as a fallback if reading
     the text with libreoffice fails.
+    :param data: Byte content of an Office File
+    :type data: bytes
     """
     data = ensure_str(data, errors='ignore')
     # Pull strings from doc.
@@ -226,6 +247,8 @@ def _read_doc_text_strings(data):
 def _read_doc_text(fname, data=None):
     """
     Read in text from the given document.
+    :param data: Byte content of an Office File
+    :type data: bytes
     """
 
     # Read in the file.
@@ -253,6 +276,8 @@ def _get_inlineshapes_text_values(data):
     """
     Read in the text associated with InlineShape objects in the document.
     NOTE: This currently is a hack.
+    :param data: Byte content of an Office File
+    :type data: bytes
     """
 
     r = []
@@ -260,27 +285,28 @@ def _get_inlineshapes_text_values(data):
 
         # It looks like maybe(?) the shapes text appears as text blocks starting at
         # ^@p^@i^@x^@e^@l (wide char "pixel") and ended by several null bytes.
-        pat = r"\x00p\x00i\x00x\x00e\x00l\x00*((?:\x00?[\x20-\x7e])+)\x00\x00\x00"
-        strs = re.findall(pat, data)
+        # TODO - Extract non-ASCII UCS-2 characters
+        pat = b"\x00p\x00i\x00x\x00e\x00l\x00*((?:\x00[\x20-\x7e])+)\x00\x00\x00"
+        strs = re.findall(pat, data, flags=re.DOTALL)
 
         # Hope that the InlineShapes() object indexing follows the same order as the strings
         # we found.
         pos = 1
         for shape_text in strs:
 
+            shape_text = ensure_str(shape_text.replace(b"\x00", b""))
             # Access value with .TextFrame.TextRange.Text accessor.
-            shape_text = shape_text.replace("\x00", "")
-            var = "InlineShapes('" + str(pos) + "').TextFrame.TextRange.Text"
+            var = "InlineShapes('{0}').TextFrame.TextRange.Text".format(pos)
             r.append((var, shape_text))
             
             # Access value with .TextFrame.ContainingRange accessor.
-            var = "InlineShapes('" + str(pos) + "').TextFrame.ContainingRange"
+            var = "InlineShapes('{0}').TextFrame.ContainingRange".format(pos)
             r.append((var, shape_text))
 
             # Access value with .AlternativeText accessor.
-            var = "InlineShapes('" + str(pos) + "').AlternativeText"
+            var = "InlineShapes('{0}').AlternativeText".format(pos)
             r.append((var, shape_text))
-            var = "InlineShapes('" + str(pos) + "').AlternativeText$"
+            var = "InlineShapes('{0}').AlternativeText$".format(pos)
             r.append((var, shape_text))
             
             # Move to next shape.
@@ -289,12 +315,12 @@ def _get_inlineshapes_text_values(data):
     except Exception as e:
 
         # Report the error.
-        log.error("Cannot read associated InlineShapes text. " + str(e))
+        log.error("Cannot read associated InlineShapes text. {0}".format(e))
 
         # See if we can read Shapes() info from an XML file.
         if ("not an OLE2 structured storage file" in str(e)):
-            # FIXME: here fname is undefined
-            r = read_ole_fields._get_shapes_text_values_xml(fname)
+            # The function accepts both filenames or text data
+            r = read_ole_fields._get_shapes_text_values_xml(ensure_str(data))
 
     return r
 
@@ -920,29 +946,33 @@ def load_excel_libreoffice(data):
         return None
     
     # Save the Excel data to a temporary file.
-    out_dir = "/tmp/tmp_excel_file_" + str(random.randrange(0, 10000000000))
-    f = open(out_dir, 'wb')
-    f.write(data)
-    f.close()
-    
+    temp_prefix = 'tmp_excel_file_'
+    _, temp_file = tempfile.mkstemp(prefix=temp_prefix, dir=tempfile.tempdir)
+    with open(temp_file, 'wb') as f:
+        f.write(data)
+
+    python3_command = get_python3_command()
+    if python3_command is None:
+        return None
+
     # Dump all the sheets as CSV files using soffice.
     output = None
     try:
-        output = subprocess.check_output(["python3", _thismodule_dir + "/export_all_excel_sheets.py", out_dir])
+        output = subprocess.check_output([python3_command, _thismodule_dir + "/export_all_excel_sheets.py", temp_file])
     except Exception as e:
         log.error("Running export_all_excel_sheets.py failed. " + str(e))
-        os.remove(out_dir)
+        os.remove(temp_file)
         return None
 
     # Get the names of the sheet files, if there are any.
     sheet_names = None
     try:
-        sheet_files = json.loads(output.replace("'", '"'))
+        sheet_files = json.loads(ensure_str(output).replace("'", '"'))
     except:
-        os.remove(out_dir)
+        os.remove(temp_file)
         return None
     if (len(sheet_files) == 0):
-        os.remove(out_dir)
+        os.remove(temp_file)
         return None
 
     # Load the CSV files into Excel objects.
@@ -981,8 +1011,8 @@ def load_excel_libreoffice(data):
         os.remove(sheet_file)
 
     # Delete the temporary Excel file.
-    if os.path.isfile(out_dir):
-        os.remove(out_dir)
+    if os.path.isfile(temp_file):
+        os.remove(temp_file)
         
     # Return the workbook.
     return result_book
@@ -1148,11 +1178,15 @@ def _process_file (filename,
             
             # Set the output directory in which to put dumped files generated by
             # the macros.
+            temp_prefix = 'tmp_file_'
+            _, temp_file = tempfile.mkstemp(prefix=temp_prefix, dir=tempfile.tempdir)
+            with open(temp_file, 'wb') as f:
+                f.write(data)
             out_dir = None
             if (only_filename is not None):
                 out_dir = artifact_dir + "/" + only_filename + "_artifacts/"
             else:
-                out_dir = "/tmp/tmp_file_" + str(random.randrange(0, 10000000000))
+                out_dir = tempfile.mkdtemp(prefix='tmp_dir_', dir=tempfile.tempdir)
             log.info("Saving dropped analysis artifacts in " + out_dir)
             vba_context.out_dir = out_dir
             del filename # We already have this in memory, we don't need to read it again.
@@ -1660,12 +1694,16 @@ def process_file_scanexpr (container, filename, data):
         if vba.detect_vba_macros():
 
             # Read in document metadata.
-            ole = olefile.OleFileIO(filename)
             try:
-                vm.set_metadata(ole.get_metadata())  # Likely broken reference to class like - vm = ViperMonkey()
+                ole = olefile.OleFileIO(filename)
             except Exception as e:
-                log.warning("Reading in metadata failed. Trying fallback. " + str(e))
-                vm.set_metadata(meta.get_metadata_exif(orig_filename))
+                log.warning('Failed to read file as OLE file')
+            # vm isn't in this context
+            # try:
+            #     vm.set_metadata(ole.get_metadata())  # Likely broken reference to class like - vm = ViperMonkey()
+            # except Exception as e:
+            #     log.warning("Reading in metadata failed. Trying fallback. " + str(e))
+            #     vm.set_metadata(meta.get_metadata_exif(orig_filename))
             
             #print('Contains VBA Macros:')
             for (subfilename, stream_path, vba_filename, vba_code) in vba.extract_macros():
@@ -1750,101 +1788,101 @@ def main():
         }
 
     usage = 'usage: %prog [options] <filename> [filename2 ...]'
-    parser = optparse.OptionParser(usage=usage)
-    parser.add_option("-r", action="store_true", dest="recursive",
-                      help='find files recursively in subdirectories.')
-    parser.add_option("-z", "--zip", dest='zip_password', type='str', default=None,
-                      help='if the file is a zip archive, open first file from it, using the '
-                           'provided password (requires Python 2.6+)')
-    parser.add_option("-f", "--zipfname", dest='zip_fname', type='str', default='*',
-                      help='if the file is a zip archive, file(s) to be opened within the zip. '
-                           'Wildcards * and ? are supported. (default:*)')
-    parser.add_option("-e", action="store_true", dest="scan_expressions",
-                      help='Extract and evaluate/deobfuscate constant expressions')
-    parser.add_option('-l', '--loglevel', dest="loglevel", action="store", default=DEFAULT_LOG_LEVEL,
-                      help="logging level debug/info/warning/error/critical (default=%default)")
-    parser.add_option("-a", action="store_true", dest="altparser",
-                      help='Use the alternate line parser (experimental)')
-    parser.add_option("-s", '--strip', action="store_true", dest="strip_useless_code",
-                      help='Strip useless VB code from macros prior to parsing.')
-    parser.add_option("-j", '--jit', action="store_true", dest="do_jit",
-                      help='Speed up emulation by JIT compilation of VB loops to Python.')
-    parser.add_option('-i', '--init', dest="entry_points", action="store", default=None,
-                      help="Emulate starting at the given function name(s). Use comma seperated "
-                           "list for multiple entries.")
-    parser.add_option('-t', '--time-limit', dest="time_limit", action="store", default=None,
-                      type='int', help="Time limit (in minutes) for emulation.")
-    parser.add_option("-c", '--iocs', action="store_true", dest="display_int_iocs",
-                      help='Display potential IOCs stored in intermediate VBA variables '
-                           'assigned during emulation (URLs and base64).')
-    parser.add_option("-v", '--version', action="store_true", dest="print_version",
-                      help='Print version information of packages used by ViperMonkey.')
-    parser.add_option("-o", "--out-file", action="store", default=None, type="str",
-                      help="JSON output file containing resulting IOCs, builtins, and actions")
-    parser.add_option("-p", "--tee-log", action="store_true", default=False,
-                      help="output also to a file in addition to standard out")
-    parser.add_option("-b", "--tee-bytes", action="store", default=0, type="int",
-                      help="number of bytes to limit the tee'd log to")
-
-    (options, args) = parser.parse_args()
+    parser = argparse.ArgumentParser(usage=usage)
+    parser.add_argument("-r", action="store_true", dest="recursive",
+                        help='find files recursively in subdirectories.')
+    parser.add_argument("-z", "--zip", dest='zip_password', type=str, default=None,
+                        help='if the file is a zip archive, open first file from it, using the '
+                             'provided password (requires Python 2.6+)')
+    parser.add_argument("-f", "--zipfname", dest='zip_fname', type=str, default='*',
+                        help='if the file is a zip archive, file(s) to be opened within the zip. '
+                             'Wildcards * and ? are supported. (default:*)')
+    parser.add_argument("-e", action="store_true", dest="scan_expressions",
+                        help='Extract and evaluate/deobfuscate constant expressions')
+    parser.add_argument('-l', '--loglevel', dest="loglevel", action="store", default=DEFAULT_LOG_LEVEL,
+                        help="logging level debug/info/warning/error/critical (default=%default)")
+    parser.add_argument("-a", action="store_true", dest="altparser",
+                        help='Use the alternate line parser (experimental)')
+    parser.add_argument("-s", '--strip', action="store_true", dest="strip_useless_code",
+                        help='Strip useless VB code from macros prior to parsing.')
+    parser.add_argument("-j", '--jit', action="store_true", dest="do_jit",
+                        help='Speed up emulation by JIT compilation of VB loops to Python.')
+    parser.add_argument('-i', '--init', dest="entry_points", action="store", default=None,
+                        help="Emulate starting at the given function name(s). Use comma seperated "
+                             "list for multiple entries.")
+    parser.add_argument('-t', '--time-limit', dest="time_limit", action="store", default=None,
+                        type=int, help="Time limit (in minutes) for emulation.")
+    parser.add_argument("-c", '--iocs', action="store_true", dest="display_int_iocs",
+                        help='Display potential IOCs stored in intermediate VBA variables '
+                             'assigned during emulation (URLs and base64).')
+    parser.add_argument("-v", '--version', action="store_true", dest="print_version",
+                        help='Print version information of packages used by ViperMonkey.')
+    parser.add_argument("-o", "--out-file", action="store", default=None, type=str,
+                        help="JSON output file containing resulting IOCs, builtins, and actions")
+    parser.add_argument("-p", "--tee-log", action="store_true", default=False,
+                        help="output also to a file in addition to standard out")
+    parser.add_argument("-b", "--tee-bytes", action="store", default=0, type=int,
+                        help="number of bytes to limit the tee'd log to")
+    parser.add_argument('files', type=str, nargs=1)
+    args = parser.parse_args()
 
     # Print version information and exit?
-    if (options.print_version):
+    if (args.print_version):
         print_version()
         sys.exit(0)
     
     # Print help if no arguments are passed
-    if len(args) == 0:
+    if len(args.files) == 0:
         safe_print(__doc__)
         parser.print_help()
         sys.exit(0)
 
     # setup logging to the console
-    # logging.basicConfig(level=LOG_LEVELS[options.loglevel], format='%(levelname)-8s %(message)s')
-    colorlog.basicConfig(level=LOG_LEVELS[options.loglevel], format='%(log_color)s%(levelname)-8s %(message)s')
+    # logging.basicConfig(level=LOG_LEVELS[args.loglevel], format='%(levelname)-8s %(message)s')
+    colorlog.basicConfig(level=LOG_LEVELS[args.loglevel], format='%(log_color)s%(levelname)-8s %(message)s')
 
     json_results = []
 
-    for container, filename, data in xglob.iter_files(args,
-                                                      recursive=options.recursive,
-                                                      zip_password=options.zip_password,
-                                                      zip_fname=options.zip_fname):
+    for container, filename, data in xglob.iter_files(args.files,
+                                                      recursive=args.recursive,
+                                                      zip_password=args.zip_password,
+                                                      zip_fname=args.zip_fname):
 
         # ignore directory names stored in zip files:
         if container and filename.endswith('/'):
             continue
-        if options.scan_expressions:
+        if args.scan_expressions:
             process_file_scanexpr(container, filename, data)
         else:
             entry_points = None
-            if (options.entry_points is not None):
-                entry_points = options.entry_points.split(",")
+            if (args.entry_points is not None):
+                entry_points = args.entry_points.split(",")
             process_file(container,
                          filename,
                          data,
-                         altparser=options.altparser,
-                         strip_useless=options.strip_useless_code,
+                         altparser=args.altparser,
+                         strip_useless=args.strip_useless_code,
                          entry_points=entry_points,
-                         time_limit=options.time_limit,
-                         display_int_iocs=options.display_int_iocs,
-                         tee_log=options.tee_log,
-                         tee_bytes=options.tee_bytes,
-                         out_file_name=options.out_file,
-                         do_jit=options.do_jit)
+                         time_limit=args.time_limit,
+                         display_int_iocs=args.display_int_iocs,
+                         tee_log=args.tee_log,
+                         tee_bytes=args.tee_bytes,
+                         out_file_name=args.out_file,
+                         do_jit=args.do_jit)
 
             # add json results to list
-            if (options.out_file):
-                with open(options.out_file, 'r') as json_file:
+            if (args.out_file):
+                with open(args.out_file, 'r') as json_file:
                     json_results.append(json.loads(json_file.read()))
 
-    if (options.out_file):
-        with open(options.out_file, 'w') as json_file:
+    if (args.out_file):
+        with open(args.out_file, 'w') as json_file:
             if (len(json_results) > 1):
                 json_file.write(json.dumps(json_results, indent=2))
             else:
                 json_file.write(json.dumps(json_results[0], indent=2))
 
-        log.info("Saved results JSON to output file " + options.out_file)
+        log.info("Saved results JSON to output file {0}".format(args.out_file))
 
 if __name__ == '__main__':
     main()
