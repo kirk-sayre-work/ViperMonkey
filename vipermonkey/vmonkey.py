@@ -109,6 +109,7 @@ from datetime import timedelta
 import subprocess
 import zipfile
 import io
+import distutils.spawn
 
 import prettytable
 from oletools.thirdparty.xglob import xglob
@@ -138,6 +139,23 @@ from core.logger import CappedFileHandler
 from logging import LogRecord
 from logging import FileHandler
 
+tempdir = tempfile.gettempdir()
+
+if os.name == "nt":
+    if ("Python3") in distutils.spawn.find_executable("python.exe"):
+        python = distutils.spawn.find_executable("python.exe")
+    elif ("Python2") in distutils.spawn.find_executable("python.exe"):
+        print("Can't find python3 - make sure it's installed, then try again.")
+        sys.exit()
+elif os.name == "posix":
+    if ("python3") in distutils.spawn.find_executable("python3"):
+        python = distutils.spawn.find_executable("python3")
+    elif ("python3") in distutils.spawn.find_executable("python"):
+        python = distutils.spawn.find_executable("python3")
+    elif ("python3") not in distutils.spawn.find_executable("python") and ("python3") not in distutils.spawn.find_executable("python3"):
+        print("Can't find python3 - make sure it's installed, then try again.")
+        sys.exit()
+
 # === MAIN (for tests) ===============================================================================================
 
 def _read_doc_text_libreoffice(data):
@@ -151,7 +169,7 @@ def _read_doc_text_libreoffice(data):
         return None
     
     # Save the Word data to a temporary file.
-    out_dir = "/tmp/tmp_word_file_" + str(random.randrange(0, 10000000000))
+    out_dir = tempdir + "tmp_word_file_" + str(random.randrange(0, 10000000000))
     f = open(out_dir, 'wb')
     f.write(data)
     f.close()
@@ -937,7 +955,7 @@ def load_excel_libreoffice(data):
         return None
     
     # Save the Excel data to a temporary file.
-    out_dir = "/tmp/tmp_excel_file_" + str(random.randrange(0, 10000000000))
+    out_dir = tempdir + "tmp_excel_file_" + str(random.randrange(0, 10000000000))
     f = open(out_dir, 'wb')
     f.write(data)
     f.close()
@@ -1216,7 +1234,7 @@ def _process_file (filename,
             if (only_filename is not None):
                 out_dir = artifact_dir + "/" + only_filename + "_artifacts/"
             else:
-                out_dir = "/tmp/tmp_file_" + str(random.randrange(0, 10000000000))
+                out_dir = tempdir + "tmp_file_" + str(random.randrange(0, 10000000000))
             log.info("Saving dropped analysis artifacts in " + out_dir)
             vba_context.out_dir = out_dir
             del filename # We already have this in memory, we don't need to read it again.
