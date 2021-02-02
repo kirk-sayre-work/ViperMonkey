@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+tag=kirk-sayre-work/vipermonkey
 
 if [[ $1 == "-h" || $# -eq 0 ]]; then
    echo "Usage: dockermonkey.sh FILE [JSON_FILE] [-i ENTRY]"
@@ -7,7 +9,7 @@ if [[ $1 == "-h" || $# -eq 0 ]]; then
    echo "If '-i ENTRY' is given emulation will start with VBA/VBScript function ENTRY."
    exit
 fi
-   
+
 if [ "$(uname)" == "Darwin" ]; then
         echo "[*] User running on a Mac"
         if [ "$(docker-machine status)" == "Stopped" ]; then
@@ -22,17 +24,22 @@ echo "[*] Running 'docker ps' to see if script has required privileges to run...
 docker ps
 
 if [ $? -ne 0 ]; then
-	echo "[!] 'docker ps' failed to run - you may not have the privileges to run docker. Try using sudo."
-	exit
+        echo "[!] 'docker ps' failed to run - you may not have the privileges to run docker. Try using sudo."
+        exit
 fi
 
-if [[ $(docker ps -f status=running -f ancestor=haroldogden/vipermonkey -l | tail -n +2) ]]; then
+if [[ $(docker ps -f status=running -f ancestor=$tag -l | tail -n +2) ]]; then
         echo "[+] Other ViperMonkey containers are running!"
 fi
 
-echo "[*] Pulling and starting container..."
-docker pull haroldogden/vipermonkey:latest
-docker_id=$(docker run --rm -d -t haroldogden/vipermonkey:latest)
+if [ "$(docker images -q $tag:latest 2> /dev/null)" == "" ]; then
+    echo "[*] Building image $tag..."
+    pushd ..
+    docker build . -t $tag
+    popd
+fi
+echo "[*] Starting container..."
+docker_id=$(docker run --rm -d -t $tag:latest)
 
 echo "[*] Attempting to copy file $1 into container ID $docker_id"
 
