@@ -34,7 +34,7 @@ fi
 
 if [ "$(docker images -q $tag:latest 2> /dev/null)" == "" ]; then
     echo "[*] Building image $tag..."
-    pushd ..
+    pushd $(dirname "$0")/..
     docker build . -t $tag
     popd
 fi
