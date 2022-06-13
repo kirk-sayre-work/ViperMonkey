@@ -1332,9 +1332,11 @@ def fix_weird_copyhere(vba_code):
     # ['Application.Run(strFileRef & "!" & strFunctionName, varArgv(lngIndex + 0)']
     namespace_pat = r"(\w+\.Run\(.+\)[^,\n\r]*),\s*[^\n\r\)]+"
     guard_pat = r"\w+\.Run\([^\n]+\)\)"
-    if ((re2.search(str(namespace_pat), vba_code) is not None) and
-        (re2.search(str(guard_pat), vba_code) is None)):
-        print(re.findall(namespace_pat, vba_code))
+    if ((".Run" in vba_code) and
+        (re2.search(str(guard_pat), vba_code) is None) and
+        (re2.search(str(namespace_pat), vba_code) is not None)):
+        if debug_strip:
+            print(re.findall(namespace_pat, vba_code))
         vba_code = re.sub(namespace_pat, r"\1", vba_code)
         if debug_strip:
             print("HERE: 6.1")

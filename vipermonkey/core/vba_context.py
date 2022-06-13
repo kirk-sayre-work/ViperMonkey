@@ -97,6 +97,42 @@ def is_procedure(vba_object):
     """
     return hasattr(vba_object, 'statements')
 
+varptr_data = None
+def add_varptr_data(data):
+    """Save the bytes written via a VarPtr() call. These are (probably?)
+    shell code bytes (or at least we will treat them as such).
+
+    @param data (list) Numeric byte values.
+
+    """
+
+    # Punt if we were not given a list.
+    global varptr_data
+    if (not isinstance(data, list)):
+        log.warning("VarPtr() called on something other than array of bytes.")
+        return
+
+    # Convert each byte value to an int (if possible).
+    tmp = []
+    for val in data:
+        try:
+
+            # Is it an int?
+            curr_val = int(val)
+
+            # Only want unsigned integers for byte values.
+            if (curr_val < 0):
+                curr_val += 2**8
+
+            # Save it.
+            tmp.append(curr_val)
+            
+        except ValueError:
+            return
+
+    # Save the bytes.
+    varptr_data = tmp
+    
 def add_shellcode_data(index, value, num_bytes):
     """Save injected shellcode data.
 
@@ -134,7 +170,7 @@ def get_shellcode_data():
     """
 
     # Punt if there is no shellcode data.
-    if (len(shellcode) == 0):
+    if ((len(shellcode) == 0) and (varptr_data is None)):
         return []
 
     # Get the shellcode bytes in order. Assume any missing
@@ -161,8 +197,14 @@ def get_shellcode_data():
         r.append(curr_val)
         last_i = i
 
-    # Return shellcode bytes, in order.
-    return r
+    # Return shellcode bytes, in order, if we had bytes from individual byte writes.
+    if (len(r) > 0):
+        return r
+
+    # If we get here we have shellcode (assumed) bytes from a VarPtr() call.
+    if (varptr_data is not None):
+        return varptr_data
+    return []
     
 
 # === VBA CLASSES =====================================================================================================
