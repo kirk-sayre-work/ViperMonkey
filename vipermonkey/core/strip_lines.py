@@ -1086,6 +1086,79 @@ def hide_colons_in_ifs(vba_code):
     r += vba_code[pos:]
     return r
 
+def move_endifs(vba_code):
+    """Sometimes 'end if' winds up on the end of a line with code. Put
+    these on their own line.
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+    """
+
+    # Look for lines that have code that end in 'end if'.
+    r = ""
+    for line in vba_code.split("\n"):
+
+        # Anything to handle?
+        if ("end if" not in line.lower()):
+            r += line + "\n"
+            continue
+
+        # Bad 'end if' line?
+        endif_pat = r"\s*[Ee][Nn][Dd] [Ii][Ff]\s*"
+        if (re.match(endif_pat, line) is not None):
+
+            # No it is not (just 'end if' with some whitespace).
+            r += line + "\n"
+            continue
+
+        # Ugh, is the 'end if' in a string?
+        if ('"' in line):
+
+            # Break out the strings in the line.
+            strs = set()
+            curr_str = None
+            for c in line:
+
+                # Start/end string?
+                if (c == '"'):
+
+                    # Start string?
+                    if (curr_str is None):
+                        curr_str = ""
+                        continue
+
+                    # End string. Save it.
+                    strs.add(curr_str)
+                    curr_str = None
+                    continue
+
+                # Save character in string if in string.
+                if (curr_str is not None):
+                    curr_str += c
+
+            # Save last string with no ending '"'.
+            if (curr_str is not None):
+                strs.add(curr_str)
+
+            # See if 'end if' is in a string.
+            in_str = False
+            for s in strs:
+                if ("end if" in s.lower()):
+                    in_str = True
+                    break
+            if in_str:
+                r += line + "\n"
+                continue
+
+        # Break the 'end if' into a separate line.
+        loc = line.lower().index("end if") - 1
+        r += line[:loc] + "\n"
+        r += "End If\n"
+
+    # Done.
+    return r
+        
 def convert_colons_to_linefeeds(vba_code):
     """Convert things like 'a=1:b=2' to 'a=1\n:b=2'; Also change things
     like 'a&"ff"' to 'a & "ff"'
@@ -1204,6 +1277,9 @@ def convert_colons_to_linefeeds(vba_code):
         line = line.replace(" & ", "&")
         tmp_r += line + "\n"
     r = tmp_r
+
+    # Fix 'end if's that wind up at the ends of lines of code.
+    r = move_endifs(r)
     
     # Done
     #print "******************"
