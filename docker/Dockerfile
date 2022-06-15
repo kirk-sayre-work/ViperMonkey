@@ -1,11 +1,7 @@
 FROM ubuntu:focal
 
 # Label the image appropriately
-LABEL description="Docker container for running Python 3 ViperMonkey" maintainer="Kirk Sayre" 
-
-# Hack to get pypy3 and python3 to install packages in the same place.
-RUN mkdir /usr/local/lib/pypy3.7
-RUN ln -s /usr/local/lib/pypy3.7 /usr/local/lib/python3.6
+LABEL description="Docker container for running Python 3 (pypy3) ViperMonkey" maintainer="Kirk Sayre" 
 
 # Set environment variables
 ENV PATH=/opt/ViperMonkey/vipermonkey:$PATH
@@ -15,8 +11,6 @@ ENV PYTHONPATH=/opt/ViperMonkey/vipermonkey
 RUN ln -snf /usr/share/zoneinfo/US /etc/localtime && echo "US" > /etc/timezone
 
 # Run apt-get update and install needed packages
-#
-# Package list needed for python3-uno taken from https://pypi.org/project/unotools/
 RUN apt-get update && apt-get install -y \
         apt-utils \
 	git\
@@ -24,27 +18,14 @@ RUN apt-get update && apt-get install -y \
 	build-essential \
         zip\
 	file\
-	libpython2-dev\
-      	libpython3-dev\
 	zlib1g-dev\
-	python3\
-	python3-pip\
 	software-properties-common\
         libreoffice\
-        libreoffice-script-provider-python\
-        libuno-cppu3\
-        python3-uno\
-        python3\
         unzip\
 && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /opt/
-
-# Python 3 specific packages used by export_all_sheets.py.
-RUN pip3 install psutil
-RUN pip3 install unotools
-RUN pip3 install unoconv
 
 # Install pypy3
 
@@ -62,7 +43,7 @@ RUN apt-get install -y pypy3-dev
 
 # Clone the python3 version of ViperMonkey so we can install the
 # pypy3 ViperMonkey packages.
-RUN cd /opt/ && git clone -b python3_port https://github.com/kirk-sayre-work/ViperMonkey.git
+RUN cd /opt/ && git clone -b pyuno_elimination https://github.com/kirk-sayre-work/ViperMonkey.git
 
 # Install the pypy3 ViperMonkey packages.
 RUN pypy3 -m pip install -r /opt/ViperMonkey/requirements.txt
@@ -72,4 +53,4 @@ RUN rm -f /opt/get-pip.py
 
 # For testing. Keeps the container up and running so you can shell
 # into it. Comment this out for prod.
-#RUN bash -c "while true; do echo 'Keeping container alive ...'; sleep 10; done"
+RUN bash -c "while true; do echo 'Keeping container alive ...'; sleep 10; done"
