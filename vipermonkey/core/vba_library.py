@@ -78,6 +78,7 @@ from core.python_jit import _eval_python
 from core import utils
 from core.excel import pull_cells_sheet, get_largest_sheet, get_num_rows
 from core import vba_conversion
+from core.utils import isascii
 
 from core.logger import log
 
@@ -99,7 +100,7 @@ def is_vbs_str(context, s):
     True if a regular Python string will work.
 
     """
-    return (context.is_vbscript or (isinstance(s, str) and s.isascii()))
+    return (context.is_vbscript or (isinstance(s, str) and isascii(s)))
 
 def member_access(var, field, globals_calling_scope=None):
     """Read a field from an object. Used in Python JIT code.

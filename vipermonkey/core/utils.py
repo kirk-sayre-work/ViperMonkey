@@ -510,3 +510,12 @@ def strip_nonvb_chars(s):
         r = r.replace("NULL", "")
     return r
     
+def isascii(s):
+    """Check if the characters in string s are in ASCII, U+0-U+7F.
+    Taken from https://stackoverflow.com/questions/196345/how-to-check-if-a-string-in-python-is-in-ascii
+
+    @param s (str) String to check.
+
+    @return (boolean) True if all ASCII, False if not.
+    """
+    return len(s) == len(s.encode())
