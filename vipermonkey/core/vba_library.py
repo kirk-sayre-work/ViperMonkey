@@ -87,6 +87,20 @@ from core.logger import log
 
 URL_REGEX = r'.*([hH][tT][tT][pP][sS]?://(([a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-\.]+(:[0-9]+)?)+(/([/\?&\~=a-zA-Z0-9_\-\.](?!http))+)?)).*'
 
+def is_vbs_str(context, s):
+    """See if the given string needs to be represented as a vb_str object
+    or whether it can be represented as a regular Python string.
+
+    @param context (Context object) The current execution context.
+    @param s (str) The string to check.
+
+    @return (boolean) False if the string must be represented as a
+    vb_str object to handle weird VBA wide char representation, or
+    True if a regular Python string will work.
+
+    """
+    return (context.is_vbscript or (isinstance(s, str) and s.isascii()))
+
 def member_access(var, field, globals_calling_scope=None):
     """Read a field from an object. Used in Python JIT code.
 
@@ -989,11 +1003,11 @@ class Len(VbaLibraryFunc):
             if (isinstance(val, str)):
 
                 # If this is VBScript strings are sensible and we can just return the length.
-                if (context.is_vbscript):
+                if (is_vbs_str(context, val)):
                     return len(val)
 
                 # Convert the string to a VbStr to handle mized ASCII/wide char weirdness.
-                vb_val = vb_str.VbStr(val, context.is_vbscript)
+                vb_val = vb_str.VbStr(val, is_vbs_str(context, val))
                 return vb_val.len()
 
             # Something with a length that is not a string.
@@ -1179,8 +1193,8 @@ class Mid(VbaLibraryFunc):
         # Convert the string to a VbStr to handle mized ASCII/wide char weirdness.
         vb_s = None
         s_len = len(s)
-        if (not context.is_vbscript):
-            vb_s = vb_str.VbStr(s, context.is_vbscript)
+        if (not is_vbs_str(context, s)):
+            vb_s = vb_str.VbStr(s, False)
             s_len = vb_s.len()
         
         # "If Start is greater than the number of characters in String,
@@ -1212,7 +1226,7 @@ class Mid(VbaLibraryFunc):
         if start+length-1 > s_len:
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug('Mid: start+length-1>len(s), return s[%d:]' % (start-1))
-            if context.is_vbscript:
+            if is_vbs_str(context, s):
                 return s[start-1:]
             return vb_s.get_chunk(start - 1, vb_s.len()).to_python_str()
 
@@ -1221,7 +1235,7 @@ class Mid(VbaLibraryFunc):
             return ''
 
         # Regular Mid().
-        if context.is_vbscript:
+        if is_vbs_str(context, s):
             r = s[start - 1:start-1+length]
         else:
             r = vb_s.get_chunk(start - 1, start - 1 + length).to_python_str()
@@ -1275,7 +1289,7 @@ class Left(VbaLibraryFunc):
                 log.debug("Left() exception: " + utils.safe_str_convert(e))
 
         # Convert the string to a VbStr to handle mized ASCII/wide char weirdness.
-        vb_s = vb_str.VbStr(s, context.is_vbscript)
+        vb_s = vb_str.VbStr(s, is_vbs_str(context, s))
         
         # "If Start is greater than the number of characters in String,
         # Left returns the whole string.
@@ -1377,7 +1391,7 @@ class Right(VbaLibraryFunc):
                 log.debug("Right() exception: " + utils.safe_str_convert(e))
 
         # Convert the string to a VbStr to handle mized ASCII/wide char weirdness.
-        vb_s = vb_str.VbStr(s, context.is_vbscript)
+        vb_s = vb_str.VbStr(s, is_vbs_str(context, s))
         
         # "If Start is greater than the number of characters in String,
         # Right returns the whole string.
@@ -2367,6 +2381,10 @@ class VarPtr(VbaLibraryFunc):
         r = utils.safe_str_convert(val)
         context.report_action("External Call", "VarPtr(" + r + ")", "VarPtr", strip_null_bytes=True)
 
+        # Save the VarPtr() bytes since they may be shellcode.
+        from core import vba_context
+        vba_context.add_varptr_data(val)
+        
         # Return a stand-in string for the result.
         if (len(r) > 500):
             r = r[:250] + "... <SNIP> ..." + r[-250:]
@@ -4616,8 +4634,7 @@ class WriteText(VbaLibraryFunc):
         var_name = "ADODB.Stream.ReadText"
         if (not context.contains(var_name)):
             context.set(var_name, b"", force_global=True)
-        # Make sure current var val is a bytes like string.
-        final_txt = bytes(utils.safe_str_convert(context.get(var_name)), "latin-1") + txt
+        final_txt = utils.safe_str_convert(context.get(var_name)) + utils.safe_str_convert(txt)
         context.set(var_name, final_txt, force_global=True)
         #print(final_txt)
         

@@ -365,7 +365,6 @@ class VbStr(object):
         # cached value for the string?
         if (orig_str in str_cache):
             self.vb_str = str_cache[orig_str]
-            self.orig_str = "".join(self.vb_str)
             return
         
         # If this is VBScript each character will be a single byte (like the Python
