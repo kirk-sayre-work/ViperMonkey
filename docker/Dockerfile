@@ -56,10 +56,11 @@ RUN rm -f /opt/get-pip.py
 
 # Base LibreOffice config dir.
 RUN mkdir /root/.config
-COPY ../vipermonkey/libreoffice_macros/libreoffice_config_dir.tar.gz /root/.config/libreoffice_config_dir.tar.gz
+COPY ./libreoffice_config_dir.tar.gz /root/.config/libreoffice_config_dir.tar.gz
+RUN cd /root/.config && tar xvzf libreoffice_config_dir.tar.gz && rm libreoffice_config_dir.tar.gz && cd /root
 
 # Copy over most recent version of the macros.
-COPY ../vipermonkey/libreoffice_macros/Module1.xba /root/.config/libreoffice/4/user/basic/Standard/Module1.xba
+COPY ./Module1.xba /root/.config/libreoffice/4/user/basic/Standard/Module1.xba
 
 # For testing. Keeps the container up and running so you can shell
 # into it. Comment this out for prod.
