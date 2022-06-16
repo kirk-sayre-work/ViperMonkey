@@ -13,7 +13,7 @@ cp ../vipermonkey/libreoffice_macros/Module1.xba .
 cp ../vipermonkey/libreoffice_macros/libreoffice_config_dir.tar.gz .
 
 # Build the docker image.
-sudo docker build -t vipermonkey:latest .
+sudo docker build -t kirksayre/vipermonkey_pypy3:latest .
 
 # Done.
 echo "Done. Image is built."

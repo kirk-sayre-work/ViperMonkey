@@ -35,24 +35,24 @@ fi
 
 if [ $1 == "--upgrade" ]; then
     echo "[*] Pulling container..."
-    docker pull kirksayre/vipermonkey:latest
+    docker pull kirksayre/vipermonkey_pypy3:latest
     echo "[+] Done. You now have the latest docker image."
     exit
 fi
 
 echo "[*] Checking for local ViperMonkey docker image..."
-docker image inspect kirksayre/vipermonkey:latest > /dev/null
+docker image inspect kirksayre/vipermonkey_pypy3:latest > /dev/null
 if [ $? -ne 0 ]; then
     echo "[*] Pulling container..."
-    docker pull kirksayre/vipermonkey:latest
+    docker pull kirksayre/vipermonkey_pypy3:latest
 fi
 echo "[*] Starting container..."
-docker_id=$(docker run --rm -d -t kirksayre/vipermonkey:latest)
+docker_id=$(docker run --rm -d -t kirksayre/vipermonkey_pypy3:latest)
 
 # Just getting version info?
 if [ $1 == "--version" ]; then
     echo "[+] Docker Container:"
-    docker image inspect kirksayre/vipermonkey:latest
+    docker image inspect kirksayre/vipermonkey_pypy3:latest
     docker ps
     echo $docker_id
     echo "[+] ViperMonkey Git Hash:"

@@ -64,4 +64,4 @@ COPY ./Module1.xba /root/.config/libreoffice/4/user/basic/Standard/Module1.xba
 
 # For testing. Keeps the container up and running so you can shell
 # into it. Comment this out for prod.
-RUN bash -c "while true; do echo 'Keeping container alive ...'; sleep 10; done"
+#RUN bash -c "while true; do echo 'Keeping container alive ...'; sleep 10; done"

@@ -9,11 +9,9 @@ you can also add your user to the docker group to avoid this.
 ## Using This Dockerfile
 
 ### Step 1 - build the docker image
-Build it!  'sudo docker build -t vipermonkey:latest .'
+Build it!  './build_docker_image.sh'
 
-NOTE: There is a period at the end of the command.  This tells docker
-to look for the dockerfile in the current directory.  It is expected
-to take 5+ minutes to build.
+NOTE: It is expected to take 5+ minutes to build.
 
 ### Step 2 - push to Docker Hub
 
@@ -26,6 +24,6 @@ sudo docker login
 Push the container to Docker Hub.
 
 ```
-sudo docker push kirksayre/vipermonkey:latest
+sudo docker push kirksayre/vipermonkey_pypy3:latest
 ```
 
