@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y \
 	zlib1g-dev\
 	software-properties-common\
         libreoffice\
+	libimage-exiftool-perl\
         unzip\
 && rm -rf /var/lib/apt/lists/*
 
@@ -50,6 +51,15 @@ RUN pypy3 -m pip install -r /opt/ViperMonkey/requirements.txt
 
 # Get rid of old get-pip.py file.
 RUN rm -f /opt/get-pip.py
+
+# Set up the LibreOffice macros used to export Excel cells and doc contents.
+
+# Base LibreOffice config dir.
+RUN mkdir /root/.config
+COPY ../vipermonkey/libreoffice_macros/libreoffice_config_dir.tar.gz /root/.config/libreoffice_config_dir.tar.gz
+
+# Copy over most recent version of the macros.
+COPY ../vipermonkey/libreoffice_macros/Module1.xba /root/.config/libreoffice/4/user/basic/Standard/Module1.xba
 
 # For testing. Keeps the container up and running so you can shell
 # into it. Comment this out for prod.
