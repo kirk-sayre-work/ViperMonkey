@@ -1100,7 +1100,8 @@ def move_endifs(vba_code):
     for line in vba_code.split("\n"):
 
         # Anything to handle?
-        if ("end if" not in line.lower()):
+        if (("end if" not in line.lower()) or
+            (line.lower().strip().startswith("if "))):
             r += line + "\n"
             continue
 
