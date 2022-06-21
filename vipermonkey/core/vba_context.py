@@ -2011,6 +2011,25 @@ class Context(object):
 
         # Done.
         return True
+
+    def _handle_set_word_text(self, name, value):
+        """Handle setting the text in a Word document. This method will update
+        the document paragraphs based on the Word text.
+
+        @param name (??) The item being assigned a value.
+        
+        @param value (??) The value to which the item is being set.
+
+        """
+
+        # Are we setting the Word document text?
+        name = safe_str_convert(name)
+        if (name.lower().strip() != "ActiveDocument.Range.Text".lower()):
+            return
+
+        # Break the doc text up into "paragraphs" and save them.
+        value = safe_str_convert(value)
+        self.set("ActiveDocument.Paragraphs", value.split("\n"))
         
     def set(self,
             name,
@@ -2063,6 +2082,9 @@ class Context(object):
         # Are we assigning a registry key using System.PrivateProfileString()?
         if (self._handle_privateprofilestring(name, value)):
             return
+
+        # Are we setting the text in a Word document?
+        self._handle_set_word_text(name, value)
 
         # Does the name make sense?
         orig_name = name

@@ -78,6 +78,7 @@ from core.python_jit import _eval_python
 from core import utils
 from core.excel import pull_cells_sheet, get_largest_sheet, get_num_rows
 from core import vba_conversion
+from core.utils import isascii
 
 from core.logger import log
 
@@ -99,7 +100,7 @@ def is_vbs_str(context, s):
     True if a regular Python string will work.
 
     """
-    return (context.is_vbscript or (isinstance(s, str) and s.isascii()))
+    return (context.is_vbscript or (isinstance(s, str) and isascii(s)))
 
 def member_access(var, field, globals_calling_scope=None):
     """Read a field from an object. Used in Python JIT code.
@@ -1794,6 +1795,9 @@ class Execute(VbaLibraryFunc):
             
         # Save the command.
         command = utils.strip_nonvb_chars(utils.safe_str_convert(params[0]))
+        #print("CODE")
+        #print(command)
+        #print("END CODE")
         context.report_action('Execute Command', command, 'Execute() String', strip_null_bytes=True)
         command += "\n"
 
@@ -2953,12 +2957,19 @@ class SaveAs(VbaLibraryFunc):
         new_fname = utils.safe_str_convert(params[0])
         fmt = params[1]
         for param in params:
+
+            # Do we have an actual parameter object to look at?
             if (isinstance(param, expressions.NamedArgument)):
                 if (param.name == "FileName"):
                     new_fname = param.value
                 if (param.name == "FileFormat"):
                     fmt = param.value
-                    
+
+            # This was not parsed as a parameter object. Guess whether
+            # this is supposed to be saved as text.
+            elif (utils.safe_str_convert(param).strip() == "2"):
+                fmt = 2
+            
         # Save the current doc to a file.
 
         # Handle saving as text.

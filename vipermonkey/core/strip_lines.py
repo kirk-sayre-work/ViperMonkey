@@ -332,10 +332,10 @@ def hide_some_array_accesses(vba_code):
 
     # Done.
     return r
-    
-def hide_weird_calls(vba_code):
-    """Hide weird calls like 'foo.bar (1,2), cat, dog', These are hard to
-    parse.
+
+def fix_caret_calls(vba_code):
+    """Change things like 'Call Shell^(...)' to 'Call Shell(...)' (delete
+    the caret).
 
     @param vba_code (str) The VB code to check and modify.
 
@@ -343,13 +343,23 @@ def hide_weird_calls(vba_code):
 
     """
 
-    # Do we have these weird calls?
-    #pat = u"\r?\n\s*\w+(?:\.\w+)*\s*\(.{1,30}\)\s*"
-    pat = "\r?\n\s*\w+(?:\.\w+)*\s*\(.{1,30}\)"
+    # Punt immediately if this is not applicable.
+    if (("Call" not in vba_code) or ("^" not in vba_code)):
+        return vba_code
+
+    # Do a tighter check to see if this is needed.
+    # Call Shell^("wscript " + koaksodkasd)
+    pat = "Call {1,50}[a-zA-Z0-9_\.]{1,200} {0,4}\^ {0,4}\("
     if (re2.search(pat, vba_code) is None):
         return vba_code
-    return vba_code
 
+    # This is needed. Remove the carets.
+    pat = "(Call {1,50}[a-zA-Z0-9_\.]{1,200} {0,4})\^( {0,4}\()"
+    vba_code = re.sub(pat, r"\1\2", vba_code)
+
+    # Done.
+    return vba_code
+    
 def fix_bad_puts(vba_code):
     """Change file Put statements like 'Put #foo(1,2,3) ...' to 'Put
     foo(1,2,3)'.
@@ -2458,15 +2468,15 @@ def fix_vba_code(vba_code):
         print(vba_code)
     vba_code = fix_bad_puts(vba_code)
     
-    # Hide some weird hard to parse calls.
-    #if debug_strip:
-    #    print "FIX_VBA_CODE: 16.1"
-    #    print vba_code
-    #vba_code = hide_weird_calls(vba_code)
+    # Fix things like "Call Shell^(...)".
+    if debug_strip:
+        print("FIX_VBA_CODE: 16.1.0")
+        print(vba_code)
+    vba_code = fix_caret_calls(vba_code)
 
     # Hide some weird hard to parse array accesses.
     if debug_strip:
-        print("FIX_VBA_CODE: 16.1")
+        print("FIX_VBA_CODE: 16.1.1")
         print(vba_code)
     vba_code = hide_some_array_accesses(vba_code)
     
