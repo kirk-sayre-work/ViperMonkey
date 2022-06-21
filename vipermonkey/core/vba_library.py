@@ -1779,6 +1779,9 @@ class Execute(VbaLibraryFunc):
             
         # Save the command.
         command = utils.strip_nonvb_chars(utils.safe_str_convert(params[0]))
+        #print("CODE")
+        #print(command)
+        #print("END CODE")
         context.report_action('Execute Command', command, 'Execute() String', strip_null_bytes=True)
         command += "\n"
 
@@ -2938,12 +2941,19 @@ class SaveAs(VbaLibraryFunc):
         new_fname = utils.safe_str_convert(params[0])
         fmt = params[1]
         for param in params:
+
+            # Do we have an actual parameter object to look at?
             if (isinstance(param, expressions.NamedArgument)):
                 if (param.name == "FileName"):
                     new_fname = param.value
                 if (param.name == "FileFormat"):
                     fmt = param.value
-                    
+
+            # This was not parsed as a parameter object. Guess whether
+            # this is supposed to be saved as text.
+            elif (utils.safe_str_convert(param).strip() == "2"):
+                fmt = 2
+            
         # Save the current doc to a file.
 
         # Handle saving as text.
