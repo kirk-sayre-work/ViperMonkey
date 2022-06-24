@@ -678,6 +678,59 @@ def _get_vba_parser(data):
     # Return the vba parser.
     return vba
 
+def pull_embedded_office_files(data, out_dir):
+    """Directly pull out any Office files embedded in the given Office
+    2007+ data. The embedded Office files will be saved in a directory
+    and will be named with their embedded names.
+
+    @param data (str) The contents of the file being analyzed.
+
+    @param out_dir (str) The directory in which to save extracted Office
+    files.
+
+    """
+
+    # Is this a Office 2007 (zip) file?
+    if not core.filetype.is_office2007_file(data, is_data=True):
+
+        # We are only pulling embedded files from Office 2007+ files,
+        # so punt.
+        return
+    
+    # We have 2007+ data.
+    
+    # convert data to a BytesIO buffer so that we can use zipfile in memory
+    # without writing a temp file on disk:
+    data_io = io.BytesIO(data)
+
+    # Look for embeddings in the 2007+ file.
+    out_dir = safe_str_convert(out_dir)
+    with zipfile.ZipFile(data_io, "r") as f:
+
+        # Look at each file in the 2007+ ZIP. For now we are just
+        # handling embeddings in Word files.
+        for name in f.namelist():
+
+            # Is this a (for now) Word embedded file?
+            if (not name.startswith("word/embeddings/")):
+                continue
+
+            # Make the output directory if needed.
+            if (not os.path.exists(out_dir)):
+                log.info("Making dropped sample directory ...")
+                os.mkdir(out_dir)
+            
+            # We have an embedded file. Save it.
+            curr_data = f.read(name)
+            out_name = name
+            if ("/" in out_name):
+                out_name = out_name[out_name.rindex("/") + 1:]
+            out_name = out_dir + "/" + out_name
+            log.info("Writing embedded Office file to " + out_name)
+            out_f = open(out_name, "wb")
+            out_f.write(curr_data)
+            out_f.close()
+
 def pull_embedded_pe_files(data, out_dir):
     """Directly pull out any PE files embedded in the given data. The PE
     files will be saved in a directory and will be named things like
@@ -807,6 +860,9 @@ def _report_analysis_results(vm, data, display_int_iocs, orig_filename, out_file
     # See if we can directly pull any embedded PE files from the file.
     pull_embedded_pe_files(data, core.vba_context.out_dir)
 
+    # See if we can directly pull any embedded Office files from the file.
+    pull_embedded_office_files(data, core.vba_context.out_dir)
+    
     # Report VBA builtin fingerprint.
     if (len(vm.external_funcs) > 0):
         safe_print('VBA Builtins Called: ' + safe_str_convert(vm.external_funcs))
