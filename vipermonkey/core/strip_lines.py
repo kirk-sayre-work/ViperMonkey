@@ -359,6 +359,32 @@ def fix_caret_calls(vba_code):
 
     # Done.
     return vba_code
+
+def fix_weird_dollar_signs(vba_code):
+    """Change things like 'WordBasic.[MacroFileName$]' to 'WordBasic.[MacroFileName]' (delete
+    the dollar sign).
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+
+    """
+
+    # Punt immediately if this is not applicable.
+    if ("$]" not in vba_code):
+        return vba_code
+
+    # Do a tighter check to see if this is needed.
+    pat = "\[[a-zA-Z_]{1,30}\$\]"
+    if (re2.search(pat, vba_code) is None):
+        return vba_code
+
+    # This is needed. Remove the carets.
+    pat = "(\[[a-zA-Z_]{1,30})\$(\])"
+    vba_code = re.sub(pat, r"\1\2", vba_code)
+
+    # Done.
+    return vba_code
     
 def fix_bad_puts(vba_code):
     """Change file Put statements like 'Put #foo(1,2,3) ...' to 'Put
@@ -1717,7 +1743,7 @@ def replace_bad_chars(vba_code):
         print(vba_code)
     while (pos < (len(vba_code) - 1)):
 
-        #print "DONE: " + safe_str_convert((0.0 + pos)/len(vba_code)*100)
+        #print("DONE: " + safe_str_convert((0.0 + pos)/len(vba_code)*100))
         # Are we looking at an interesting character?
         pos += 1
         c = vba_code[pos]
@@ -2474,9 +2500,15 @@ def fix_vba_code(vba_code):
         print(vba_code)
     vba_code = fix_caret_calls(vba_code)
 
-    # Hide some weird hard to parse array accesses.
+    # Fix things like "WordBasic.[MacroFileName$]".
     if debug_strip:
         print("FIX_VBA_CODE: 16.1.1")
+        print(vba_code)
+    vba_code = fix_weird_dollar_signs(vba_code)
+
+    # Hide some weird hard to parse array accesses.
+    if debug_strip:
+        print("FIX_VBA_CODE: 16.1.2")
         print(vba_code)
     vba_code = hide_some_array_accesses(vba_code)
     
