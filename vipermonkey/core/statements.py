@@ -5459,6 +5459,13 @@ with_statement = CaselessKeyword('With').suppress() + Optional(".") + \
                  Group(statement_block('body')) + \
                  CaselessKeyword('End').suppress() + CaselessKeyword('With').suppress()
 with_statement.setParseAction(With_Statement)
+single_line_with_statement = CaselessKeyword('With').suppress() + Optional(".") + \
+    (member_access_expression('env') ^ ((lex_identifier('env') ^ function_call_limited('env')))) + \
+    Suppress(":") + \
+    Group(simple_statements_line('body')) + \
+    Suppress(":") + \
+    CaselessKeyword('End').suppress() + CaselessKeyword('With').suppress()
+single_line_with_statement.setParseAction(With_Statement)
 
 # --- GOTO statement ----------------------------------------------------------
 
@@ -5871,6 +5878,7 @@ simple_statement = (
 # No label statement.
 simple_statement_restricted = (
     NotAny(Regex(r"End\s+Sub"))
+    + NotAny(Regex(r"End\s+With"))
     + (
         print_statement
         | dim_statement
@@ -5890,6 +5898,7 @@ simple_statement_restricted = (
         | rem_statement
         | resume_statement
         | single_line_if_statement
+        | single_line_with_statement
     )
 )
 
