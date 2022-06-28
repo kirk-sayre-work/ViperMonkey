@@ -1551,6 +1551,7 @@ def hide_strings(vba_code):
         print(vba_code)
     vba_code = re.sub(r"[Aa]s\s+#", "as__HASH", vba_code)
     vba_code = re.sub(r"[Pp]ut\s+#", "put__HASH", vba_code)
+    vba_code = re.sub(r"[Pp]rint\s+#", "print__HASH", vba_code)    
     vba_code = re.sub(r"[Gg]et\s+#", "get__HASH", vba_code)
     vba_code = re.sub(r"[Cc]lose\s+#", "close__HASH", vba_code)
 
@@ -1857,14 +1858,6 @@ def replace_bad_chars(vba_code):
             in_str = not in_str
             #print("IN_STR: " + safe_str_convert(in_str))
             continue
-
-        # Handle entering/leaving [] expressions.
-        # Not sure what this was for.
-        #if ((not in_comment) and (not in_str)):
-        #    if (c == '['):
-        #        num_square_brackets += 1
-        #    if (c == ']'):
-        #        num_square_brackets -= 1
             
         # Handle entering/leaving date constants.
         if ((not in_comment) and (not in_str) and (c == '#')):
@@ -2180,6 +2173,7 @@ def fix_difficult_code(vba_code):
     # Put the As, Put and Close statements back.
     r = r.replace("as__HASH", "As #")
     r = r.replace("put__HASH", "Put #")
+    r = r.replace("print__HASH", "Print #")
     r = r.replace("get__HASH", "Get #")
     r = r.replace("close__HASH", "Close #")
 
