@@ -2594,6 +2594,11 @@ def fix_vba_code(vba_code):
 
     # Wipe out all comments.
     r = strip_comments(r)
+
+    # Sometimes ViperMonkey may add a spurious NULL at the end of dropped
+    # 2nd stages. Fix that here.
+    if (r.strip().endswith("NULL")):
+        r = r.strip()[:-len("NULL")] + "\n"
     
     # Return the updated code.
     if debug_strip:
