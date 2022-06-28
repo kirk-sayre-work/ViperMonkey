@@ -117,13 +117,11 @@ module_body_lines = Combine(ZeroOrMore(logical_line))  # .setDebug()
 # === FUNCTIONS ==============================================================
 
 def vba_collapse_long_lines(vba_code):
-    """Parse a VBA module code to detect continuation line characters
-    (underscore) and collapse split lines. Continuation line
-    characters are replaced by spaces.
+    """Just make sure the code ends with a newline.
 
     @param vba_code (str) The VBA code to modify.
 
-    @return (str) The given VBA code with long lines collapsed.
+    @return (str) The given VBA code ending with a newline.
 
     """
     # make sure the last line ends with a newline char, otherwise the parser breaks:
@@ -131,10 +129,5 @@ def vba_collapse_long_lines(vba_code):
         return ""
     if vba_code[-1] != '\n':
         vba_code += '\n'
-    # return module_body_lines.parseString(vba_code, parseAll=True)[0]
-    # quicker solution without pyparsing:
-    # TODO: use a regex instead, to allow whitespaces after the underscore?
-    vba_code = vba_code.replace(' _\r\n', ' ')
-    vba_code = vba_code.replace(' _\r', ' ')
-    vba_code = vba_code.replace(' _\n', ' ')
+
     return vba_code

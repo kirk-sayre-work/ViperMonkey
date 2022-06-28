@@ -1317,11 +1317,21 @@ def convert_colons_to_linefeeds(vba_code):
 
     # Fix 'end if's that wind up at the ends of lines of code.
     r = move_endifs(r)
-    
+
+    # Fix "Next:" that wind up on their own line.
+    tmp_r = ""
+    for line in r.split("\n"):
+        strip_line = line.strip().lower()
+        if (strip_line == "next__label_colon__"):
+            tmp_r += line.replace("__LABEL_COLON__", "") + "\n"
+            continue
+        tmp_r += line + "\n"
+    r = tmp_r
+        
     # Done
-    #print "******************"
-    #print r
-    #print "******************"
+    #print("******************")
+    #print(r)
+    #print("******************")
     #sys.exit(0)
     return r
 
@@ -2425,10 +2435,10 @@ def fix_vba_code(vba_code):
     #vba_code = re.sub(r" _ *\r?\n", "", vba_code)
     #vba_code = re.sub(r"&_ *\r?\n", "&", vba_code)
     #vba_code = re.sub(r"\(_ *\r?\n", "(", vba_code)
-    vba_code = re.sub(r"([^\w_])_ *\r?\n", r"\1", vba_code)
+    vba_code = re.sub(r"([^\w_])_(?: *\r?\n){1,100}", r"\1", vba_code)
     vba_code = "\n" + vba_code
     vba_code = re.sub(r"\n:", "\n", vba_code)
-
+    
     # Some maldocs have single line member access expressions that end with a '.'.
     # Comment those out.
     if debug_strip:
@@ -2721,7 +2731,7 @@ def is_assign_line(line, line_num, local_funcs, bool_statements):
         return False
 
     # Skip const definitions.
-    if (" const " in line.lower()):
+    if ((" const " in line.lower()) or (line.lower().startswith("const "))):
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("SKIP: Const decl. Keep it.")
         return False
@@ -2825,7 +2835,7 @@ def find_var_assigns(vba_code, change_callbacks, local_funcs):
     
     # Find all assigned variables and track what line the variable was assigned on.
     # Dim statements are counted as assignments.
-    assign_re = re2.compile(r"(?:\s*(\w+(?:\([^\)]*\))?(\.\[?\w+\]?)*)\s*=\s*)|(?:Dim\s+(\w+(\.\w+)*))")
+    assign_re = re2.compile(r"(?:\s*(\w+(?:\([^\)]*\))?(\.\[?\w+\]?)*)\s*=\s*)|(?:(?:Dim:Const)\s+(\w+(\.\w+)*))")
     assigns = {}
     line_num = 0
     bool_statements = set(["If", "For", "Do"])
@@ -3006,7 +3016,7 @@ def strip_useless_code(vba_code, local_funcs):
     change_callbacks = set()    
 
     # Find all assigned variables and track what line the variable was assigned on.
-    # Dim statements are counted as assignments.
+    # Dim and Const statements are counted as assignments.
     assigns = find_var_assigns(vba_code, change_callbacks, local_funcs)
 
     # Now do a very loose check to see if the assigned variable is referenced anywhere else.

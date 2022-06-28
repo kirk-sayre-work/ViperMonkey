@@ -6488,7 +6488,7 @@ def extend_statement_grammar():
                   (procedures.property_let ^ orphaned_marker) | \
                   (procedures.property_get ^ orphaned_marker) | \
                   name_statement | stop_statement | enum_statement
-
+    
     statement_no_orphan <<= try_catch | type_declaration | simple_for_statement | real_simple_for_each_statement | simple_if_statement | \
                             line_input_statement | simple_if_statement_macro | simple_while_statement | \
                             simple_do_statement | simple_select_statement | with_statement| simple_statement | rem_statement | \
