@@ -1619,10 +1619,6 @@ class Eval(VbaLibraryFunc):
         # Save original expression.
         orig_expr = expr
         
-        # We are executing a string, so any "" in the string are really '"' when
-        # we execute the string. Maybe?
-        expr = expr.replace('""', '"')
-
         # Short circuit some easy things to eval.
 
         # Int.
@@ -1651,11 +1647,13 @@ class Eval(VbaLibraryFunc):
 
         except ParseException:
 
-            # Maybe replacing the '""' with '"' was a bad idea. Try the original
-            # command.
+            # Try replacing '""' with '"'. We are executing a string,
+            # so any "" in the string are really '"' when we execute
+            # the string. Maybe?
             try:
-                log.warning("Parsing failed on modified expression. Trying original expression ...")
-                obj = expressions.expression.parseString(orig_expr, parseAll=True)[0]
+                log.warning("Parsing failed on original expression. Trying modified expression ...")
+                expr = expr.replace('""', '"')
+                obj = expressions.expression.parseString(expr, parseAll=True)[0]
                 r = obj
             except ParseException:
 
@@ -1795,9 +1793,10 @@ class Execute(VbaLibraryFunc):
             
         # Save the command.
         command = utils.strip_nonvb_chars(utils.safe_str_convert(params[0]))
-        #print("CODE")
-        #print(command)
-        #print("END CODE")
+        if (log.getEffectiveLevel() == logging.DEBUG):
+            print("-- ORIGINAL EVALED CODE --")
+            print(params[0])
+            print("-- END ORIGINAL EVALED CODE --")
         context.report_action('Execute Command', command, 'Execute() String', strip_null_bytes=True)
         command += "\n"
 
@@ -2827,6 +2826,9 @@ class Replace(VbaLibraryFunc):
         rep = utils.safe_str_convert(params[2])
         if ((rep is None) or (rep == 0) or (rep == "NULL")):
             rep = ''
+        if (log.getEffectiveLevel() == logging.DEBUG):
+            log.debug("replace pattern = '" + pat + "'")
+            log.debug("replace replacement = '" + rep + "'")
 
         # Wide string to change and not wide char pattern/replacement?
         if (vb_str.is_wide_str(string) and
