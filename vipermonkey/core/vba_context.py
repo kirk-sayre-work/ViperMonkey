@@ -2351,7 +2351,7 @@ class Context(object):
                     r.append(s)
         return r
                     
-    def report_action(self, action, params=None, description=None, strip_null_bytes=False):
+    def report_action(self, action, params=None, description=None, strip_null_bytes=False, just_info=False):
         """Save information about an interesting action.
 
         @param action (str) The action to save in the context.
@@ -2364,6 +2364,10 @@ class Context(object):
 
         @param strip_null_bytes (boolean) If True strip null bytes
         (0x00) from all strings in the action.
+
+        @param just_info (boolean) Set to True if this is just some
+        general information about the analysis and not an actual
+        action performed by the sample.
 
         """
         
@@ -2388,5 +2392,6 @@ class Context(object):
                 action = action.replace("NULL", "")
             
         # Save the action for reporting.
-        self.got_actions = True
+        if (not just_info):
+            self.got_actions = True
         self.engine.report_action(action, params, description)

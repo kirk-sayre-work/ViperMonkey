@@ -672,9 +672,9 @@ class ViperMonkey(StubbedEngine):
         
         # First emulate any Visual Basic that appears outside of subs/funcs.
         if (regular_emulation):
-            context.report_action('Start Regular Emulation', '', 'All wildcard matches will match')
+            context.report_action('Start Regular Emulation', '', 'All wildcard matches will match', just_info=True)
         else:
-            context.report_action('Start Speculative Emulation', '', 'All wildcard matches will fail')
+            context.report_action('Start Speculative Emulation', '', 'All wildcard matches will fail', just_info=True)
         log.info("Emulating loose statements...")
         done_emulation = False
         for m in self.modules:
@@ -699,7 +699,7 @@ class ViperMonkey(StubbedEngine):
                 log.debug("Trying entry point " + entry_point)
             if ((entry_point in self.globals) and
                 (hasattr(self.globals[entry_point], "eval"))):
-                context.report_action('Found Entry Point', safe_str_convert(entry_point), '')
+                context.report_action('Found Entry Point', safe_str_convert(entry_point), '', just_info=True)
                 # We will be trying multiple entry points, so make a copy
                 # of the context so we don't accumulate stage changes across
                 # entry points.
@@ -736,7 +736,7 @@ class ViperMonkey(StubbedEngine):
                     if isinstance(item, (Function, Sub)):
 
                         # Emulate it.
-                        context.report_action('Found Entry Point', safe_str_convert(name), '')
+                        context.report_action('Found Entry Point', safe_str_convert(name), '', just_info=True)
 
                         # We will be trying multiple entry points, so make a copy
                         # of the context so we don't accumulate stage changes across
@@ -769,7 +769,7 @@ class ViperMonkey(StubbedEngine):
             # Emulate all 0 argument subroutines as potential entry points.
             for only_sub in zero_arg_subs:
                 sub_name = only_sub.name
-                context.report_action('Found Heuristic Entry Point', safe_str_convert(sub_name), '')
+                context.report_action('Found Heuristic Entry Point', safe_str_convert(sub_name), '', just_info=True)
 
                 # We will be trying multiple entry points, so make a copy
                 # of the context so we don't accumulate stage changes across
