@@ -509,7 +509,8 @@ def strip_nonvb_chars(s):
     if (r.count("NULL") > 10):
         r = r.replace("NULL", "")
     return r
-    
+
+cached_ascii = {}
 def isascii(s):
     """Check if the characters in string s are in ASCII, U+0-U+7F.
     Taken from https://stackoverflow.com/questions/196345/how-to-check-if-a-string-in-python-is-in-ascii
@@ -518,4 +519,24 @@ def isascii(s):
 
     @return (boolean) True if all ASCII, False if not.
     """
-    return len(s) == len(s.encode())
+
+    # The encode() operation is expensive, so cache the values of this
+    # function.
+    hsh = None
+    if (len(s) > 1000):
+        import os
+        old_val = "0"
+        # Set PYTHONHASHSEED to not salt the hash.
+        if ("PYTHONHASHSEED" in os.environ):
+            old_val = os.environ["PYTHONHASHSEED"]
+        os.environ["PYTHONHASHSEED"] = "0"
+        hsh = hash(s)
+        os.environ["PYTHONHASHSEED"] = old_val
+        if (hsh in cached_ascii):
+            return cached_ascii[hsh]
+
+    # Actually do the ASCII check.
+    r = len(s) == len(s.encode())
+    if (hsh is not None):
+        cached_ascii[hsh] = r
+    return r
