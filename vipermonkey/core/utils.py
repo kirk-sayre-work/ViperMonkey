@@ -103,6 +103,13 @@ def safe_str_convert(s, strict=False):
             return r
         return ''.join(list(filter(_test_char, s)))
 
+    except TypeError as e:
+
+        # Weird pyparsing error (see https://github.com/chimpler/pyhocon/issues/220).
+        # Punt if this happens rather than crashing.
+        log.error("safe_str_convert() failed. " + str(e))
+        return ""
+    
 class Infix(object):
     """Used to define our own infix operators.
 
