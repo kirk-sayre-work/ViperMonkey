@@ -1580,7 +1580,7 @@ class MemberAccessExpression(VBA_Object):
         new_add.params = tmp
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("Add() func = " + safe_str_convert(new_add))
-        
+            
         # Evaluate the dictionary add.
         new_dict = new_add.eval(context)
 

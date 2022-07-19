@@ -4833,7 +4833,7 @@ class Call_Statement(VBA_Object):
                         cmd = p
                 if (len(cmd) > 0):
                     tmp_call_params = cmd
-            context.report_action(self.name, tmp_call_params, 'Interesting Function Call', strip_null_bytes=True)
+            context.report_action(self.name, tmp_call_params, 'Interesting Function Call', strip_null_bytes=False)
 
         # Handle method calls inside a With statement.
         r = self._handle_with_calls(context)
@@ -4869,7 +4869,7 @@ class Call_Statement(VBA_Object):
                             cmd = p
                     if (len(cmd) > 0):
                         tmp_call_params1 = cmd
-                context.report_action('Object.Method Call', tmp_call_params1, func_name, strip_null_bytes=True)
+                context.report_action('Object.Method Call', tmp_call_params1, func_name, strip_null_bytes=False)
 
         # Emulate the function body.
         try:

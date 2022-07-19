@@ -2394,4 +2394,8 @@ class Context(object):
         # Save the action for reporting.
         if (not just_info):
             self.got_actions = True
-        self.engine.report_action(action, params, description)
+        if (self.engine is not None):
+            self.engine.report_action(action, params, description)
+        else:
+            # Happens when testing Python JIT code in isolation.
+            print("TEST ACTION: " + safe_str_convert((action, params, description)))
