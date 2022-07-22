@@ -57,7 +57,7 @@ import re
 import random
 from from_unicode_str import from_unicode_str
 import decimal
-#import sys
+import sys
 #import traceback
 
 from pyparsing import ParseException
@@ -3787,8 +3787,9 @@ class Randomize(VbaLibraryFunc):
         context = context # pylint
         params = params # pylint
 
+        context.rnd = random.Random()
         if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Randomize(): Stubbed out as NOP")
+            log.debug("Randomizing context Rnd values")
         return ''
 
 class Rnd(VbaLibraryFunc):
@@ -3800,7 +3801,17 @@ class Rnd(VbaLibraryFunc):
         context = context # pylint
         params = params # pylint
 
-        return random.random()
+        if context.rnd is None:
+            context.rnd = [0.7055475, 0.533424, 0.5795186, 0.2895625, 0.301948,
+                           0.7747401, 0.01401764, 0.7607236, 0.81449, 0.7090379]
+
+        if isinstance(context.rnd, list):
+            if context.rnd:
+                return context.rnd.pop(0)
+            else:
+                context.rnd = random.Random()
+
+        return context.rnd.random()
 
     def num_args(self):
         return 0
