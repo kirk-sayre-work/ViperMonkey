@@ -353,7 +353,10 @@ class Context(object):
         self.with_prefix = ""
         # Track the current with prefix for with statements. This has not been evaluated
         self.with_prefix_raw = None
-        
+
+        # Track the Rnd calls
+        self.rnd = None
+
         # globals should be a pointer to the globals dict from the core VBA engine (ViperMonkey)
         # because each statement should be able to change global variables
         if _globals is not None:
@@ -399,6 +402,7 @@ class Context(object):
             self.num_general_errors = context.num_general_errors
             self.with_prefix = context.with_prefix
             self.with_prefix_raw = context.with_prefix_raw
+            self.rnd = context.rnd
         else:
             self.globals = {}
         # on the other hand, each Context should have its own private copy of locals
@@ -896,8 +900,13 @@ class Context(object):
 
         # Don't reopen already opened files.
         if (fname in self.open_files.keys()):
-            log.warning("File " + safe_str_convert(fname) + " is already open.")
-            return
+            if fname == "ADODB.Stream":
+                # A new ADODB.Stream is being called
+                # We lose track of the old one, but the new one is going to be empty
+                log.warning("Assuming a new " + safe_str_convert(fname) + " is getting opened.")
+            else:
+                log.warning("File " + safe_str_convert(fname) + " is already open.")
+                return
 
         # Open the simulated file.
         self.open_files[fname] = b''

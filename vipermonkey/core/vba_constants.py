@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """@package vipermonkey.core.vba_constants Define many builtin VBA
 enum constant values.
 

@@ -78,7 +78,9 @@ def int_convert(arg, leave_alone=False):
 
     # Convert float to int?
     if (isinstance(arg, float)):
-        arg = int(round(arg))
+        if arg < 1:
+            arg -= 1
+        arg = int(arg)
 
     # Convert hex to int?
     if (isinstance(arg, str) and (arg.strip().lower().startswith("&h"))):
