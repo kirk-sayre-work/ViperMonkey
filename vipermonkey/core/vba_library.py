@@ -3310,7 +3310,7 @@ class Fix(VbaLibraryFunc):
         r = ''
         try:
             num = float(params[0])
-            r = math.floor(num)
+            r = int(num)
         except Exception as e:
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug("Fix exception: " + utils.safe_str_convert(e))
@@ -4178,8 +4178,7 @@ class Randomize(VbaLibraryFunc):
         context = context # pylint
         params = params # pylint
 
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Randomize(): Stubbed out as NOP")
+        context.rnd = random.Random()
         return ''
 
 class Rnd(VbaLibraryFunc):
@@ -4191,6 +4190,19 @@ class Rnd(VbaLibraryFunc):
         context = context # pylint
         params = params # pylint
 
+        if context.rnd is None:
+            context.rnd = [0.70554750, 0.53342400, 0.57951860, 0.28956250, 0.30194800, 0.77474010, 0.01401764,
+                           0.76072360, 0.81449000, 0.70903790, 0.04535276, 0.41403270, 0.86261930, 0.79048000,
+                           0.37353620, 0.96195320, 0.87144580, 0.05623686, 0.94955660, 0.36401870, 0.52486840,
+                           0.76711170, 0.05350453, 0.59245820, 0.46870010, 0.29816540, 0.62269670, 0.64782120,
+                           0.26379290, 0.27934210, 0.82980160, 0.82460210, 0.58916300, 0.98609320, 0.91096430,
+                           0.22686600, 0.69511550, 0.98000320, 0.24393140, 0.53387310, 0.10636970, 0.99941460,
+                           0.67617590, 0.01570392, 0.57518380, 0.10005220, 0.10302260, 0.79888440, 0.28448030]
+        if isinstance(context.rnd, list):
+            try:
+                return context.rnd.pop(0)
+            except IndexError:
+                context.rnd = random.Random()
         return random.random()
 
     def num_args(self):

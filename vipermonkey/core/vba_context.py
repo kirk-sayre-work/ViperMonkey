@@ -396,6 +396,9 @@ class Context(object):
         self.with_prefix = ""
         # Track the current with prefix for with statements. This has not been evaluated
         self.with_prefix_raw = None
+
+        # Track the Rnd calls
+        self.rnd = None
         
         # globals should be a pointer to the globals dict from the core VBA engine (ViperMonkey)
         # because each statement should be able to change global variables
@@ -442,6 +445,7 @@ class Context(object):
             self.num_general_errors = context.num_general_errors
             self.with_prefix = context.with_prefix
             self.with_prefix_raw = context.with_prefix_raw
+            self.rnd = context.rnd
         else:
             self.globals = {}
         # on the other hand, each Context should have its own private copy of locals

@@ -77,24 +77,23 @@ def int_convert(arg, leave_alone=False):
     if (arg == "**MATCH ANY**"):
         return arg
 
-    # Convert float to int?
+    # Convert float to int (floor)
     if (isinstance(arg, float)):
-        arg = int(round(arg))
+        arg = int(arg) if arg >= 0 else int(arg) - 1
 
     # Convert hex to int?
     if (isinstance(arg, str) and (arg.strip().lower().startswith("&h"))):
-        hex_str = "0x" + arg.strip()[2:]
         try:
-            return int(hex_str, 16)
+            return int(arg.strip()[2:], 16)
         except Exception as e:
             log.error("Cannot convert hex '" + str(arg) + "' to int. Defaulting to 0. " + str(e))
             return 0
             
     arg_str = str(arg)
-    if ("." in arg_str):
-        arg_str = arg_str[:arg_str.index(".")]
     try:
-        return int(arg_str)
+        # Convert float to int (floor)
+        arg = float(arg_str)
+        return int(arg) if arg >= 0 else int(arg) - 1
     except Exception as e:
         if (not leave_alone):
             log.error("Cannot convert '" + str(arg_str) + "' to int. Defaulting to 0. " + str(e))
@@ -103,7 +102,7 @@ def int_convert(arg, leave_alone=False):
         return arg_str
 
 def str_convert(arg):
-    """Convert a VBA expression to an str, handling VBA NULL.
+    """Convert a VBA expression to a str, handling VBA NULL.
 
     @param arg (any) The thing to convert to a string.
     
@@ -129,7 +128,7 @@ def coerce_to_int_list(obj):
     converted to its ASCII code.
 
     @param obj (VBA_Object object) The VBA object to convert to ASCII
-    codes.
+    or Unicode codes.
 
     @return (list) List of ASCII codes (int).
 
@@ -142,14 +141,11 @@ def coerce_to_int_list(obj):
     # Make sure we have a string.
     s = coerce_to_str(obj)
 
-    # Convert this to a list of ASCII char codes.
-    r = []
-    for c in s:
-        r.append(ord(c))
-    return r
+    # Convert this to a list of ASCII/Unicode char codes
+    return [ord(c) for c in s]
 
 def coerce_to_str(obj, zero_is_null=False):
-    """Coerce a VBA object (integer, Null, etc) to a string.
+    """Coerce a VBA object (integer, Null, etc.) to a string.
 
     @param obj (VBA_Object object) The VBA object to convert to a
     string.
@@ -217,12 +213,11 @@ def coerce_args_to_str(args):
     string.
 
     """
-    # TODO: None should be converted to "", not "None"
     return [coerce_to_str(arg) for arg in args]
     # return map(lambda arg: str(arg), args)
 
 def coerce_to_int(obj):
-    """Coerce a VBA object (integer, Null, etc) to a int.
+    """Coerce a VBA object (integer, Null, etc.) to an int.
 
     @param obj (VBA_Object) The item to coerce to an integer.
 
@@ -253,14 +248,14 @@ def coerce_to_int(obj):
         if ("." in obj):
             try:
                 obj = float(obj)
-                return int(obj)
+                return int(obj) if obj >= 0 else int(obj) - 1
             except ValueError:
                 pass
             
         # Hex string?
         hex_pat = r"&h[0-9a-f]+"
-        if (re.match(hex_pat, obj.lower()) is not None):
-            return int(obj.lower().replace("&h", "0x"), 16)
+        if (re.match(hex_pat, obj, flags=re.IGNORECASE) is not None):
+            return int(obj[2:], 16)
 
     # Is this an Excel cell dict?
     if (isinstance(obj, dict) and ("value" in obj)):
@@ -270,7 +265,7 @@ def coerce_to_int(obj):
         
     # Try regular int.
     try:
-        return int(obj)
+        return int(obj) if obj >= 0 else int(obj) - 1
     except ValueError as e:
 
         # Punt and just return NULL.
@@ -278,7 +273,7 @@ def coerce_to_int(obj):
         return 0
 
 def coerce_to_num(obj):
-    """Coerce a VBA object (integer, Null, etc) to a int or float.
+    """Coerce a VBA object (integer, Null, etc.) to an int or float.
 
     @param obj (VBA_Object) The item to coerce to a number.
 
@@ -326,8 +321,8 @@ def coerce_to_num(obj):
 
         # Hex string?
         hex_pat = r"&h[0-9a-f]+"
-        if (re.match(hex_pat, obj.lower()) is not None):
-            return int(obj.lower().replace("&h", "0x"), 16)
+        if (re.match(hex_pat, obj, flags=re.IGNORECASE) is not None):
+            return int(obj[2:], 16)
 
     # Is this an Excel cell dict?
     if (isinstance(obj, dict) and ("value" in obj)):
