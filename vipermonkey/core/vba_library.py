@@ -4194,15 +4194,9 @@ class Randomize(VbaLibraryFunc):
 
         return ''
 
-    def _csng(self, number):
-        round_to = 6 - math.floor(math.log10(number))
-        return round(number, round_to)
-
     def _get_timer(self):
         dt = datetime.now()
-        now = (60 * (60 * dt.hour) + dt.minute) + dt.second + (dt.microsecond / 1000000)
-        return self._csng(now)
-
+        return (60 * (60 * dt.hour) + dt.minute) + dt.second + (dt.microsecond / 1000000)
 
 class Rnd(VbaLibraryFunc):
     """Emulate Rnd(Optional Number As Single) RNG function.
@@ -4219,24 +4213,22 @@ class Rnd(VbaLibraryFunc):
                 number = vba_conversion.coerce_to_int(params[0])
             except ValueError:
                 pass
-            if number == 0:
-                pass
-            else:
-                # if parameter is negative, create temporary seed
-                if number < 0:
-                    context.rnd_seed = struct.unpack('<l', struct.pack('<f', number))[0]
-                    i64 = context.rnd_seed & 0xFFFFFFFF
-                    context.rnd_seed = (i64 + (i64 >> 24)) & 0xFFFFFF
 
-                # if parameter is not zero, generate the next seed
-                context.rnd_seed = struct.unpack('<i', struct.pack('<i', (context.rnd_seed * 0x43FD43FD + 0xC39EC3) & 0xFFFFFF))[0]
+        log.debug(f"Using {number} for Rnd Function")
 
-        # normalize seed to floating value from 0.0 up to 1.0
-        return self._csng(context.rnd_seed / 2**24)
+        if number == 0:
+            pass
+        else:
+            # if parameter is negative, create temporary seed
+            if number < 0:
+                context.rnd_seed = struct.unpack('<l', struct.pack('<f', number))[0]
+                i64 = context.rnd_seed & 0xFFFFFFFF
+                context.rnd_seed = (i64 + (i64 >> 24)) & 0xFFFFFF
 
-    def _csng(self, number):
-        round_to = 6 - math.floor(math.log10(number))
-        return round(number, round_to)
+            # if parameter is not zero, generate the next seed
+            context.rnd_seed = (context.rnd_seed * 0x43FD43FD + 0xC39EC3) & 0xFFFFFF
+
+        return context.rnd_seed / 2**24
 
 class OnTime(VbaLibraryFunc):
     """Emulate Application.OnTime() (stubbed). Just immediately calls the
