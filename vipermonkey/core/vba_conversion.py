@@ -243,6 +243,9 @@ def coerce_to_int(obj):
         
         # No NULLS.
         obj = obj.replace("\x00", "")
+
+        # Clean whitespace
+        obj = obj.strip()
         
         # Float string?
         if ("." in obj):

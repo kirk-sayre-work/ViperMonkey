@@ -60,6 +60,7 @@ import random
 from core.from_unicode_str import from_unicode_str
 import decimal
 import urllib.parse
+import struct
 #import sys
 #import traceback
 
@@ -4170,7 +4171,7 @@ class LCase(VbaLibraryFunc):
         return "STRING"
     
 class Randomize(VbaLibraryFunc):
-    """Emulate Randomize() RNG function.
+    """Emulate Randomize(Optional Number As Double) RNG function.
 
     """
 
@@ -4178,11 +4179,33 @@ class Randomize(VbaLibraryFunc):
         context = context # pylint
         params = params # pylint
 
-        context.rnd = random.Random()
+        lvalue = None
+        if ((params is not None) and (len(params) > 0)):
+            try:
+                number = vba_conversion.coerce_to_int(params[0])
+                lvalue = struct.unpack("<i", struct.pack('<d', number)[4:])[0]
+            except ValueError:
+                pass
+        else:
+            lvalue = struct.unpack('<i', struct.pack('<f', self._get_timer()))[0]
+        if lvalue is not None:
+            lvalue = (lvalue & 0xFFFF ^ (lvalue >> 16)) << 8
+            context.rnd_seed = (context.rnd_seed & 0xFF0000FF) | lvalue
+
         return ''
 
+    def _csng(self, number):
+        round_to = 6 - math.floor(math.log10(number))
+        return round(number, round_to)
+
+    def _get_timer(self):
+        dt = datetime.now()
+        now = (60 * (60 * dt.hour) + dt.minute) + dt.second + (dt.microsecond / 1000000)
+        return self._csng(now)
+
+
 class Rnd(VbaLibraryFunc):
-    """Emulate Rnd() RNG function.
+    """Emulate Rnd(Optional Number As Single) RNG function.
 
     """
 
@@ -4190,23 +4213,30 @@ class Rnd(VbaLibraryFunc):
         context = context # pylint
         params = params # pylint
 
-        if context.rnd is None:
-            context.rnd = [0.70554750, 0.53342400, 0.57951860, 0.28956250, 0.30194800, 0.77474010, 0.01401764,
-                           0.76072360, 0.81449000, 0.70903790, 0.04535276, 0.41403270, 0.86261930, 0.79048000,
-                           0.37353620, 0.96195320, 0.87144580, 0.05623686, 0.94955660, 0.36401870, 0.52486840,
-                           0.76711170, 0.05350453, 0.59245820, 0.46870010, 0.29816540, 0.62269670, 0.64782120,
-                           0.26379290, 0.27934210, 0.82980160, 0.82460210, 0.58916300, 0.98609320, 0.91096430,
-                           0.22686600, 0.69511550, 0.98000320, 0.24393140, 0.53387310, 0.10636970, 0.99941460,
-                           0.67617590, 0.01570392, 0.57518380, 0.10005220, 0.10302260, 0.79888440, 0.28448030]
-        if isinstance(context.rnd, list):
+        number = 1.0
+        if ((params is not None) and (len(params) > 0)):
             try:
-                return context.rnd.pop(0)
-            except IndexError:
-                context.rnd = random.Random()
-        return random.random()
+                number = vba_conversion.coerce_to_int(params[0])
+            except ValueError:
+                pass
+            if number == 0:
+                pass
+            else:
+                # if parameter is negative, create temporary seed
+                if number < 0:
+                    context.rnd_seed = struct.unpack('<l', struct.pack('<f', number))[0]
+                    i64 = context.rnd_seed & 0xFFFFFFFF
+                    context.rnd_seed = (i64 + (i64 >> 24)) & 0xFFFFFF
 
-    def num_args(self):
-        return 0
+                # if parameter is not zero, generate the next seed
+                context.rnd_seed = struct.unpack('<i', struct.pack('<i', (context.rnd_seed * 0x43FD43FD + 0xC39EC3) & 0xFFFFFF))[0]
+
+        # normalize seed to floating value from 0.0 up to 1.0
+        return self._csng(context.rnd_seed / 2**24)
+
+    def _csng(self, number):
+        round_to = 6 - math.floor(math.log10(number))
+        return round(number, round_to)
 
 class OnTime(VbaLibraryFunc):
     """Emulate Application.OnTime() (stubbed). Just immediately calls the
