@@ -58,6 +58,7 @@ __version__ = '0.02'
 
 # Important: need to change the default pyparsing whitespace setting, because CRLF
 # is not a whitespace for VBA.
+import re
 import pyparsing
 pyparsing.ParserElement.setDefaultWhitespaceChars(' \t\x19')
 
@@ -131,10 +132,10 @@ def vba_collapse_long_lines(vba_code):
         return ""
     if vba_code[-1] != '\n':
         vba_code += '\n'
+
+    # Remove comments that could impact underscore line continuation
+    vba_code = re.sub(r'(?:[\']|REM[ \t])[^_\r\n]*_[ \t]*(?=[\r\n]|$)', '', vba_code, flags=re.IGNORECASE)
+
     # return module_body_lines.parseString(vba_code, parseAll=True)[0]
     # quicker solution without pyparsing:
-    # TODO: use a regex instead, to allow whitespaces after the underscore?
-    vba_code = vba_code.replace(' _\r\n', ' ')
-    vba_code = vba_code.replace(' _\r', ' ')
-    vba_code = vba_code.replace(' _\n', ' ')
-    return vba_code
+    return re.sub(r'[ \t]+_[ \t]*(\r\n|\r|\n)[ \t]*', ' ', vba_code)

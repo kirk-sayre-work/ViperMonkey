@@ -5844,7 +5844,7 @@ doevents_statement = Suppress(CaselessKeyword("DoEvents"))
 
 # simple statement: fits on a single line (excluding for/if/do/etc blocks)
 simple_statement = (
-    NotAny(Regex(r"End\s+Sub"))
+    NotAny(CaselessKeyword("End") + (CaselessKeyword("Sub") | CaselessKeyword("Function")))
     + (
         print_statement
         | dim_statement
@@ -5870,7 +5870,7 @@ simple_statement = (
 
 # No label statement.
 simple_statement_restricted = (
-    NotAny(Regex(r"End\s+Sub"))
+    NotAny(CaselessKeyword("End") + (CaselessKeyword("Sub") | CaselessKeyword("Function")))
     + (
         print_statement
         | dim_statement
