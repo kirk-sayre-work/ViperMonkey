@@ -396,7 +396,10 @@ class Context(object):
         self.with_prefix = ""
         # Track the current with prefix for with statements. This has not been evaluated
         self.with_prefix_raw = None
-        
+
+        # Track the Project m_rndSeed for Rnd and Randomize
+        self.rnd_seed = 0x50000
+
         # globals should be a pointer to the globals dict from the core VBA engine (ViperMonkey)
         # because each statement should be able to change global variables
         if _globals is not None:
@@ -442,6 +445,7 @@ class Context(object):
             self.num_general_errors = context.num_general_errors
             self.with_prefix = context.with_prefix
             self.with_prefix_raw = context.with_prefix_raw
+            self.rnd_seed = context.rnd_seed
         else:
             self.globals = {}
         # on the other hand, each Context should have its own private copy of locals

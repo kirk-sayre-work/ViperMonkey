@@ -60,6 +60,7 @@ import random
 from core.from_unicode_str import from_unicode_str
 import decimal
 import urllib.parse
+import struct
 #import sys
 #import traceback
 
@@ -3310,7 +3311,7 @@ class Fix(VbaLibraryFunc):
         r = ''
         try:
             num = float(params[0])
-            r = math.floor(num)
+            r = int(num)
         except Exception as e:
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug("Fix exception: " + utils.safe_str_convert(e))
@@ -4170,7 +4171,7 @@ class LCase(VbaLibraryFunc):
         return "STRING"
     
 class Randomize(VbaLibraryFunc):
-    """Emulate Randomize() RNG function.
+    """Emulate Randomize(Optional Number As Double) RNG function.
 
     """
 
@@ -4178,12 +4179,27 @@ class Randomize(VbaLibraryFunc):
         context = context # pylint
         params = params # pylint
 
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Randomize(): Stubbed out as NOP")
+        lvalue = None
+        if ((params is not None) and (len(params) > 0)):
+            try:
+                number = vba_conversion.coerce_to_int(params[0])
+                lvalue = struct.unpack("<i", struct.pack('<d', number)[4:])[0]
+            except ValueError:
+                pass
+        else:
+            lvalue = struct.unpack('<i', struct.pack('<f', self._get_timer()))[0]
+        if lvalue is not None:
+            lvalue = (lvalue & 0xFFFF ^ (lvalue >> 16)) << 8
+            context.rnd_seed = (context.rnd_seed & 0xFF0000FF) | lvalue
+
         return ''
 
+    def _get_timer(self):
+        dt = datetime.now()
+        return (60 * (60 * dt.hour) + dt.minute) + dt.second + (dt.microsecond / 1000000)
+
 class Rnd(VbaLibraryFunc):
-    """Emulate Rnd() RNG function.
+    """Emulate Rnd(Optional Number As Single) RNG function.
 
     """
 
@@ -4191,10 +4207,28 @@ class Rnd(VbaLibraryFunc):
         context = context # pylint
         params = params # pylint
 
-        return random.random()
+        number = 1.0
+        if ((params is not None) and (len(params) > 0)):
+            try:
+                number = vba_conversion.coerce_to_int(params[0])
+            except ValueError:
+                pass
 
-    def num_args(self):
-        return 0
+        log.debug(f"Using {number} for Rnd Function")
+
+        if number == 0:
+            pass
+        else:
+            # if parameter is negative, create temporary seed
+            if number < 0:
+                context.rnd_seed = struct.unpack('<l', struct.pack('<f', number))[0]
+                i64 = context.rnd_seed & 0xFFFFFFFF
+                context.rnd_seed = (i64 + (i64 >> 24)) & 0xFFFFFF
+
+            # if parameter is not zero, generate the next seed
+            context.rnd_seed = (context.rnd_seed * 0x43FD43FD + 0xC39EC3) & 0xFFFFFF
+
+        return context.rnd_seed / 2**24
 
 class OnTime(VbaLibraryFunc):
     """Emulate Application.OnTime() (stubbed). Just immediately calls the
