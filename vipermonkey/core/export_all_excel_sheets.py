@@ -70,8 +70,14 @@ def is_excel_file(maldoc):
     typ = subprocess.check_output(["file", maldoc])
     if ((b"Excel" in typ) or (b"Microsoft OOXML" in typ)):
         return True
-    typ = subprocess.check_output(["exiftool", maldoc])
-    return (b"vnd.ms-excel" in typ)
+    try:
+        typ = subprocess.check_output(["exiftool", maldoc])
+        return (b"vnd.ms-excel" in typ)
+    except subprocess.CalledProcessError:
+        # Probably caused by a "Error reading FAT from sector..." error
+        # with exiftool. Punt and assume this is not a readable Excel
+        # file.
+        return False
 
 def fix_file_name(fname):
     """
