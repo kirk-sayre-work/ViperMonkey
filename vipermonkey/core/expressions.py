@@ -547,8 +547,12 @@ class MemberAccessExpression(VBA_Object):
             curr_func = curr_obj
             if isinstance(curr_obj, SimpleNameExpression):
                 obj_name = safe_str_convert(curr_obj).strip()
-                curr_func = function_call.parseString(obj_name + "()", parseAll=True)[0]
-                curr_func.params = []
+                try:
+                    curr_func = function_call.parseString(obj_name + "()", parseAll=True)[0]
+                    curr_func.params = []
+                except ParseException:
+                    log.error("Parse error. Cannot parse function name.")
+                    return None
             elif isinstance(curr_obj, Function_Call):
                 obj_name = safe_str_convert(curr_obj.name).strip()
                 curr_func = Function_Call(None, None, None, old_call=curr_obj)
