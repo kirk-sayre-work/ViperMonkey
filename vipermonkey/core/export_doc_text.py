@@ -94,7 +94,7 @@ def get_tables(fname):
         data = f.read()
         f.close()
         os.remove(info_fname)
-    except IOError as e:
+    except (IOError,UnicodeDecodeError) as e:
         log.error("Read of file containing libreoffice exported Document tables failed. " + str(e))
         return []
     table_pat = r"::START_TABLE::.*?::END_TABLE::"
