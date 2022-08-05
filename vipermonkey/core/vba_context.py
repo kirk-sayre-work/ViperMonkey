@@ -317,6 +317,9 @@ class Context(object):
         # Track the current call stack. This is used to detect simple cases of
         # infinite recursion.
         self.call_stack = []
+
+        # Track dynamically written VBA.
+        self.dynamic_code = {}
         
         # Track the maximum number of iterations to emulate in a while loop before
         # breaking out (infinite loop) due to no vars in the loop guard being
@@ -418,6 +421,7 @@ class Context(object):
                 self.globals = context.globals
             self.tested_wildcard = context.tested_wildcard
             self.wildcard_match_value = context.wildcard_match_value
+            self.dynamic_code = context.dynamic_code
             self.in_bitwise_expression = context.in_bitwise_expression
             self.decoded_str_info = context.decoded_str_info
             self.last_saved_file = context.last_saved_file
@@ -850,6 +854,15 @@ class Context(object):
 
         return self
 
+    def write_dynamic_vba(self, index, code):
+        """
+        Track dynamic VBA code written with InsertLines().
+
+        @param index (int) The line at which to write the VBA code.
+        @param code (str) The VBA code.
+        """        
+        self.dynamic_code[index] = code
+        
     def get_interesting_fileid(self):
         """Pick an 'interesting' looking open emulated file and return
         its ID.
@@ -1071,7 +1084,8 @@ class Context(object):
             return False
         
     def dump_all_files(self, autoclose=False):
-        """Call dump_file() on all open emulated files.
+        """Call dump_file() on all open emulated files. Also save dynamically
+        written VBA.
 
         @see get_interesting_fileid
         @see file_is_open
@@ -1086,8 +1100,32 @@ class Context(object):
         after dumping, if False leave them open.
 
         """
+
+        # Save the written files.
         for fname in list(self.open_files.keys()):
             self.dump_file(fname, autoclose=autoclose)
+
+        # Write out dynamic VBA if we have any.
+        if (len(self.dynamic_code) > 0):
+
+            # Write code in proper order.
+            indices = list(self.dynamic_code)
+            indices.sort()
+
+            # Make the dropped file directory if needed.
+            if not os.path.isdir(out_dir):
+                os.makedirs(out_dir)
+
+            # Save the code.
+            fname = out_dir + "/dynamic_vba_code.txt"
+            try:
+                f = open(fname, "w")
+                for i in indices:
+                    f.write(self.dynamic_code[i] + "\n")
+                f.close()
+                log.info("Wrote dynamic VBA to file " + fname)
+            except Exception as e:
+                log.error("Writing file " + safe_str_convert(fname) + " failed with error: " + safe_str_convert(e))
 
     def get_num_open_files(self):
         """Get the # of currently open files being tracked.

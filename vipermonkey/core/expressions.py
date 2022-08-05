@@ -4192,6 +4192,7 @@ class Function_Call(VBA_Object):
 
             #print("WHERE: 4")
             # Do we have a straight function call?
+            #print(type(f))
             if (isinstance(f, (procedures.Function, procedures.Sub)) or
                 ("vba_library." in safe_str_convert(type(f)))):
 
@@ -4203,7 +4204,9 @@ class Function_Call(VBA_Object):
                 # Call function.
                 #print("WHERE: 5")
                 r = f.eval(context=context, params=params)                        
-                        
+                #print("WHERE: 5.1")
+                #print(r)
+                
                 # Set the values of the arguments passed as ByRef parameters.
                 #print("WHERE: 6")
                 if (hasattr(f, "byref_params")):

@@ -3097,6 +3097,33 @@ class Join(VbaLibraryFunc):
 
     def return_type(self):
         return "STRING"
+
+class InsertLines(VbaLibraryFunc):
+    """Emulate InsertLines() dynamic code addition method.
+
+    """
+
+    def eval(self, context, params=None):
+        context = context # pylint
+
+        if ((params is None) or (len(params) < 2)):
+            return "NULL"
+
+        # Pull out the index at which to insert the code and the code.
+        index = None
+        try:
+            index = vba_conversion.coerce_to_int(params[0])
+        except Exception as e:
+            log.error("InsertLines(): index is not an int.")
+            return 'NULL'
+        if (index < 0):
+            log.error("InsertLines(): index is invalid.")
+            return 'NULL'
+        code = utils.safe_str_convert(params[1])
+
+        # Save the dynamic code update.
+        context.write_dynamic_vba(index, code)
+        return 'NULL'
     
 class InStr(VbaLibraryFunc):
     """Emulate InStr() string function.
@@ -6726,7 +6753,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Worksheets, Value, IsObject, Filter, GetRef, BuildPath, CreateFolder,
                Arguments, DateDiff, SetRequestHeader, SetOption, SetTimeouts, DefaultFilePath,
                SubFolders, Files, Name, ExcelFormula, Tables, Cell, DecodeURIComponent,
-               Words, EncodeScriptFile, CustomDocumentProperties, CDec):
+               Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
