@@ -5176,10 +5176,15 @@ class Redim_Statement(VBA_Object):
         indent = indent
         
         # TODO: Needs work.
-        log.warn("Python JIT of ReDim currently not supported.")
-        return "ERROR: ReDim JIT generation needs work."
-    # pylint: disable=pointless-string-statement
+        log.warn("Python JIT of ReDim currently not supported. Treating this as a noop and hoping for the best.")
+        indent_str = " " * indent
+        return indent_str + "pass"
+        #return "ERROR: ReDim JIT generation needs work. '" + safe_str_convert(self) + "'"
     """
+        # Not handling redims of things that don't exist.
+        if (not context.contains(self.item)):
+            "ERROR: Cannot generate ReDim python code for '" + safe_str_convert(self) + "'"
+        
         # Is this a Variant type?
         indent_str = " " * indent
         var_name = utils.fix_python_overlap(safe_str_convert(self.item))
@@ -5190,10 +5195,8 @@ class Redim_Statement(VBA_Object):
             return indent_str + var_name + " = []"
 
         # Is this a Byte array?
-        # Or calling ReDim on something that does not exist (grrr)?
         elif ((safe_str_convert(context.get_type(self.item)) == "Byte Array") or
-              (self.data_type == "Byte") or
-              (not context.contains(self.item))):
+              (self.data_type == "Byte")):
 
             # Do we have a start and end for the new size?
             if ((self.start is not None) and (self.end is not None)):
@@ -5214,6 +5217,9 @@ class Redim_Statement(VBA_Object):
                 except:
                     pass
 
+            else:
+                return "ERROR: Cannot generate ReDim python code for '" + safe_str_convert(self) + "'"
+
         # Resize array?
         elif (isinstance(self.raw_item, Function_Call)):
 
@@ -5227,10 +5233,13 @@ class Redim_Statement(VBA_Object):
                 new_list = "[0] * (" + new_size + ")"
                 var_name = utils.fix_python_overlap(safe_str_convert(self.raw_item.name))
                 return indent_str + var_name + " = " + new_list
-                    
-        return "ERROR: Cannot generate python code for '" + safe_str_convert(self) + "'"
+
+            else:
+                return "ERROR: Cannot generate ReDim python code for '" + safe_str_convert(self) + "'"
+            
+        return "ERROR: Cannot generate ReDim python code for '" + safe_str_convert(self) + "'"
     """
-    
+
     def eval(self, context, params=None):
 
         # pylint.

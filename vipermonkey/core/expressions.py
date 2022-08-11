@@ -4338,10 +4338,14 @@ class Function_Call(VBA_Object):
         # Expressions with boolean operators are probably bitwise operators.
         old_bitwise = context.in_bitwise_expression
         context.in_bitwise_expression = True
+        # Function references in parameter lists are calls, not function definitions.
+        old_only_func_calls = context.only_func_calls
+        context.only_func_calls = True
         for p in self.params:
             py_params.append(to_python(p, context, params))
         context.in_bitwise_expression = old_bitwise
-
+        context.only_func_calls = old_only_func_calls
+        
         # Is this a VBA internal function? Or a call to an external function?
         from core import vba_library
         is_internal = (func_name.lower() in vba_library.VBA_LIBRARY)

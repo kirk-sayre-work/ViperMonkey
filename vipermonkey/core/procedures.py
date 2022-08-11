@@ -114,6 +114,10 @@ class Sub(VBA_Object):
 
     def to_python(self, context, params=None, indent=0):
 
+        # Are we supposed to treat this like a 0 argument function call?
+        if context.only_func_calls:
+            return safe_str_convert(self.name) + "()"
+        
         # Get the global variables read in the function body.
         tmp_context = Context(context=context, _locals=context.locals, copy_globals=True)
         global_var_info, _ = _get_var_vals(self, tmp_context, global_only=True)
@@ -496,6 +500,10 @@ class Function(VBA_Object):
         return self.gloss
 
     def to_python(self, context, params=None, indent=0):
+
+        # Are we supposed to treat this like a 0 argument function call?
+        if context.only_func_calls:
+            return safe_str_convert(self.name) + "()"
         
         # Get the global variables read in the function body.
         tmp_context = Context(context=context, _locals=context.locals, copy_globals=True)

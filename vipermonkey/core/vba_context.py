@@ -298,6 +298,10 @@ class Context(object):
         
         # Track whether we are handling a non-boolean (bitwise) expression.
         self.in_bitwise_expression = False
+
+        # Track whether function references in Python JIT code generation should
+        # be 0 argument calls rather than function definitions.
+        self.only_func_calls = False
         
         # Track whether emulation actions have been reported.
         self.got_actions = False
@@ -419,6 +423,7 @@ class Context(object):
                 self.globals = dict(context.globals)
             else:
                 self.globals = context.globals
+            self.only_func_calls = context.only_func_calls
             self.tested_wildcard = context.tested_wildcard
             self.wildcard_match_value = context.wildcard_match_value
             self.dynamic_code = context.dynamic_code
