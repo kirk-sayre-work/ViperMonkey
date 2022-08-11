@@ -1636,7 +1636,7 @@ let_statement = (
             (
                 Optional(Suppress('(')) + TODO_identifier_or_object_attrib('name') + Optional(Suppress(')'))
                 + (Optional(Suppress('(') + Optional(expression('index')) + Optional(',' + expression('index1')) + Suppress(')')) ^ \
-                   Optional(Suppress('(') + expression('index') + Suppress(')') + Suppress('(') + expression('index1') + Suppress(')'))) \
+                   Optional(Suppress('(') + Optional(expression('index')) + Suppress(')') + Suppress('(') + expression('index1') + Suppress(')'))) \
             )
             ^ member_access_expression('name')
             ^ string_modification('name')
