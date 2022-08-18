@@ -2128,13 +2128,9 @@ class LTrim(VbaLibraryFunc):
     def eval(self, context, params=None):
         context = context # pylint
 
-        if ((params is None) or (len(params) == 0)):
+        if ((params is None) or (len(params) == 0) or (params[0] is None)):
             return ""
-        r = None
-        if (isinstance(params[0], int)):
-            r = utils.safe_str_convert(params[0])
-        else:
-            r = params[0].lstrip()
+        r = utils.safe_str_convert(params[0]).lstrip()
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("LTrim: return %r" % r)
         return r
