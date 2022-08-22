@@ -3009,7 +3009,17 @@ def strip_useless_code(vba_code, local_funcs):
         log.warning("VBS dynamically executes code. Not stripping assignment statements.")
         r = strip_attribute_lines(vba_code)
         r = collapse_macro_if_blocks(r)
-        return r
+
+        # For now we are just stripping out class declarations. Need to actually
+        # emulate classes somehow.
+        final_r = ""
+        for line in r.split("\n"):
+            if ((line.strip().lower().startswith("class ")) or
+                (line.strip().lower().startswith("end class"))):
+                log.warning("Classes not handled. Stripping '" + line.strip() + "'.")
+                continue
+            final_r += line + "\n"
+        return final_r
     
     # Track data change callback function names.
     change_callbacks = set()    
