@@ -844,6 +844,7 @@ def fix_bad_exponents(vba_code):
     # Do we have possible bad exponents?
     pat = '([\w\(\)])\^([\w\(\)])'
     r = ""
+    hex_pat = "&h[0-9a-f]{1,25}\^"
     if (re2.search(pat, vba_code) is not None):
 
         # Now look line by line through the code so as not to modify these constructs
@@ -855,6 +856,11 @@ def fix_bad_exponents(vba_code):
                 r += line + "\n"
                 continue
 
+            # Hex literal line?
+            if (re2.search(hex_pat, line.lower()) is not None):
+                r += line + "\n"
+                continue
+                
             # Line with no bad exponents?
             if (re2.search(pat, line) is None):
                 r += line + "\n"
@@ -867,7 +873,7 @@ def fix_bad_exponents(vba_code):
     # No bad exponents anywhere.
     else:
         return vba_code
-            
+
     return r
 
 def fix_bad_var_names(vba_code):
@@ -1940,6 +1946,14 @@ def replace_bad_chars(vba_code):
         if (c == ";"):
             r += c    
 
+
+    # We could have messed up hex literals like "&Hff00^" by changing them to
+    # "&Hff00 ^". Fix this here.
+    hex_pat = "&H[0-9A-F]{1,25} \^"
+    if (re2.search(hex_pat, r) is not None):
+        hex_pat = "(&H[0-9A-F]{1,25}) \^"
+        r = re.sub(hex_pat, r"\1^", r)
+    
     # Done.
     return r
 
