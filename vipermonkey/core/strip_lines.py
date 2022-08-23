@@ -1957,6 +1957,32 @@ def replace_bad_chars(vba_code):
     # Done.
     return r
 
+def fix_unclosed_parens(vba_code):
+    """It looks like VBA accepts lines line 'Call foo(' (no matching
+    ')'). Comment these lines out.
+
+    @param vba_code (str) The code to modify.
+    
+    @return (str) The modified code.
+    """
+
+    # Do we have any of these bad constructs?
+    pat = r"\(\s*\r?\n"
+    if (re2.search(pat, vba_code) is None):
+        return vba_code
+
+    # We do have unclosed parens. Go through and comment all those lines
+    # out.
+    r = ""
+    for line in vba_code.split("\n"):
+        if line.strip().endswith("("):
+            r += "' " + line + "\n"
+            continue
+        r += line + "\n"
+
+    # Done.
+    return r
+    
 def fix_class_constructor_calls(vba_code):
     """
     Rename Default functions in defined classes to
@@ -2079,6 +2105,10 @@ def fix_difficult_code(vba_code):
         print("HERE: 2.7")
         print(vba_code)
     vba_code = fix_varptr_calls(vba_code)
+    if debug_strip:
+        print("HERE: 2.7.1")
+        print(vba_code)
+    vba_code = fix_unclosed_parens(vba_code)
 
     # Precompute certain Chr() results that are just there for obfuscation.
     if debug_strip:
