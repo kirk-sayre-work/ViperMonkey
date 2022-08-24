@@ -1680,7 +1680,23 @@ class Eval(VbaLibraryFunc):
 
     def return_type(self):
         return "UNKNOWN"
-    
+
+class End(VbaLibraryFunc):
+    """Emulate End (program termination) statement.
+
+    """
+
+    def eval(self, context, params=None):
+        context.exit_func = True
+        context.report_action('Program Exited', "---", "End Statement")
+
+class __End(End):
+    """Synthetic version of End statement to help with parsing (see
+    strip_lines.py for End rewrites).
+
+    """
+    pass
+        
 class Exists(VbaLibraryFunc):
     """Emulate Document or Scripting.Dictionary Exists() method.
 
@@ -6749,7 +6765,8 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Worksheets, Value, IsObject, Filter, GetRef, BuildPath, CreateFolder,
                Arguments, DateDiff, SetRequestHeader, SetOption, SetTimeouts, DefaultFilePath,
                SubFolders, Files, Name, ExcelFormula, Tables, Cell, DecodeURIComponent,
-               Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines):
+               Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
+               End, __End):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 

@@ -2580,6 +2580,12 @@ def fix_vba_code(vba_code):
     bad_call_pat = "(\r?\n\s*[\w_]{2,50})\""
     if (re2.search(str(bad_call_pat), vba_code)):
         vba_code = re.sub(bad_call_pat, r'\1 "', vba_code)
+
+    # Fix lines like 'If ar_no = 1 Then End'. Sometimes the
+    # End statement causes parse problems.
+    pat = r"\sThen\s+End\s*\r?\n"
+    if (re2.search(str(pat), vba_code)):
+        vba_code = re.sub(pat, " Then __End\n", vba_code)
     
     # Skip the next part if unnneeded.
     if debug_strip:
