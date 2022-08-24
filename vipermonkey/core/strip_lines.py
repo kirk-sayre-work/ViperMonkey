@@ -1224,6 +1224,7 @@ def convert_colons_to_linefeeds(vba_code):
     marker_chars = [('"', '"', None), ('[', ']', None), ("'", '\n', None), ('#', '#', None), ("If ", "Then", "End If")]
 
     # Loop through the text leaving some blocks unchanged and others with ':' changed to '\n'.
+    # Also add whitespace around some '&' operators.
     pos = 0
     r = ""
     while (pos < len(vba_code)):
@@ -1264,6 +1265,10 @@ def convert_colons_to_linefeeds(vba_code):
             change_chunk = re.sub(r"\"&\"", r"\" & " + "\"", change_chunk)
             # 'a&(...'
             change_chunk = re.sub(r"([\w_])&\(", r"\1 & " + "(", change_chunk)
+            # 'a&b...'
+            change_chunk = re.sub(r"([\w_])&([\w_])", r"\1 & \2", change_chunk)
+            # ')&"...'
+            change_chunk = re.sub(r"\)&\"", ") & \"", change_chunk)
             
             # Find the chunk of text to leave alone.
             marker_pos2a = len(vba_code)
@@ -1298,7 +1303,11 @@ def convert_colons_to_linefeeds(vba_code):
             change_chunk = re.sub(r"\"&\"", r"\" & " + "\"", change_chunk)
             # 'a&(...'
             change_chunk = re.sub(r"([\w_])&\(", r"\1 & " + "(", change_chunk)
-            
+            # 'a&b...'
+            change_chunk = re.sub(r"([\w_])&([\w_])", r"\1 & \2", change_chunk)
+            # ')&"...'
+            change_chunk = re.sub(r"\)&\"", ") & \"", change_chunk)
+
             r += change_chunk
             pos = len(vba_code)
 

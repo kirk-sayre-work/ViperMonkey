@@ -4625,6 +4625,7 @@ class WriteLine(VbaLibraryFunc):
             return
 
         # Get the data.
+
         data = params[0]
         if (len(params) == 3):
             data = params[2]
@@ -4655,6 +4656,7 @@ class WriteLine(VbaLibraryFunc):
 
         context.write_file(file_id, data)
         context.write_file(file_id, '\n')
+        return "NULL"
 
 class WriteText(VbaLibraryFunc):
     """Emulate File WriteText() method.
