@@ -5029,7 +5029,7 @@ call_statement0.setParseAction(Call_Statement)
 call_statement1.setParseAction(Call_Statement)
 call_statement2.setParseAction(Call_Statement)
 
-call_statement = (call_statement1 ^ call_statement0 ^ call_statement2)
+call_statement = (call_statement0 ^ call_statement1 ^ call_statement2)
 
 # --- EXIT FOR statement ----------------------------------------------------------
 

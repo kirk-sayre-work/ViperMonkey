@@ -1462,6 +1462,13 @@ class Item(BuiltInDocumentProperties):
             with_dict = params[0]
             # Item index is 2nd parameter.
             index = vba_conversion.coerce_to_int(params[1])
+
+        elif ((len(params) >= 2) and (isinstance(params[1], dict))):
+
+            # Dict is 2nd parameter.
+            with_dict = params[1]
+            # Item index is 1st parameter.
+            index = vba_conversion.coerce_to_int(params[0])
         
         # Are we reading from a With Scripting.Dictionary?
         elif ((context.with_prefix_raw is not None) and
@@ -2012,6 +2019,12 @@ class Add(VbaLibraryFunc):
         params[0] = object
         params[1] = key
         params[2] = value
+
+        or
+
+        params[0] = key
+        params[1] = value
+        params[2] = object
         """
         context = context # pylint
 
@@ -2020,10 +2033,15 @@ class Add(VbaLibraryFunc):
             return {}
 
         # Get the object (dict), key, and value.
-        obj = params[0]
-        key = params[1]
-        val = params[2]
-        if (not isinstance(obj, dict)):
+        if (isinstance(params[0], dict)):        
+            obj = params[0]
+            key = params[1]
+            val = params[2]
+        elif (isinstance(params[2], dict)):        
+            obj = params[2]
+            key = params[0]
+            val = params[1]
+        else:
             return {}
 
         # Add to the map.
@@ -2035,6 +2053,30 @@ class Add(VbaLibraryFunc):
         # Done.
         return obj
 
+    def modified_params(self):
+        return [2]
+    
+class Keys(VbaLibraryFunc):
+    """Emulate Keys() VB object method. Currently only add to
+    Scripting.Dictionary objects is supported.
+
+    """
+
+    def eval(self, context, params=None):
+        """
+        params[0] = object
+        """
+        context = context # pylint
+
+        # Sanity check.
+        if ((params is None) or (len(params) == 0) or (not isinstance(params[0], dict))):
+            return []
+        r = []
+        for k in params[0].keys():
+            if (k != '__ADDED_ITEMS__'):
+                r.append(k)
+        return r
+    
 class Array(VbaLibraryFunc):
     """Emulate creating an array with Array() function.
 
@@ -6138,6 +6180,13 @@ class Print(VbaLibraryFunc):
             log.warning("Wrong # of arguments for Print " + utils.safe_str_convert(params))
             return
 
+        # Is this just a console print with multiple arguments?
+        sec_param = utils.safe_str_convert(params[1]).strip().lower()
+        if (sec_param in ["wscript", "debug"]):
+            data_str = utils.safe_str_convert(params[0]).replace("\x00", "")
+            context.report_action("Debug Print", data_str, '')
+            return
+        
         # 1st arg should be file ID.
         fileid = "#" + utils.safe_str_convert(params[0])
 
@@ -6156,7 +6205,7 @@ class Print(VbaLibraryFunc):
         # Sanity check.
         if (params is None):
             return
-
+                
         # Print #NN to a file ID?
         if (len(params) == 2):
             self._handle_file_print(context, params)
@@ -6768,7 +6817,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Arguments, DateDiff, SetRequestHeader, SetOption, SetTimeouts, DefaultFilePath,
                SubFolders, Files, Name, ExcelFormula, Tables, Cell, DecodeURIComponent,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
-               End, __End):
+               End, __End, Keys):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 

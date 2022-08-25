@@ -386,6 +386,32 @@ class MemberAccessExpression(VBA_Object):
         self.gloss = r
         return self.gloss
 
+    def get_modified_object(self):
+        """Return the object on which the method is being called if the method
+        being called can modify the object. Like foo.Add(1,2) on a
+        Scripting.Dictionary.
+
+        @return (VBAObject) The object if the method can modify the
+        object, None if not.
+
+        """
+
+        # Set of methods that can modify an object.
+        mod_methods = [".Add("]
+
+        # Is one of the methods being called?
+        got_method = False
+        self_str = str(self)
+        for method in mod_methods:
+            if (method in self_str):
+                got_method = True
+                break
+        if (not got_method):
+            return None
+
+        # We have a modifying method. Return the object.
+        return self.lhs
+        
     def _to_python_handle_listbox_list(self, context, indent):
         """Convert List() object method calls like foo.List(bar) to Python.
         foo is (currently) a ListBox object.
@@ -495,10 +521,13 @@ class MemberAccessExpression(VBA_Object):
         r = indent_str + to_python(new_add, context)        
         return r
 
-    def _convert_nested_methods_to_func_call(self, context):
+    def _convert_nested_methods_to_func_call(self, context, resolve_vars=True):
         """Given a member access expression like foo(1).bar(2).baz(3) return
         (conceptually) baz(3, bar(2, foo(1))). Note that the objects
         are broken out as function arguments in the calls.
+
+        @param resolve_vars (bollean) Whether to look up variables
+        that appear as parameters in the context or not.
 
         @return (Function_Call object) The member access expression
         calls converted to nested function calls if possible, None if
@@ -578,7 +607,10 @@ class MemberAccessExpression(VBA_Object):
                 if ((context.contains(obj_name)) and (len(obj_stack) == 0)):
 
                     # If this is a synthetic value leave it as a variable.
-                    curr_func = context.get(obj_name)
+                    curr_func = curr_obj
+                    if resolve_vars:
+                        curr_func = context.get(obj_name)
+
                     #print("HERE: 2")
                     #print(curr_func)
                     if (curr_func == "__LOOP_VAR__"):
@@ -630,7 +662,7 @@ class MemberAccessExpression(VBA_Object):
         indent = indent # pylint warning
         
         # Return the nested function calls as Python.
-        res_func = self._convert_nested_methods_to_func_call(context)
+        res_func = self._convert_nested_methods_to_func_call(context, resolve_vars=False)
         if (res_func is None):
             return None
         r = to_python(res_func, context)
@@ -715,12 +747,20 @@ class MemberAccessExpression(VBA_Object):
             return add_code
 
         # Convert nested method calls to regular function calls for supported
-        # VB methods.
-        add_code = self._to_python_nested_methods(context, indent)
-        if (add_code is not None):
-            #print("OUT: 3")
-            #print(add_code)
-            return add_code
+        # VB methods. Don't do this for some methods called on objects.
+        skip_list = [".Echo", "Debug.Print"]
+        exp_str = str(self)
+        do_nest = True
+        for skip_func in skip_list:
+            if (skip_func in exp_str):
+                do_nest = False
+                break
+        if do_nest:
+            add_code = self._to_python_nested_methods(context, indent)
+            if (add_code is not None):
+                #print("OUT: 3")
+                #print(add_code)
+                return add_code
         
         # For now just pick off the last item in the expression.
         if (len(self.rhs) > 0):
@@ -1548,6 +1588,8 @@ class MemberAccessExpression(VBA_Object):
         """
 
         # Get the LHS as a dict if possible.
+        #print("_handle_add")
+        #print(self)
         if (isinstance(lhs, str) and
             lhs.startswith("{") and
             lhs.endswith("}")):
@@ -2683,13 +2725,13 @@ class MemberAccessExpression(VBA_Object):
         # TODO: It would be cleaner to funnel these special purpose things
         # through here, that is, implement all that stuff as emulated funcs
         # in vba library.
-        skip_list = [".SaveToFile"]
+        skip_list = [".SaveToFile", ".Add"]
         exp_str = str(self)
         for skip_func in skip_list:
             if (skip_func in exp_str):
                 #print("NO!! 0")
                 return None
-        
+            
         # Convert this to nested function calls
         res_func = self._convert_nested_methods_to_func_call(context)
         if (res_func is None):

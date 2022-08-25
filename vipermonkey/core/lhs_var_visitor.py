@@ -61,11 +61,19 @@ class lhs_var_visitor(visitor):
         if (safe_str_convert(item) in self.visited):
             return False
         self.visited.add(safe_str_convert(item))
+
+        # Regular assignment?
         if ("Let_Statement" in safe_str_convert(type(item))):
             if (isinstance(item.name, str)):
                 self.variables.add(item.name)
             elif (isinstance(item.name, pyparsing.ParseResults) and
                   (item.name[0].lower().replace("$", "").replace("#", "").replace("%", "") == "mid")):
                 self.variables.add(safe_str_convert(item.name[1]))
+
+        # Member access expresion that can modify an object?
+        if hasattr(item, "get_modified_object"):
+            obj = item.get_modified_object()
+            if ("SimpleNameExpression" in safe_str_convert(type(obj))):
+                self.variables.add(safe_str_convert(obj))
 
         return True

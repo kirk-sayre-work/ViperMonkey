@@ -114,6 +114,17 @@ class VbaLibraryFunc(object):
         log.warning("Using default return type of 'INTEGER' for " + safe_str_convert(type(self)))
         return "INTEGER"
 
+    def modified_params(self):
+        """Get the indices of any parameters whose value will be modified by
+        calls to this function.
+
+        @return (list) The indices of parameters whose values will/may
+        be modified.
+
+        """
+        log.warning("Using default modified parameter indices [] for " + safe_str_convert(type(self)))
+        return []
+
 def limits_exceeded(throw_error=False):
     """Check to see if we are about to exceed the maximum recursion
     depth. Also check to see if emulation is taking too long (if
