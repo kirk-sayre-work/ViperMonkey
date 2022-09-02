@@ -613,8 +613,16 @@ class MemberAccessExpression(VBA_Object):
 
                     #print("HERE: 2")
                     #print(curr_func)
+                    #print(type(curr_func))
+
+                    # Handle variables that have been hidden by the Python JIT process.
                     if (curr_func == "__LOOP_VAR__"):
                         curr_func = curr_obj
+
+                    # Punt if the last stack item is a local function call.
+                    if isinstance(curr_func, (procedures.Function, procedures.Sub)):
+                        #print("BOO: 1.5")
+                        return None
                 else:
                     #print("BOO: 2")
                     #print(obj_name)

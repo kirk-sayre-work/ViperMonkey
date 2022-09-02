@@ -4558,7 +4558,21 @@ class CallByName(VbaLibraryFunc):
             # Close the file.
             closer = Close()
             closer.eval(context, [args])
-            
+
+        # Reading a document property?
+        if (cmd.lower() == "BuiltInDocumentProperties".lower()):
+
+            # Get the property we are looking for.
+            prop = utils.safe_str_convert(args)
+            r = context.read_metadata_item(prop)
+            if (r == ""):
+                r = "NULL"
+            return r
+
+        # Getting name of current Office file?
+        if (cmd.lower() == "FullName".lower()):
+            return "C:\\CURRENT_FILE_NAME.docm"
+        
         # Do nothing.
         return None
 
