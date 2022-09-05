@@ -238,6 +238,12 @@ class SimpleNameExpression(VBA_Object):
         
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug('try eval variable/function %r' % self.name)
+
+        # Simple case. Is this just a RegExp object creation?
+        if (safe_str_convert(self).lower() == "regexp"):
+            return "RegExp"
+
+        # Harder case. See if this is a known function or variable.
         try:
             value = context.get(self.name)
             if (log.getEffectiveLevel() == logging.DEBUG):
@@ -2334,6 +2340,9 @@ class MemberAccessExpression(VBA_Object):
         """
 
         # Is this dealing with a RegEx object?
+        #print("START: _handle_regex_test()")
+        #print(self)
+        #print(safe_str_convert(tmp_lhs).lower())
         if (not safe_str_convert(tmp_lhs).lower().endswith("regexp")):
             return None
 

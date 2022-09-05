@@ -956,7 +956,7 @@ def eval_arg(arg, context, treat_as_var_name=False):
 
         # Handle as a regular VBA object.
         if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("eval_arg: eval as VBA_Object %s" % arg)
+            log.debug("eval_arg: eval as VBA_Object %s (%s)" % (arg, type(arg)))
         r = arg.eval(context=context)
         
         # Is this a Shapes() access that still needs to be handled?
