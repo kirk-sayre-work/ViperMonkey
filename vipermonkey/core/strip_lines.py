@@ -2396,7 +2396,25 @@ def delete_bracket_constructs(vba_code):
 
     # Done.
     return vba_code
-        
+
+def _remove_empty_multistatement_lines(vba_code):
+    """Strip empty multi-statement lines like "::" from the VB.
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+
+    """
+
+    # Do we have bogus empty multi-statement lines?
+    pat = r"\r?\n(?::\s*)+\r?\n"
+    if (re2.search(pat, vba_code) is None):
+        return vba_code
+
+    # We have them, just delete.
+    r = re.sub(pat, "", vba_code)
+    return r
+    
 def fix_vba_code(vba_code):
     """Fix up some substrings that ViperMonkey has problems parsing.
 
@@ -2431,6 +2449,12 @@ def fix_vba_code(vba_code):
         print("FIX_VBA_CODE: 2")
         print(vba_code)
     vba_code = vba_code.replace("End SubPrivate", "End Sub\nPrivate")
+
+    # Strip empty multi-statement lines like "::" from the VB.
+    if debug_strip:
+        print("FIX_VBA_CODE: 2.1")
+        print(vba_code)
+    vba_code = _remove_empty_multistatement_lines(vba_code)
 
     # No null bytes in VB to process.
     if debug_strip:
