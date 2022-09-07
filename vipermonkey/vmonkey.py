@@ -1039,14 +1039,17 @@ def _process_file (filename,
         # IOCs.
         if (vba.detect_vba_macros() or display_int_iocs):
 
-            # Read in document metadata.
+            # Read in document metadata with olefile.
             try:
-                log.info("Reading document metadata...")
+                log.info("Reading document metadata with olefile...")
                 ole = olefile.OleFileIO(data)
                 vm.set_metadata(ole.get_metadata())
             except Exception as e:
-                log.warning("Reading in metadata failed. Trying fallback. " + safe_str_convert(e))
-                vm.set_metadata(get_metadata_exif(orig_filename))
+                log.warning("Reading in metadata with olefile failed. " + safe_str_convert(e))
+
+            # Read in document metadata with exiftool.
+            log.info("Reading document metadata with exiftool...")
+            vm.set_metadata(get_metadata_exif(orig_filename))
 
             # If this is an Excel spreadsheet, read it in.
             vm.loaded_excel = excel.load_excel(data)

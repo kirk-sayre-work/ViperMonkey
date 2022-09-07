@@ -6661,13 +6661,15 @@ class WriteProcessMemory(VbaLibraryFunc):
             return
         from core import vba_context
         vba_context.add_shellcode_data(params[1], params[2], params[3])
-        
+
+guessed_file_count = 0
 class Write(VbaLibraryFunc):
     """Emulate Write() method.
 
     """
 
     def eval(self, context, params=None):
+        global guessed_file_count
         if ((params is None) or (len(params) < 1)):
             return
 
@@ -6686,6 +6688,7 @@ class Write(VbaLibraryFunc):
             log.error("Cannot process Write(). No open files.")
             return
         files = list(context.open_files.keys())
+        guessed_file = False
         if len(files) > 1:
             # Skip ADODB.Stream when guessing what file to write to.
             tmp_files = []
@@ -6695,8 +6698,12 @@ class Write(VbaLibraryFunc):
                 tmp_files.append(f)
             files = tmp_files
             if len(files) > 1:
-                log.error("Cannot process Write(). Too many open files.")
-                return
+                tmp_fname = "guessed_file" + str(guessed_file_count) + ".dat"
+                guessed_file_count += 1
+                log.warning("Too many open files to guess file for Write(). Writing to synthetic file " + tmp_fname)
+                context.open_file(tmp_fname, "")
+                guessed_file = True
+                files = [tmp_fname]
 
         # Simulate the write.
 
@@ -6704,7 +6711,12 @@ class Write(VbaLibraryFunc):
         file_id = files[0]
         log.info("Writing data to " + utils.safe_str_convert(file_id) + " .")
 
+        # Write the data.
         context.write_file(file_id, data)
+
+        # Close the file if we just guessed at a file name.
+        if guessed_file:
+            context.close_file(file_id)
 
 class DefaultFilePath(VbaLibraryFunc):
     """Emulate Options.DefaultFilePath() property. Stubbed.
