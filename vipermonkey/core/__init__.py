@@ -384,13 +384,23 @@ class ViperMonkey(StubbedEngine):
 
         """
         
-        # Handle meta information represented as a dict.
-        new_dat = dat
-        if (isinstance(dat, dict)):
-            new_dat = FakeMeta()
-            for field in list(dat.keys()):
-                setattr(new_dat, safe_str_convert(field), dat[field])
-                setattr(new_dat, safe_str_convert(field).lower(), dat[field])
+        # Handle updating existing metadata.
+        new_dat = FakeMeta()
+        if (self.metadata is not None):
+            new_dat = self.metadata
+
+        # Handle meta information represented as a dict or object.
+        if (not isinstance(dat, dict)):
+            dat = dat.__dict__
+        for field in list(dat.keys()):
+            fname = safe_str_convert(field)
+            if (not hasattr(new_dat, fname)):
+                setattr(new_dat, fname, dat[field])
+            fname = fname.lower()
+            if (not hasattr(new_dat, fname)):
+                setattr(new_dat, fname, dat[field])
+
+        # Done setting metadata.
         self.metadata = new_dat
         
     def add_compiled_module(self, m, stream):
