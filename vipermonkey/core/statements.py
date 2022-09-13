@@ -1836,6 +1836,10 @@ prop_assign_statement.setParseAction(Prop_Assign_Statement)
 
 # --- FOR statement -----------------------------------------------------------
 
+# Counter of num loops generated for making unique synthetic loop
+# variables.
+num_loops_generated = 0
+
 class For_Statement(VBA_Object):
     """A For loop statement.
 
@@ -1993,6 +1997,11 @@ class For_Statement(VBA_Object):
         implemented as Python code.
         """
 
+        # Counter of num loops generated for making unique synthetic loop
+        # variables.
+        global num_loops_generated
+        num_loops_generated += 1
+        
         # Get the loop variable.
         loop_var = safe_str_convert(self.name)
 
@@ -2008,16 +2017,27 @@ class For_Statement(VBA_Object):
         # Get the start index, end index, and step of the loop.
         start, end, step = self._get_loop_indices_python(context)
 
+        # Set up doing this for loop in Python.
+        loop_start = indent_str + "exit_all_loops = False\n"
+        loop_start += indent_str + loop_var + " = coerce_to_num(" + safe_str_convert(start) + ")\n"
+
+        # VB for loops evaluate the loop end value and step once at
+        # the loop start. Handle that in the python code with
+        # synthetic variables computing the loop start and end value
+        # before the python loop.
+        end_var = "_LOOP_END_" + str(num_loops_generated)
+        step_var = "_LOOP_STEP_" + str(num_loops_generated)
+        loop_start += indent_str + step_var + " = coerce_to_int(" + safe_str_convert(step) + ")\n"
+        loop_start += indent_str + end_var + " = coerce_to_int(" + safe_str_convert(end) + ")\n"
+        
         # If we have an empty loop body we can punt and skip the loop.
         if (len(self.statements) == 0):
             r = indent_str + loop_var + " = " + safe_str_convert(end) + "\n"
             return r
         
-        # Set up doing this for loop in Python.
-        loop_start = indent_str + "exit_all_loops = False\n"
-        loop_start += indent_str + loop_var + " = coerce_to_num(" + safe_str_convert(start) + ")\n"
-        loop_start += indent_str + "while (((" + loop_var + " <= coerce_to_int(" + safe_str_convert(end) + ")) and (" + safe_str_convert(step) + " > 0)) or " + \
-                      "((" + loop_var + " >= coerce_to_int(" + safe_str_convert(end) + ")) and (" + safe_str_convert(step) + " < 0))):\n"
+        # Generate code for the actual loop.
+        loop_start += indent_str + "while (((" + loop_var + " <= " + end_var + ") and (" + step_var + " > 0)) or " + \
+                      "((" + loop_var + " >= " + end_var + ") and (" + step_var + " < 0))):\n"
         loop_start += indent_str + " " * 4 + "if exit_all_loops:\n"
         loop_start += indent_str + " " * 8 + "break\n"
         loop_start = indent_str + "# Start emulated loop.\n" + loop_start
