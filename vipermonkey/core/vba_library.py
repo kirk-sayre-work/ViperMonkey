@@ -4531,6 +4531,11 @@ class CallByName(VbaLibraryFunc):
         # CallByName(ActiveDocument, 'CustomXMLParts', 2, 'foo')
         if (cmd.lower() == "customxmlparts"):
             r = context.get(utils.safe_str_convert(args))
+            # TODO: Looks like a campaign on 9/13/2022 has a bug. Add an extra hex value to fix
+            # their bug.
+            if (((len(r) % 2) == 0) and (re.search("^[a-fA-F0-9]+$", r.strip()) is not None)):
+                log.warning("Adding 0x00 to end of hex string from CustomXMLParts...")
+                r += "00"
             return r
         if ((cmd.lower() == "selectsinglenode") or (cmd.lower() == "text")):
             r = obj
