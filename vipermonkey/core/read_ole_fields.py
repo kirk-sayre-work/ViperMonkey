@@ -4870,6 +4870,86 @@ def _read_shape_textframe_chars(data, vm):
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))            
 
+def _get_customxml(data):
+    """Read CustomXML values from an Office 2007+ file.
+    
+    @param data (bytes) The read in Office 2007+ file (data).
+
+    @return (dict) A dict mapping the name of the CustomXML element to
+    the 2nd element is the value element.
+
+    """
+
+    # We can only do this with 2007+ files.
+    if (not filetype.is_office2007_file(data, True)):
+        return []
+
+    # Unzip the file contents.
+    unzipped_data, fname = unzip_data(data)
+    delete_file = (fname is not None)
+    if (unzipped_data is None):
+        return []
+
+    # Pull out CustomXML values from XML files in the customXml/ subdirectory.
+    r = {}
+    for zip_subfile in unzipped_data.namelist():
+
+        # CustomXML XML file?
+        if (("customXml" not in zip_subfile) or (not zip_subfile.endswith(".xml"))):
+            continue
+
+        # Read CustomXML XML file.
+        f1 = unzipped_data.open(zip_subfile)
+        contents = f1.read()
+        f1.close()
+        
+        # <custom-xml-content xmlns="ID">...VALUE...<
+        # Find all the CustomXML IDs/Values.
+        pat = br"<custom\-xml\-content +xmlns\=\"([^\"]+)\" *>([^<]+)<"
+        if (re.search(pat, contents) is None):
+            continue
+        vals = re.findall(pat, contents)
+            
+        # Map IDs to values.
+        for val in vals:
+            r[safe_str_convert(val[0])] = safe_str_convert(val[1])
+
+    # Delete the temporary Office file.
+    if (delete_file):
+        # Need to close the zipfile first, otherwise os.remove fails on Windows
+        unzipped_data.close()
+        os.remove(fname)
+        
+    # Done.
+    return r
+            
+def _read_shape_customxml(data, vm):
+    """Read and save CustomXML strings from Office 2007+ files.
+
+    @param data (bytes) The read in Office file data. Can be None if data
+    should be read from a file (orig_fname).
+
+    @param vm (ViperMonkey object) The ViperMonkey emulation engine
+    object that will do the emulation. The read values will be saved
+    in the given emulation engine.
+
+    """
+
+    # Pull out document variables.
+    log.info("Reading CustomXML...")
+    info = _get_customxml(data)
+    if (info is None):
+        return
+    for cid in info:
+        var_val = info[cid]
+        var_name = cid
+        vm.doc_vars[var_name] = var_val
+        if (log.getEffectiveLevel() == logging.DEBUG):
+            log.debug("Added potential CustomXML VBA doc variable %r = %r to doc_vars." % (var_name, var_val))
+        vm.doc_vars[var_name.lower()] = var_val
+        if (log.getEffectiveLevel() == logging.DEBUG):
+            log.debug("Added potential CustomXML VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))
+            
 def _read_simple_forms(data, vm):
     """Read in and save the tags and captions of forms represented in an
     Office 97 file in a simple ASCII format.
@@ -5009,6 +5089,9 @@ def read_payload_hiding_places(data, orig_filename, vm, vba_code, vba):
 
     # Read in Shapes TextFrame.Characters strings.
     _read_shape_textframe_chars(data, vm)
+
+    # Read in CustomXML strings.
+    _read_shape_customxml(data, vm)
     
 ###########################################################################
 ## Main Program

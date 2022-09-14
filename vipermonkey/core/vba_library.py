@@ -4528,6 +4528,15 @@ class CallByName(VbaLibraryFunc):
             if (len(params) > 4):
                 run_cmd = utils.safe_str_convert(params[3]) + " " + utils.safe_str_convert(params[4])
                 context.report_action('Execute Command', run_cmd, 'Shell function', strip_null_bytes=True)
+        # CallByName(ActiveDocument, 'CustomXMLParts', 2, 'foo')
+        if (cmd.lower() == "customxmlparts"):
+            r = context.get(utils.safe_str_convert(args))
+            return r
+        if ((cmd.lower() == "selectsinglenode") or (cmd.lower() == "text")):
+            r = obj
+            if context.contains(obj):
+                r = context.get(obj)
+            return r
             
         # Are we using this to read text from a GUI element?
         if ((cmd == "Tag") or (cmd == "Text")):

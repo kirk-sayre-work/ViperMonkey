@@ -1,5 +1,6 @@
-"""@package vipermonkey.core.strip_lines Strip useles lines from
-Visual Basic code and rewrite difficult to parse code chunks.
+"""@package vipermonkey.core.strip_lines 
+Strip useles lines from Visual Basic code and rewrite difficult to
+parse code chunks.
 
 """
 
