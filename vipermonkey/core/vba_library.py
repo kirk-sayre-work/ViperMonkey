@@ -3115,8 +3115,8 @@ class RegRead(VbaLibraryFunc):
         if (key == 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment\\PROCESSOR_ARCHITECTURE'):
             return "x86"
 
-        # Not faked.
-        return ""
+        # Not faked. Roll the dice and see what happens...
+        return "**MATCH ANY**"
     
 class Join(VbaLibraryFunc):
     """Emulate Join() string function.

@@ -1838,13 +1838,16 @@ class Context(object):
             log.debug("Found doc var " + var + " = " + safe_str_convert(r))
         return r
 
-    def save_intermediate_iocs(self, value):
+    def save_intermediate_iocs(self, value, reverse=True):
         """Save extracted IOCs from variable values that appear to contain
         base64 encoded or URL IOCs. Base64 and URL substrings are
         extracted from the given value and saved in the context as
         intermediate IOCs.
 
         @param value (str) The value to check for intermediate IOCs.
+
+        @param reverse (boolean) Whether to also try reversing the
+        given data and checking for intermediate IOCs.
 
         """
 
@@ -1853,7 +1856,7 @@ class Context(object):
         # The given value may be a list. Process each item.
         if (isinstance(value, list)):
             for v in value:
-                self.save_intermediate_iocs(v)
+                self.save_intermediate_iocs(v, reverse=reverse)
             return
         
         # Strip NULLs and unprintable characters from the potential IOC.
@@ -1862,11 +1865,15 @@ class Context(object):
             value = value.replace("NULL", "")
         # ` is not interesting for b64 or URLs.
         value = value.replace("`", "")
-            
+        
         # If the value is too short or it is an integer we are not interested in it.
         if ((len(value) < 10) or (value.isdigit())):
             return
-            
+
+        # Check for intermediate IOCs in the reverse of the string if needed.
+        if reverse:
+            self.save_intermediate_iocs(value[::-1], reverse=False)
+        
         # Is there a URL in the data?
         pulled_iocs = set()
         got_ioc = False
