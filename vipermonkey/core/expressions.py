@@ -568,7 +568,7 @@ class MemberAccessExpression(VBA_Object):
         # a corresponding emulation function in ViperMonkey.
         #print("OBJ")
         #print(obj_stack)
-        unneeded_vars = set(["ActiveWorkbook".lower()])
+        unneeded_vars = set(["ActiveWorkbook".lower(), "ActiveDocument".lower()])
         prev_func = None
         curr_func = None
         res_func = None
@@ -578,6 +578,7 @@ class MemberAccessExpression(VBA_Object):
             curr_obj = obj_stack.pop()
             #print("CURR OBJ")
             #print(curr_obj)
+            #print(type(curr_obj))
             obj_name = None
             curr_func = curr_obj
             if isinstance(curr_obj, SimpleNameExpression):

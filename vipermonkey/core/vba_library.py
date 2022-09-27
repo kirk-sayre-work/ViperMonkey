@@ -4491,12 +4491,56 @@ class CVErr(VbaLibraryFunc):
             return vals[err]
         return ""
 
+class Text(VbaLibraryFunc):
+    """Emulate getting the .Text field of an object as a synthetic function.
+
+    """
+
+    def eval(self, context, params=None):
+
+        # Sanity check.
+        if ((params is None) or (len(params) == 0)):
+            return "NULL"
+
+        # Assume whatever this is called in is already text.
+        return utils.safe_str_convert(params[-1])
+
+class SelectSingleNode(Text):
+    """Fake SelectSingleNode() emulation that just returns whatever text
+    it is given.
+
+    """
+    pass
+    
+class CustomXMLParts(VbaLibraryFunc):
+    """Emulate ActiveDocument.CustomXMLParts() method.
+
+    """
+
+    def eval(self, context, params=None):
+
+        # Sanity check.
+        if ((params is None) or (len(params) == 0)):
+            return "NULL"
+
+        # Read the custom XML saved as a doc var in the context.
+        xml_id = utils.safe_str_convert(params[0])
+        r = context.get(xml_id)
+        # TODO: Looks like a campaign on 9/13/2022 has a bug. Add an extra hex value to fix
+        # their bug.
+        if (((len(r) % 2) == 0) and (re.search("^[a-fA-F0-9]+$", r.strip()) is not None)):
+            log.warning("Adding 0x00 to end of hex string from CustomXMLParts...")
+            r += "00"
+        return r
+    
 class CallByName(VbaLibraryFunc):
     """Emulate CallByName() function.
 
     """
 
     def eval(self, context, params=None):
+
+        # Sanity check.
         if ((params is None) or (len(params) < 3)):
             return "NULL"
 
@@ -6857,7 +6901,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Arguments, DateDiff, SetRequestHeader, SetOption, SetTimeouts, DefaultFilePath,
                SubFolders, Files, Name, ExcelFormula, Tables, Cell, DecodeURIComponent,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
-               End, __End, Keys):
+               End, __End, Keys, CustomXMLParts, Text, SelectSingleNode):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
