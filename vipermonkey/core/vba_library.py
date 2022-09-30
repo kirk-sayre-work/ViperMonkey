@@ -5086,23 +5086,29 @@ class ExecQuery(VbaLibraryFunc):
         context.report_action("Execute Query", cmd, 'Query', strip_null_bytes=True)
 
         # Special handling on ping query.
-        if (cmd.lower().startswith("SELECT * FROM Win32_PingStatus WHERE Address='".lower())):
+        if (cmd.lower().startswith("SELECT * FROM Win32_PingStatus WHERE Address".lower())):
 
             # Kind of save that there is an "ip address" result.
-            start = cmd.index("'") + 1
-            end = cmd.rindex("'")
-            domain = cmd[start:end]
+
+            # Was a specific domain given in the ping query?
+            domain = "UNKNOWN_PING_QUERY_DOMAIN"
+            if ("'" in cmd):
+                start = cmd.index("'") + 1
+                end = cmd.rindex("'")
+                domain = cmd[start:end]
             context.report_action("Ping", "Pinging '" + domain + "'", 'Interesting Command Execution', strip_null_bytes=True)
             context.set(".ProtocolAddress", "_IP_ADDR_OF(" + domain + ")", force_global=True)
 
             # Return some fake results.
-            return [{"statuscode" : 0,
-                     "properties_" : {"item" : {"protocoladdress": "_IP_ADDR_OF(" + domain + ")"}},
-                     "properties" : {"item" : {"protocoladdress": "_IP_ADDR_OF(" + domain + ")"}}},
-                    {"statuscode" : 1,
-                     "properties_" : {"item" : {"protocoladdress": "_IP_ADDR_OF(" + domain + ")"}},
-                     "properties" : {"item" : {"protocoladdress": "_IP_ADDR_OF(" + domain + ")"}}},]
-
+            r =  [{"statuscode" : 0,
+                   "protocoladdress": "_IP_ADDR_OF(" + domain + ")",
+                   "properties_" : {"item" : {"protocoladdress": "_IP_ADDR_OF(" + domain + ")"}},
+                   "properties" : {"item" : {"protocoladdress": "_IP_ADDR_OF(" + domain + ")"}}},
+                  {"statuscode" : 1,
+                   "protocoladdress": "_IP_ADDR_OF(" + domain + ")",
+                   "properties_" : {"item" : {"protocoladdress": "_IP_ADDR_OF(" + domain + ")"}},
+                   "properties" : {"item" : {"protocoladdress": "_IP_ADDR_OF(" + domain + ")"}}},]
+            return r
             
         # Return some data for some queries.
         if (cmd.lower() == "select * from win32_process"):
