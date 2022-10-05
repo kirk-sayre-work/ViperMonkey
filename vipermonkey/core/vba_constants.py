@@ -6316,6 +6316,9 @@ class VbaConstants(object):
         self.globals["ActiveDocument.Scripts.Count".lower()] = 0
         self.globals["ThisDocument.Scripts.Count".lower()] = 0
 
+        self.globals["ActiveSheet.PageSetup.LeftFooter".lower()] = " "
+        self.globals["ActiveSheet.PageSetup.RightFooter".lower()] = " "
+        
         self.globals["ActiveDocument.FullName".lower()] = "C:\\CURRENT_FILE_NAME.docm"
         self.globals["ThisDocument.FullName".lower()] = "C:\\CURRENT_FILE_NAME.docm"
         self.globals["ActiveDocument.Name".lower()] = "CURRENT_FILE_NAME.docm"
