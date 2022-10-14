@@ -125,7 +125,7 @@ def vba_collapse_long_lines(vba_code):
 
     """
     # make sure the last line ends with a newline char, otherwise the parser breaks:
-    if (vba_code is None):
+    if ((vba_code is None) or (len(vba_code) == 0)):
         return ""
     if vba_code[-1] != '\n':
         vba_code += '\n'
