@@ -3102,29 +3102,59 @@ def get_shapes_text_values_direct_2007(data):
 
     """
 
-    # TODO: This only handles a single Shapes object.
-    
-    # Get the name of the Shape element.
-    pat1 = br'<v:shape\s+id="(\w+)".+<w:txbxContent>'
-    name = re.findall(pat1, data)
-    if (len(name) == 0):
-        return []
-    name = name[0]
-
-    # Get the text value(s) for the Shape.
-    pat2 = br'<w:t[^<]*>([^<]+)</w:t[^<]*>'
-    vals = re.findall(pat2, data)
-    if (len(vals) == 0):
+    # Get the name(s) of the Shape element(s).
+    pat1 = br'<v:shape\s+(?:w\d{1,100}:anchorId="\w+"\s+)?id="([\w\s]+)"[^>]+>'
+    names = re.findall(pat1, data, re.DOTALL)
+    if (len(names) == 0):
         return []
 
-    # Reassemble the values.
-    val = b""
-    for v in vals:
-        val += v
-    val = _clean_2007_text(val)
+    # Ugh. Proof errors throw off line feeds in the text. Mark all the
+    # text in the proof error components as having no new line.
+    #
+    # <w:proofErr w:type="gramStart"/>
+    # <w:r w:rsidRPr="0042231A">
+    #   <w:rPr>
+    #     <w:color w:val="FFFFFF" w:themeColor="background1"/>
+    #     <w:sz w:val="20"/>
+    #   </w:rPr>
+    #   <w:t>system.byte</w:t>
+    # </w:r>
+    # <w:proofErr w:type="gramEnd"/>
+    proof_pat = br'(<w:proofErr w:type="gramStart"/><w:r w:rsidRPr="[^"]+?"><w:rPr><w:color w:val="[^"]+?" w:themeColor="[^"]+?"/><w:sz w:val="[^"]+?"/></w:rPr><w:t>)([^<]+?)(</w:t></w:r>)'
+    data = re.sub(proof_pat, br"\1\2NO_NEW_LINE\3", data)
     
-    # Return the Shape name and text value.
-    r = [(name, val)]
+    # Pull out the text for each shape.
+    r = []
+    for name in names:
+
+        # Pull out the XML for this shape.
+        xml_pat = br'<v:shape\s+(?:w\d{1,100}:anchorId="\w+"\s+)?id="' + name + b'"[^>]+>.+?</v:shape>'
+        xml_data = re.findall(xml_pat, data, re.DOTALL)
+        if (len(xml_data) == 0):
+            continue
+        xml_data = xml_data[0]
+        
+        # Get the text value(s) for the Shape.
+        pat2 = br'<w:t[^>]*?>([^<]+?)</w:t[^<]*?>'
+        vals = re.findall(pat2, xml_data)
+        if (len(vals) == 0):
+            return []
+
+        # Reassemble the values.
+        val = b""
+        for v in vals:
+            if v.endswith(b"NO_NEW_LINE"):
+                v = v.replace(b"NO_NEW_LINE", b"")
+                val = val[:-1]
+            else:
+                v += b"\n"
+            val += v
+        val = _clean_2007_text(val)
+    
+        # Save the Shape name and text value.
+        r.append((name, val))
+
+    # Done.
     return _make_elems_str(r)
 
 def get_shapes_text_values_direct_2007_1(data):
@@ -4578,7 +4608,10 @@ def _read_payload_textbox_text(data, vba_code, vm):
     object_data.extend(tmp_data)
     tmp_data = get_variable_values(data, vba_code)
     object_data.extend(tmp_data)
+    bad_var_names = set(["ps1", "vbs"])
     for (var_name, var_val) in object_data:
+        if (var_name.lower() in bad_var_names):
+            continue
         var_name = safe_str_convert(var_name)
         var_val = safe_str_convert(var_val)
         var_name_variants = [var_name,
@@ -4731,6 +4764,12 @@ def _read_payload_shape_text(data, vm):
         vm.doc_vars["activedocument."+var_name+".caption"] = var_val
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("activedocument."+var_name+".caption", var_val))
+        vm.doc_vars["activedocument.shapes.range(['"+var_name+"'])"] = var_val
+        if (log.getEffectiveLevel() == logging.DEBUG):
+            log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("activedocument.shapes.range(['"+var_name+"'])", var_val))
+        vm.doc_vars["activedocument.shapes.range(array(\""+var_name+"\"))"] = var_val
+        if (log.getEffectiveLevel() == logging.DEBUG):
+            log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("activedocument.shapes.range(array(\""+var_name+"\"))", var_val))
         tmp_name = "shapes('" + var_name + "').textframe.textrange.text"
         vm.doc_vars[tmp_name] = var_val
         if (log.getEffectiveLevel() == logging.DEBUG):

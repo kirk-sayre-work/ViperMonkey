@@ -4739,35 +4739,36 @@ class WriteLine(VbaLibraryFunc):
             return
 
         # Get the data.
-
         data = params[0]
         if (len(params) == 3):
             data = params[2]
-        
+
+        # Get the name of the file being written.
+        file_id = None
+        if (len(params) == 2):
+            file_id = utils.safe_str_convert(params[1])
+        elif (len(context.open_files) > 1):
+            log.warning("More than 1 file is open. Writing to an arbitrary file.")
+            file_id = context.get_interesting_fileid()
+            log.warning("Writing to '" + utils.safe_str_convert(file_id) + "' .")
+        else:        
+            # Get the ID of the 1 open file.
+            file_id = list(context.open_files.keys())[0]
+            
+        # Do we have any open files?
+        if ((context.open_files is None) or (len(context.open_files) == 0)):
+            log.error("Cannot process WriteLine(). No open files.")
+            return
+            
         # Save writes that look like they are writing URLs.
         data_str = utils.safe_str_convert(data)
         if (("http:" in data_str) or ("https:" in data_str)):
             urls = utils.safe_str_convert(re.findall(URL_REGEX, data_str))
             context.report_action('Write URL', urls, 'File Write')
-        
-        # TODO: Currently the object on which WriteLine() is being called is not
-        # being tracked. We will only handle the WriteLine() if there is only 1
-        # current open file.
-        if ((context.open_files is None) or (len(context.open_files) == 0)):
-            log.error("Cannot process WriteLine(). No open files.")
-            return
-        file_id = None
-        if (len(context.open_files) > 1):
-            log.warning("More than 1 file is open. Writing to an arbitrary file.")
-            file_id = context.get_interesting_fileid()
-            log.warning("Writing to '" + utils.safe_str_convert(file_id) + "' .")
-        else:        
-
-            # Get the ID of the file.
-            file_id = list(context.open_files.keys())[0]
-        
+                
         # TODO: Handle writing at a given file position.
 
+        # Actually simulate the file write.
         context.write_file(file_id, data)
         context.write_file(file_id, '\n')
         return "NULL"
@@ -6429,10 +6430,13 @@ class CreateTextFile(VbaLibraryFunc):
             return "NULL"
 
         # Get the name of the file being opened.
-        try:
-            fname = context.get(params[0])
-        except KeyError:
-            fname = utils.safe_str_convert(params[0])
+        fname = utils.safe_str_convert(params[0])
+        # Obvious path/file name?
+        if ((":" not in fname) and ("\\" not in fname)):
+            try:
+                fname = context.get(params[0])
+            except KeyError:
+                pass
         if (fname is None):
             return "NULL"
         

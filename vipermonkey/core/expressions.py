@@ -3197,7 +3197,8 @@ class MemberAccessExpression(VBA_Object):
         return word_list[index]
 
     def _handle_range_text_read(self, context):
-        """Handle .Range.Text field references of a paragraph object.
+        """Handle .Range.Text field references of a paragraph object. Also
+        handle .Range().Select of text from shapes.
 
         @param context (Context object) Current emulation context.
 
@@ -3205,19 +3206,46 @@ class MemberAccessExpression(VBA_Object):
 
         """
 
-        # Is this a .Range.Text reference?
-        if (not str(self).strip().endswith(".Range.Text")):
+        # Is this a .Range.Text reference? Or a shape .Range().Select?
+        is_shape = False
+        is_para = False
+        self_str = str(self).strip()
+        if (self_str.endswith(".Range.Text")):
+            is_para = True
+        if ((self_str.endswith(".Select")) and
+            (".Shapes.Range(" in self_str)):
+            is_shape = True
+        if ((not is_shape) and (not is_para)):
             return None
 
-        # We are referencing the .Range.Text field. Is the "object"
-        # value a string (that's how a paragraph is being represented)?
-        par_val = eval_arg(self.lhs, context)
-        if (isinstance(par_val, str) and (par_val != "NULL")):
-            return par_val + "\n"
+        # Handle paragraphs.
+        if is_para:
 
-        # The "object" value is not a string, so probably not a
-        # paragraph object.
-        return None
+            # We are referencing the .Range.Text field. Is the "object"
+            # value a string (that's how a paragraph is being represented)?
+            par_val = eval_arg(self.lhs, context)
+            if (isinstance(par_val, str) and (par_val != "NULL")):
+                return par_val + "\n"
+
+            # The "object" value is not a string, so probably not a
+            # paragraph object.
+            return None
+
+        # Handle shapes.
+
+        # Get the "variable" to look up the referenced text.
+        shape_var = self_str.lower().replace(".select", "")
+        r = None
+        if (context.contains(shape_var)):
+
+            # Grab the text.
+            r = context.get(shape_var)
+
+            # Save that this is the current "selected" text.
+            context.set("Selection.Text", r, force_global=True)
+
+        # Done.
+        return r
             
     def _handle_excel_get_sheet_name(self, context):
         """Handle calls like Sheets.Item(3).Name for getting a sheet name.
@@ -3280,7 +3308,8 @@ class MemberAccessExpression(VBA_Object):
         if (r is not None):
             return r
 
-        # Reading the text of a paragraph?
+        # Reading the text of a paragraph? Or a range selection on the
+        # text of a shape?
         #print("HERE: .51")
         r = self._handle_range_text_read(context)
         if (r is not None):
