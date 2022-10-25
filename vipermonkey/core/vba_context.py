@@ -2165,7 +2165,6 @@ class Context(object):
             suffix = name[name.rindex("."):].strip().lower()
             fields = set([".caption", ".tag", ".text", ".name", ".alternativetext", ".controltiptext"])
             if (suffix in fields):
-                log.warning("Saving " + name + " as a global variable.")
                 force_global = True
         
         # Save IOCs from intermediate values if needed.
@@ -2300,16 +2299,20 @@ class Context(object):
         if ((name.lower().endswith(".nodetypedvalue")) or (name.lower().endswith(".text"))):
 
             # Figure out in which field to put the decoded value.
+            #print("NAME!!!")
+            #print(name)
             decode_field = ".Text"
             if (name.lower().endswith(".text")):
                 decode_field = ".NodeTypedValue"
                 
             # Handle doing conversions on the data.
             node_type = name[:name.rindex(".")] + ".datatype"
+            #print(node_type)
             try:
 
                 # Something set to type "bin.hex"?
                 val = safe_str_convert(self.get(node_type)).strip()
+                #print(val)
                 conv_val = None
                 if (val.lower() == "bin.hex"):
 
@@ -2325,15 +2328,27 @@ class Context(object):
 
                 # Base64 conversion?
                 elif (val.lower() == "bin.base64"):
+                    #print("B64!!")
+                    #print(value)
+                    # Try base64 decoding first.
                     conv_val = utils.b64_decode(value)
 
-                # Set the decoded value if we got one.
+                    # If that did not work maybe we are encoding into base64.
+                    if ((name.lower().endswith(".nodetypedvalue")) and (conv_val is None)):
+                        #print("TRY ENCODE!!")
+                        conv_val = utils.b64_encode(value)
+                    #print(conv_val)
+
+                # Set the decoded/encoded value if we got one.
                 if (conv_val is not None):
                     self.set(name, conv_val, no_conversion=True, do_with_prefix=do_with_prefix)
 
                     # Save the decoded value in the decoded value field of the object.
                     text_name = name[:name.rindex(".")] + decode_field
                     self.set(text_name, conv_val, no_conversion=True, do_with_prefix=do_with_prefix)
+                    #print("SET!!!")
+                    #print(text_name)
+                    #print(conv_val)
                     
             except KeyError:
                 if (log.getEffectiveLevel() == logging.DEBUG):

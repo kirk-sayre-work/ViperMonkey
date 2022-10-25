@@ -1951,11 +1951,12 @@ class MemberAccessExpression(VBA_Object):
         context.set(var_name, final_txt, force_global=True)
 
         # Save based on generic ADODB.Stream object.
-        var_name = "ADODB.Stream.ReadText"
-        if (not context.contains(var_name)):
-            context.set(var_name, b"", force_global=True)
-        context.set(var_name, final_txt, force_global=True)
-        #print("VAR NAME: " + var_name)
+        var_names = set(["ADODB.Stream.ReadText", "ADODB.Stream.Read"])
+        for var_name in var_names:
+            if (not context.contains(var_name)):
+                context.set(var_name, b"", force_global=True)
+            context.set(var_name, final_txt, force_global=True)
+            #print("VAR NAME: " + var_name)
         
         # We handled the write.
         return True

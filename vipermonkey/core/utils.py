@@ -374,6 +374,21 @@ def fix_python_overlap(var_name):
         var_name = var_name.replace(".", "")
     return var_name
 
+def b64_encode(value):
+    """Base64 encode a string.
+
+    @param value (str) The string to encode.
+
+    @return (str) On success return the base64 encoded string, on
+    error return None.
+
+    """
+    try:
+        r = safe_str_convert(base64.b64encode(safe_str_convert(value).encode("latin-1")))
+        return r
+    except Exception as e:
+        return None
+
 def b64_decode(value):
     """Base64 decode a string.
 

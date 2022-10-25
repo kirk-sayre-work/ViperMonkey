@@ -4805,6 +4805,13 @@ class WriteText(VbaLibraryFunc):
             context.set(var_name, b"", force_global=True)
         final_txt = utils.safe_str_convert(context.get(var_name)) + utils.safe_str_convert(txt)
         context.set(var_name, final_txt, force_global=True)
+
+        # Also write to ADODB.Stream.Read
+        var_name = "ADODB.Stream.Read"
+        if (not context.contains(var_name)):
+            context.set(var_name, b"", force_global=True)
+        final_txt = utils.safe_str_convert(context.get(var_name)) + utils.safe_str_convert(txt)
+        context.set(var_name, final_txt, force_global=True)
         #print(final_txt)
         
 class CurDir(VbaLibraryFunc):
