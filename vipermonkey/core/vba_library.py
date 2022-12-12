@@ -4738,6 +4738,11 @@ class WriteLine(VbaLibraryFunc):
         if ((params is None) or (len(params) < 1)):
             return
 
+        # Do we have any open files?
+        if ((context.open_files is None) or (len(context.open_files) == 0)):
+            log.error("Cannot process WriteLine(). No open files.")
+            return
+        
         # Get the data.
         data = params[0]
         if (len(params) == 3):
@@ -4754,12 +4759,7 @@ class WriteLine(VbaLibraryFunc):
         else:        
             # Get the ID of the 1 open file.
             file_id = list(context.open_files.keys())[0]
-            
-        # Do we have any open files?
-        if ((context.open_files is None) or (len(context.open_files) == 0)):
-            log.error("Cannot process WriteLine(). No open files.")
-            return
-            
+                        
         # Save writes that look like they are writing URLs.
         data_str = utils.safe_str_convert(data)
         if (("http:" in data_str) or ("https:" in data_str)):

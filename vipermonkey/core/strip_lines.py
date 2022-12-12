@@ -724,7 +724,21 @@ def fix_skipped_1st_arg2(vba_code):
     #print tmp_code
 
     # Fix things like 'a + + b + "ff"' (double pluses).
-    tmp_code = re.sub(plus_pat, '+ "" +', tmp_code)
+    tmp_code = re.sub(plus_pat, '+', tmp_code)
+    tmp_code1 = ""
+    while (tmp_code != tmp_code1):
+        tmp_code1 = tmp_code
+        tmp_code = re.sub(plus_pat, '+', tmp_code)
+
+    # After that there can still be things like 'a = + '' + ...'. Fix those.
+    eq_plus_pat = r"= *\+"
+    tmp_code = re.sub(eq_plus_pat, '= ', tmp_code)
+
+    # After that there can still be things like '* + '' + ...'. Fix those.
+    times_plus_pat = r"\* *\+"
+    tmp_code = re.sub(times_plus_pat, '*', tmp_code)
+    times_plus_pat = r"\+ *\*"
+    tmp_code = re.sub(times_plus_pat, '+ "" *', tmp_code)
     
     # Find all paren exprs and make up replacement names.
     in_paren = False
