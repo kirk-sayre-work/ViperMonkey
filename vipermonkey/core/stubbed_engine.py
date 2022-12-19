@@ -79,11 +79,17 @@ class StubbedEngine(object):
         # Make sure all the action info is a proper string.
         if (isinstance(action, str)):
             action = safe_str_convert(action)
+            # Patch for some string values.
+            action = action.replace(chr(0x90), "u")
         if (isinstance(params, str)):
             params = safe_str_convert(params)
+            # Patch for some string values.
+            params = params.replace(chr(0x90), "u")
         if (isinstance(description, str)):
             description = safe_str_convert(description)
-
+            # Patch for some string values.
+            description = description.replace(chr(0x90), "u")
+            
         # Throttle actions that happen a lot.
         action_tuple = (action, params, description)
         action_str = safe_str_convert(action_tuple)

@@ -516,13 +516,16 @@ def strip_nonvb_chars(s):
     @return (str) The cleaned up string.
 
     """
-
+    
     # Handle unicode strings.
     s = safe_str_convert(s)
 
     # Do we need to do this?
     if (re.search(r"[^\x09-\x7e]", s) is None):
         return s
+
+    # Patch for some string values.
+    s = s.replace(chr(0x90), "u")
     
     # Strip non-ascii printable characters.
     r = re.sub(r"[^\x09-\x7e]", "", s)
