@@ -5891,6 +5891,10 @@ class Range(VbaLibraryFunc):
             if len(params) == 2 and isinstance(params[0], int) and isinstance(params[1], int):
                 return context.globals["activedocument.content.text"][params[0]:params[1]]
 
+            # Might be calling range on a paragraph object.
+            if ((len(params) == 1) and isinstance(params[0], str)):
+               return params[0] 
+            
             # No Range object in Word sample and no loaded Excel file. Bomb out.
             context.increase_general_errors()
             log.warning("Cannot process Range() call. No Excel file loaded.")
