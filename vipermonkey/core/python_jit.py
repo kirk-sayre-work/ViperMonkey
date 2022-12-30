@@ -75,8 +75,9 @@ def _boilerplate_to_python(indent):
 
     """
     indent_str = " " * indent
-    boilerplate = indent_str + "import core.vba_library\n"
-    boilerplate = indent_str + "import core.vba_context\n"
+    boilerplate = indent_str + "import datetime\n"
+    boilerplate += indent_str + "import core.vba_library\n"
+    boilerplate += indent_str + "import core.vba_context\n"
     boilerplate += indent_str + "from core.utils import safe_print\n"
     boilerplate += indent_str + "from core.utils import safe_str_convert\n"
     boilerplate += indent_str + "from core.utils import plus\n"
@@ -598,12 +599,7 @@ def to_python(arg, context, params=None, indent=0, statements=False):
 
     # Some other literal?
     else:
-        arg_str = None
-        try:
-            arg_str = safe_str_convert(arg)
-        except UnicodeEncodeError:
-            arg_str = filter(isprint, arg)
-        r = " " * indent + arg_str
+        r = " " * indent + repr(arg)
 
     #print "--- to_python() ---"
     #print arg

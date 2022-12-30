@@ -45,6 +45,7 @@ import pyparsing
 # (see https://pythonhosted.org/pyparsing/pyparsing.ParserElement-class.html#enablePackrat)
 pyparsing.ParserElement.enablePackrat(cache_size_limit=10000000)
 
+import vipermonkey.core.vba_context as vba_context
 from vipermonkey.core import deobfuscation
 from vipermonkey.core.modules import *
 from vipermonkey.core.modules import Module as _Module
@@ -94,14 +95,11 @@ class SmartDict(dict):
         super(SmartDict, self).__setitem__(key.lower(), value)
 
 
-orig_Context = Context
-
-
 # MonkeyPatch Context with new features useful for a user
 # FIXME: We can't just update the main context with this stuff because we can't get
 #   the VbaLibraryFunc class to import there (which is needed by SmartDict).
 #   This is due the complexities caused by the abundant use of wildcard imports.
-class Context(orig_Context):
+class Context(vba_context.Context):
     """Overwrites ViperMonkey's original context to improve functionality:
 
         - simplify constructor
