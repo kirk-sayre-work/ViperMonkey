@@ -323,7 +323,9 @@ def hide_some_array_accesses(vba_code):
     # Comment out the lines we cannot parse.
     r = ""
     for line in vba_code.split("\n"):
-        if (re2.search(pat, line) is None):
+        # There is a possibility of FPs with this regex if () appears in strings,
+        # so hide the contents of strings.
+        if (re2.search(pat, hide_string_content(line)) is None):
             r += line + "\n"
             continue
         if (line.strip().lower().startswith("if ")):

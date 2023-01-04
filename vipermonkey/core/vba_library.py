@@ -860,7 +860,11 @@ class FolderExists(VbaLibraryFunc):
         # Is this a directory that is expected to exist?
         expected_dirs = set(["c:\\users", "c:\\programdata", "c:\\users\\public"])
         curr_dir = utils.safe_str_convert(params[0]).lower()
-        return ((curr_dir in expected_dirs) or (curr_dir[:-1] in expected_dirs))
+        if ((curr_dir in expected_dirs) or (curr_dir[:-1] in expected_dirs)):
+            return True
+
+        # Might be used for gating, so have it match anything.
+        return "**MATCH ANY**"
 
     def num_args(self):
         return 1
