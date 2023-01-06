@@ -2120,6 +2120,13 @@ class Context(object):
         existing values of the variable.
 
         """
+
+        # To properly handle Dim statements we need to set the var value
+        # to NULL if it does not already exist, and leave the var value alone if
+        # it already exists. Do that by checking for a special var value.
+        if (value == "NULL_NO_OVERWRITE"):
+            value = "NULL"
+            no_overwrite = True
         
         # Special case. Are we setting a formula in an Excel cell?
         if (self._set_excel_formula(name, value)):

@@ -544,7 +544,7 @@ class Dim_Statement(VBA_Object):
         tokens = var_info
         
         # Track the initial value of the variable.
-        self.init_val = "NULL"
+        self.init_val = "NULL_NO_OVERWRITE"
         last_var = tokens[0]
         if ((len(last_var) >= 3) and
             (last_var[len(last_var) - 2] == '=')):
@@ -672,10 +672,15 @@ class Dim_Statement(VBA_Object):
             context.set("__ORIG__" + var[0], curr_init_val, force_local=True)
             context.set("__ORIG__" + var[0], curr_init_val, force_global=True)
                 
-            # Set the initial value of the declared variable.
-            var_name = utils.fix_python_overlap(safe_str_convert(var[0]))
-            r += " " * indent + var_name + " = " + safe_str_convert(curr_init_val) + "\n"
-
+            # Set the initial value of the declared variable. Don't initialize the variable
+            # if it has already been used/declared.
+            var_name = utils.fix_python_overlap(safe_str_convert(var[0]))            
+            r1 = " " * indent + "try:\n"
+            r1 += " " * (indent + 2) + var_name + "\n"
+            r1 += " " * indent + "except:\n"
+            r1 += " " * (indent + 2) + var_name + " = " + safe_str_convert(curr_init_val) + "\n"
+            r += r1
+            
         # Done.
         return r
     
