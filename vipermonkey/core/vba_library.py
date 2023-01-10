@@ -4530,6 +4530,8 @@ class CustomXMLParts(VbaLibraryFunc):
         # Read the custom XML saved as a doc var in the context.
         xml_id = utils.safe_str_convert(params[0])
         r = context.get(xml_id)
+        if (r is None):
+            return "NULL"
         # TODO: Looks like a campaign on 9/13/2022 has a bug. Add an extra hex value to fix
         # their bug.
         if (((len(r) % 2) == 0) and (re.search("^[a-fA-F0-9]+$", r.strip()) is not None)):

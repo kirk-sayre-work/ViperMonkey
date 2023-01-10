@@ -2182,6 +2182,11 @@ class For_Statement(VBA_Object):
         value of the loop index variable (int).
 
         """
+
+        # Sanity check the loop step.
+        if (step == 0):
+            log.error("Loop step is 0. Not emulating loop.")
+            return (None, None)
         
         # Handle simple loops used purely for obfuscation.
         #
