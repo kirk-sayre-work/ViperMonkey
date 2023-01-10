@@ -147,7 +147,7 @@ def convert_csv(fname):
         # We have the data, clean up the info file.
         os.remove(info_fname)
         
-    except (IOError,UnicodeDecodeError) as e:
+    except (IOError,UnicodeDecodeError,json.decoder.JSONDecodeError) as e:
         log.error("Exporting " + safe_str_convert(fname) + " to CSV with LibreOffice failed. " + str(e))
         return []
     
