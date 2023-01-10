@@ -946,8 +946,12 @@ def _get_specific_values(chunk, stream_names, debug):
         else:
             val = val[2]
 
+        # Make sure we have a bytes-like-object.
+        if (isinstance(val, str)):
+            val = val.encode("latin-1")
+            
         # Replace any wide char CompObj data items that appear in the middle of a chunk of text.
-        compobj_pat = br"\x01\x00C\x00o\x00m\x00p\x00O\x00b\x00j"
+        compobj_pat = br"\x01\x00C\x00o\x00m\x00p\x00O\x00b\x00j"        
         if (re.search(compobj_pat, val) is not None):
             tmp_val = ""
             ascii_pat = br"[\x20-\x7f]{5,}"
