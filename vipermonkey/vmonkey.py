@@ -752,7 +752,13 @@ def pull_embedded_pe_files(data, out_dir):
         # Pull embedded PE files from each file in the zip.
         with zipfile.ZipFile(data_io, "r") as f:
             for name in f.namelist():
-                curr_data = f.read(name)
+                curr_data = None
+                try:
+                    curr_data = f.read(name)
+                except Exception as e:
+                    log.error("Failed reading " + safe_str_convert(name) + " from Office ZIP file. " + \
+                              safe_str_convert(e))
+                    continue
                 pull_embedded_pe_files(curr_data, out_dir)
         return
     
