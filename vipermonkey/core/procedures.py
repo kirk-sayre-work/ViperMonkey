@@ -615,7 +615,7 @@ class Function(VBA_Object):
             if (param.init_val is not None):
                 init_val = eval_arg(param.init_val, context=context)
             call_info[param.name] = (init_val, None)
-            
+
         # Array accesses of calls to functions that return an array are parsed as
         # function calls with the array indices given as function call arguments. Note
         # that this parsing problem only occurs for 0 argument functions (foo(12)).
@@ -639,7 +639,9 @@ class Function(VBA_Object):
             defined_param_pos += 1
             param_value = "NULL"
             param_name = defined_param.name
+            got_passed_param = False
             if ((params is not None) and (defined_param_pos < len(params))):
+                got_passed_param = True
                 param_value = params[defined_param_pos]
 
             # Handle empty string parameters.
@@ -655,9 +657,9 @@ class Function(VBA_Object):
                 log.debug('Function %s: setting param %s = %r' % (self.name, param_name, param_value))
 
             # Handle params with default values.
-            if ((param_name not in call_info) or
-                (call_info[param_name] == ('', None)) or
-                (param_value != "")):
+            if ((param_name not in call_info) or # Don't have a parameter value in the map
+                (call_info[param_name] == ('', None)) or # Required parameter
+                got_passed_param): # Optional param, override default value
                 call_info[param_name] = (param_value, defined_param.my_type)
 
             # Is this a ByRef parameter?
