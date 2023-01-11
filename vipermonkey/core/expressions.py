@@ -1895,6 +1895,7 @@ class MemberAccessExpression(VBA_Object):
                 return False
 
             # Look for ADODB.Stream in a variable from a subfield.
+            lhs_orig = safe_str_convert(lhs_orig)
             for field in self.rhs[:-1]:
                 lhs_orig += "." + safe_str_convert(field)
 
