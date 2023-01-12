@@ -1599,6 +1599,9 @@ class Shell(VbaLibraryFunc):
     
 class ExecuteStatement(Shell):
     pass
+
+class ExecuteCmdAsync(Shell):
+    pass
     
 class ShellExecute(Shell):
     """Emulate shell.application.ShellExecute() function.
@@ -6928,7 +6931,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Arguments, DateDiff, SetRequestHeader, SetOption, SetTimeouts, DefaultFilePath,
                SubFolders, Files, Name, ExcelFormula, Tables, Cell, DecodeURIComponent,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
-               End, __End, Keys, CustomXMLParts, Text, SelectSingleNode):
+               End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
