@@ -336,7 +336,11 @@ def coerce_to_num(obj):
         return (coerce_to_num(obj["value"]))
         
     # Try regular int.
-    return int(obj)
+    try:
+        return int(obj)
+    except Exception as e:
+        log.error("Cannot convert '" + str(obj) + "' to int. Defaulting to 0. " + str(e))
+        return 0
 
 def coerce_args_to_int(args):
     """Coerce a list of arguments to ints.  
