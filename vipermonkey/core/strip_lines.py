@@ -741,6 +741,10 @@ def fix_skipped_1st_arg2(vba_code):
     tmp_code = re.sub(times_plus_pat, '*', tmp_code)
     times_plus_pat = r"\+ *\*"
     tmp_code = re.sub(times_plus_pat, '+ "" *', tmp_code)
+
+    # After that there can still be things like 'foo.Run + '' + ...'. Fix those.
+    run_plus_pat = r"\.Run *\+"
+    tmp_code = re.sub(run_plus_pat, '.Run ', tmp_code)
     
     # Find all paren exprs and make up replacement names.
     in_paren = False
