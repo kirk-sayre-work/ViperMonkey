@@ -318,6 +318,21 @@ def run_function(func_name, context, params):
 # Track the unresolved arguments to the current call.
 var_names = None
 
+class InstallProduct(VbaLibraryFunc):
+    """Emulate WindowsInstaller.InstallProduct() method.
+
+    """
+
+    def eval(self, context, params=None):
+        if ((params is None) or (len(params) == 0)):
+            return "NULL"
+        url = utils.safe_str_convert(params[0])
+        context.report_action('WindowsInstaller', url, 'Install Remote MSI', strip_null_bytes=True)
+        return 0
+
+    def num_args(self):
+        return 1
+
 class ExecuteExcel4Macro(VbaLibraryFunc):
     """Emulate ExecuteExcel4Macro() dynamic XLM evaluation function.
 
@@ -6931,7 +6946,8 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Arguments, DateDiff, SetRequestHeader, SetOption, SetTimeouts, DefaultFilePath,
                SubFolders, Files, Name, ExcelFormula, Tables, Cell, DecodeURIComponent,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
-               End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync):
+               End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync,
+               InstallProduct):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
