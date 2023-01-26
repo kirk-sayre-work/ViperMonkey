@@ -1409,6 +1409,8 @@ def break_up_whiles(vba_code):
 
         # Pull out the current while statement.
         start = vba_code_l[pos:].index("while")
+        if ("\n" not in vba_code_l[start + pos:]):
+            break
         end = vba_code_l[start + pos:].index("\n")
         curr_while = vba_code[start + pos:end + start + pos]
 
