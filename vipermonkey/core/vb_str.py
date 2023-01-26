@@ -70,10 +70,10 @@ def is_wide_str(the_str):
         return False
     if ('\x00' not in the_str):
         return False
-    if (the_str.count('\x00') != len(the_str)/2):
+    if (the_str.count('\x00') != int(len(the_str)/2)):
         return False
     is_wide = True
-    for i in range(1, len(the_str)/2 + 1):
+    for i in range(1, int(len(the_str)/2) + 1):
         if (the_str[i * 2 - 1] != '\x00'):
             is_wide = False
             break
