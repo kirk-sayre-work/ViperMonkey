@@ -600,7 +600,7 @@ class Context(object):
             return ""
     
         # Normalize the variable name.
-        var = var.lower().replace(" ", "_")
+        var = safe_str_convert(var).lower().replace(" ", "_")
         if ("." in var):
             var = var[:var.index(".")]
     
