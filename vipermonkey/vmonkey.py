@@ -1036,17 +1036,26 @@ def _process_file (filename,
         vba = None
         try:
             vba = _get_vba_parser(data)
-        except FileOpenError as e:
+        except Exception as e:
 
             # Is this an unrecognized format?
             if ("Failed to open file  is not a supported file type, cannot extract VBA Macros." not in safe_str_convert(e)):
 
-                # No, it is some other problem. Pass on the exception.
-                raise e
+                # This is not something we can possibly fix.
+                got_crash_error = True
+                log.error("Cannot extract VB to analyze. " + safe_str_convert(e))
+                return None                
 
             # This may be VBScript with some null characters. Remove those and try again.
             data = data.replace(b"\x00", b"")
-            vba = _get_vba_parser(data)
+            try:
+                vba = _get_vba_parser(data)
+            except Exception as e:
+
+                # Can't get anything to process.
+                got_crash_error = True
+                log.error(safe_str_convert(e))
+                return None
 
         # Set where to store directly dropped files if needed.
         if (artifact_dir is None):
