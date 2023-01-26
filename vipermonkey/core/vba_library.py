@@ -2192,7 +2192,7 @@ class RTrim(VbaLibraryFunc):
         if (isinstance(params[0], int)):
             r = utils.safe_str_convert(params[0])
         else:
-            r = params[0].rstrip()
+            r = utils.safe_str_convert(params[0]).rstrip()
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("RTrim: return %r" % r)
         return r
