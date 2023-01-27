@@ -333,6 +333,21 @@ class InstallProduct(VbaLibraryFunc):
     def num_args(self):
         return 1
 
+class BinaryGetURL(VbaLibraryFunc):
+    """Emulate BinaryGetURL() function.
+
+    """
+
+    def eval(self, context, params=None):
+        if ((params is None) or (len(params) == 0)):
+            return "NULL"
+        url = utils.safe_str_convert(params[0])
+        context.report_action('BinaryGetURL()', url, 'Binary Data Download', strip_null_bytes=True)
+        return 0
+
+    def num_args(self):
+        return 1
+    
 class ExecuteExcel4Macro(VbaLibraryFunc):
     """Emulate ExecuteExcel4Macro() dynamic XLM evaluation function.
 
@@ -6947,7 +6962,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                SubFolders, Files, Name, ExcelFormula, Tables, Cell, DecodeURIComponent,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
                End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync,
-               InstallProduct):
+               InstallProduct, BinaryGetURL):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
