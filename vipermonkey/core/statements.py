@@ -5351,11 +5351,15 @@ class Redim_Statement(VBA_Object):
                     # Add in old values if needed.
                     if (old_val is not None):
                         pos = 0
-                        for v in old_val:
-                            if (pos >= len(new_list)):
-                                break
-                            new_list[pos] = v
-                            pos += 1
+                        try:
+                            for v in old_val:
+                                if (pos >= len(new_list)):
+                                    break
+                                new_list[pos] = v
+                                pos += 1
+                        except TypeError:
+                            # old_val is not iterable.
+                            new_list[0] = old_val
 
                     # Save the resized array.                        
                     context.set(var_name, new_list)
