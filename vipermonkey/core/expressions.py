@@ -1909,9 +1909,7 @@ class MemberAccessExpression(VBA_Object):
         # Pull out the text to write to the text stream.
         txt = None
         rhs_val = eval_arg(rhs.params[0], context)
-        txt = rhs_val
-        if isinstance(txt, str):
-            txt = bytes(txt, "latin-1")
+        txt = safe_str_convert(rhs_val, strict=True)
         #print("TEXT!!")
         #print(txt)
         #print(type(txt))
@@ -1944,10 +1942,10 @@ class MemberAccessExpression(VBA_Object):
         var_val = context.get(var_name)
         if isinstance(var_val, VBA_Object):
             var_val = eval_arg(var_val, context)
-        var_val = bytes(safe_str_convert(var_val), "latin-1")
+        var_val = bytes(safe_str_convert(var_val, strict=True), "latin-1")
         if isinstance(txt, VBA_Object):
             txt = eval_arg(txt, context)
-        txt = bytes(safe_str_convert(txt), "latin-1")
+        txt = bytes(safe_str_convert(txt, strict=True), "latin-1")
         final_txt = var_val + txt
         context.set(var_name, final_txt, force_global=True)
 
