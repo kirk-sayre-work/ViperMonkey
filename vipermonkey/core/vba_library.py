@@ -2549,7 +2549,7 @@ class TransformFinalBlock(VbaLibraryFunc):
         base64_str = ""
         end += 1
         for b in vals[start : end]:
-            base64_str += chr(b)
+            base64_str += chr(int(b))
 
         # Decode the base64 encoded string.
         if (log.getEffectiveLevel() == logging.DEBUG):
