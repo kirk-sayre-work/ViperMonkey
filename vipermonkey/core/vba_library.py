@@ -1582,7 +1582,7 @@ class Shell(VbaLibraryFunc):
     def eval(self, context, params=None):
 
         # This might be the string "shell".
-        if (params is None):
+        if ((params is None) or (len(params) == 0)):
             return "shell"
         try:
             params.remove('ThisDocument')
