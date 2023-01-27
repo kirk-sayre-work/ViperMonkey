@@ -1975,6 +1975,8 @@ class Context(object):
 
             # Resolve the row and column.
             cell_call = name.rhs[0]
+            if (len(cell_call.params) < 2):
+                return False
             row = safe_str_convert(vba_object.eval_arg(cell_call.params[0], self))
             col = safe_str_convert(vba_object.eval_arg(cell_call.params[1], self))
 
