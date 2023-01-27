@@ -3908,13 +3908,13 @@ class Choose(VbaLibraryFunc):
             log.warning("Invalid index passed to Choice(). Returning NULL. " + utils.safe_str_convert(e))
             return "NULL"
 
-        # Is the desired value in the choice list?
-        if (index > (len(params) + 1)):
-            log.warning("Invalid index passed to Choice(). Too large.")
-            return "NULL"
-
         # Return the choice value.
-        return params[index]
+        try:
+            return params[index]
+        except IndexError as e:
+            # Bad index
+            log.warning("Invalid index passed to Choice(). " + utils.safe_str_convert(e))
+            return "NULL"
             
 class RGB(VbaLibraryFunc):
     """Emulate RGB() color function.
