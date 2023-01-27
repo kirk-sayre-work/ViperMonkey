@@ -69,9 +69,9 @@ def int_convert(arg, leave_alone=False):
     if ((isinstance(arg, str)) and (arg.strip() == "NULL")):
         return 0
 
-    # Empty strings are NULL.
+    # Empty strings are NULL, which is 0 as an int.
     if (arg == ""):
-        return "NULL"
+        return 0
     
     # Leave the wildcard matching value alone.
     if (arg == "**MATCH ANY**"):
