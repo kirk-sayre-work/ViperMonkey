@@ -1145,7 +1145,7 @@ def hide_colons_in_ifs(vba_code):
         if (endif_match is not None):
             end_pos = endif_match.span()[1] + if_index
         r += vba_code[if_index:end_pos+1].replace(":", "__COLON__")
-        pos = end_pos
+        pos = end_pos+1
     r += vba_code[pos:]
     return r
 
@@ -1296,7 +1296,7 @@ def convert_colons_to_linefeeds(vba_code):
             marker_pos2b = len(vba_code)
             if (use_end_marker in vba_code[marker_pos1+1:]):
                 marker_pos2a = vba_code[marker_pos1+1:].index(use_end_marker) + marker_pos1 + 2
-
+                
             # New lines can't appear in any of the unchangeable blocks.
             if ("\n" in vba_code[marker_pos1+1:]):
                 marker_pos2b = vba_code[marker_pos1+1:].index("\n") + marker_pos1 + 2
@@ -1698,6 +1698,36 @@ def fix_elseif_lines(vba_code):
     # Done.
     return vba_code
 
+def reduce_str_concats(vba_code):
+    """Replace things like '"c" & "at" & "s"' with '"cats"'. PEG grammars
+    have a TERRIBLE slow time parsing things like this, so replace them
+    here.
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+    """
+
+    # Do we have any potential str concats to resolve?
+    if (('"' not in vba_code) or ("&" not in vba_code)):
+        return vba_code
+    concat_pat = r'"[^"]+" * (?:& *"[^"]+" *)+'
+    str_pat = '"([^"])+"'
+    if (re2.search(concat_pat, vba_code) is None):
+        return vba_code
+    
+    # Find the string literal concat expressions to resolve.
+    for str_exp in re2.findall(concat_pat, vba_code):
+        strs = []
+        new_str_exp = ""
+        str_exp = str_exp.replace('""', '__ESCAPED_QUOTE__')
+        for i in re2.findall(str_pat, str_exp):
+            new_str_exp += i
+        new_str_exp = new_str_exp.replace('__ESCAPED_QUOTE__', '""')
+        vba_code = vba_code.replace(str_exp, '"' + new_str_exp + '"')
+
+    return vba_code
+    
 def reduce_chr_obfuscation(vba_code):
     """Replace Chr() expressions like 'chr(3662922/CLng("&H8c47"))' with
     the resolved character string.
@@ -1712,17 +1742,25 @@ def reduce_chr_obfuscation(vba_code):
         return vba_code
     
     # Find chr() expressions we can reduce.
-    chr_pat1a = r'[Cc][Hh][Rr] *\( *(\-?\d{1,10}) *([\+\-/\*]) *(?:(?:[Cc][Ll][Nn][Gg])|(?:[Cc][Ii][Nn][Tt])) *\( *"?((?:&[Hh])?[0-9A-fa-f]{1,10}(?:\.\d{1,10})?)"? *\) *\)'
+    # chr(-123 + CLng("&H1E1"))
     chr_pat0a = r'[Cc][Hh][Rr] *\( *\-?\d{1,10} *[\+\-/\*] *(?:(?:[Cc][Ll][Nn][Gg])|(?:[Cc][Ii][Nn][Tt])) *\( *"?(?:&[Hh])?[0-9A-fa-f]{1,10}(?:\.\d{1,10})?"? *\) *\)'
+    # Regex to pull out 2 int vals and operator.
+    chr_pat1a = r'[Cc][Hh][Rr] *\( *(\-?\d{1,10}) *([\+\-/\*]) *(?:(?:[Cc][Ll][Nn][Gg])|(?:[Cc][Ii][Nn][Tt])) *\( *"?((?:&[Hh])?[0-9A-fa-f]{1,10}(?:\.\d{1,10})?)"? *\) *\)'
+    # chr(CLng("&H1E1") + 123)
     chr_pat0b = r'[Cc][Hh][Rr] *\( *(?:(?:[Cc][Ll][Nn][Gg])|(?:[Cc][Ii][Nn][Tt])) *\( *"?(?:&[Hh])?[0-9A-fa-f]{1,10}(?:\.\d{1,10})?"? *\) *[\+\-/\*] *\-?\d{1,10} *\)'
     chr_pat1b = r'[Cc][Hh][Rr] *\( *(?:(?:[Cc][Ll][Nn][Gg])|(?:[Cc][Ii][Nn][Tt])) *\( *"?((?:&[Hh])?[0-9A-fa-f]{1,10}(?:\.\d{1,10})?)"? *\) *([\+\-/\*]) *(\-?\d{1,10}) *\)'
-    chr_pat0 = "(?:" + chr_pat0a + ")|(?:" + chr_pat0b + ")"
+    # chr(551-(&H1E1))
+    chr_pat0c = r'[Cc][Hh][Rr] *\( *\-?\d{1,10} *[\+\-] *\(?"?&[Hh][0-9A-fa-f]{1,10}"? *\)? *\)'
+    chr_pat1c = r'[Cc][Hh][Rr] *\( *(\-?\d{1,10}) *([\+\-]) *\(?"?(&[Hh][0-9A-fa-f]{1,10})"? *\)? *\)'
+    chr_pat0 = "(?:" + chr_pat0a + ")|(?:" + chr_pat0b + ")|(?:" + chr_pat0c + ")"
     for chr_exp in re2.findall(chr_pat0, vba_code):
 
         # Pull out the pieces of the expression.
         pieces = re2.findall(chr_pat1a, chr_exp)
         if (len(pieces) == 0):
             pieces = re2.findall(chr_pat1b, chr_exp)
+        if (len(pieces) == 0):
+            pieces = re2.findall(chr_pat1c, chr_exp)            
         pieces = pieces[0]
         lhs = coerce_to_int(pieces[0])
         op = pieces[1]
@@ -1762,6 +1800,10 @@ def reduce_chr_obfuscation(vba_code):
 
         vba_code = vba_code.replace(chr_exp, curr_char)
 
+    # We may have string concats we can simplify now that the chr()
+    # obfuscation has been removed.
+    vba_code = reduce_str_concats(vba_code)
+    
     # Done.
     return vba_code
     
