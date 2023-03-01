@@ -5825,7 +5825,10 @@ file_open_statement = (
     + Optional(
         file_type("type")
         + Suppress(CaselessKeyword("As"))
-        + (file_pointer("file_id") | TODO_identifier_or_object_attrib("file_id") | file_pointer_loose("file_id"))
+        + (expression("file_id") |
+           file_pointer("file_id") |
+           TODO_identifier_or_object_attrib("file_id") |
+           file_pointer_loose("file_id"))
         + Suppress(Optional(CaselessKeyword("Len") + Literal("=") + expression))
     )
 )
