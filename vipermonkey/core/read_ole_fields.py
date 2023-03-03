@@ -3548,6 +3548,7 @@ def get_shapes_text_values(fname, stream):
         #print("STREAM: " + safe_str_convert(stream))
         if (not ole.exists(stream)):
             #print("DONE 2: get_shapes_text_values()")
+            ole.close()
             return []
         data = ole.openstream(stream).read()
         
@@ -3620,7 +3621,9 @@ def get_shapes_text_values(fname, stream):
             
             # Move to next shape.
             pos += 1
-            
+
+        ole.close()
+        
     except Exception as e:
 
         # Report the error.
@@ -3779,6 +3782,7 @@ def _read_doc_vars_ole(fname):
         ole = olefile.OleFileIO(fname, write_mode=False)
         var_offset, var_size = _get_doc_var_info(ole)
         if ((var_offset is None) or (var_size is None) or (var_size == 0)):
+            ole.close()
             return []
         data = ole.openstream("1Table").read()[var_offset : (var_offset + var_size + 1)]
         tmp_strs = re.findall("(([^\x00-\x1F\x7F-\xFF]\x00){2,})", data)
@@ -3807,6 +3811,7 @@ def _read_doc_vars_ole(fname):
             pos += 1
 
         # Return guesses at doc variable assignments.
+        ole.close()
         return _make_elems_str(r)
             
     except Exception as e:
@@ -3964,6 +3969,7 @@ def _read_custom_doc_props(fname):
                 data = ole.openstream(stream_name).read()
                 break
         if (data is None):
+            ole.close()
             return []
         strs = re.findall("([\w\.\:/]{4,})", safe_str_convert(data))
         
@@ -3995,6 +4001,7 @@ def _read_custom_doc_props(fname):
             pos += 1
 
         # Return guesses at custom doc prop assignments.
+        ole.close()
         return _make_elems_str(r)
             
     except Exception as e:
@@ -4056,6 +4063,8 @@ def _get_embedded_object_values(fname):
             # Save any information we find.
             for i in obj_text:
                 r.append(i)
+
+            ole.close()
         
     except Exception as e:
         if ("not an OLE2 structured storage file" not in safe_str_convert(e)):
