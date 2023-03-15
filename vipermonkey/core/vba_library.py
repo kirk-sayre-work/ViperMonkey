@@ -1660,6 +1660,7 @@ class Eval(VbaLibraryFunc):
             return 0
         expr = utils.strip_nonvb_chars(utils.safe_str_convert(params[0])).strip()
 
+        print("EVAL!!")
         # Save original expression.
         orig_expr = expr
         
@@ -1798,6 +1799,7 @@ class Execute(VbaLibraryFunc):
             (isinstance(params[0], (VBA_Object, VbaLibraryFunc)))):
             return "NULL"
 
+        print("EXECUTE!!")
         # Based on some VBScript malware samples it looks like you can
         # call Execute() on a PE EXE in memory and have it run. Does
         # the "command" look like a PE file?
@@ -1850,9 +1852,12 @@ class Execute(VbaLibraryFunc):
             # Restore the With prefix.
             context.with_prefix = old_with_prefix
             context.with_prefix_raw = old_with_prefix_raw
+
+        # Fix newlines.
+        command = utils.strip_nonvb_chars(utils.safe_str_convert(params[0]))
+        command = command.replace("\r\n", "\n").replace("\r", "\n")
             
         # Save the command.
-        command = utils.strip_nonvb_chars(utils.safe_str_convert(params[0]))
         if (log.getEffectiveLevel() == logging.DEBUG):
             print("-- ORIGINAL EVALED CODE --")
             print(params[0])
@@ -1863,7 +1868,7 @@ class Execute(VbaLibraryFunc):
         # Fix invalid string assignments.        
         full_orig_command = command
         command = strip_lines.fix_vba_code(command)
-
+        
         # Save original command string.
         orig_command = command
         
