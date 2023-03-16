@@ -1433,7 +1433,7 @@ class Context(object):
         name = safe_str_convert(name)
         if (((name.lower() == "nodetypedvalue") or (name.lower() == ".nodetypedvalue")) and
             (name not in self.locals) and
-            (".Text".lower() in self.locals)):
+            ((".Text".lower() in self.locals) or (".Text".lower() in self.globals))):
             return self.get(".Text")
 
         # Try to avoid attempting a bunch of variations on the variable name

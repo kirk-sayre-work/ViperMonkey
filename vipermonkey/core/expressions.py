@@ -4292,6 +4292,7 @@ class Function_Call(VBA_Object):
 
                 # Call function.
                 #print("WHERE: 5")
+                #print(type(f))
                 r = f.eval(context=context, params=params)                        
                 #print("WHERE: 5.1")
                 #print(r)

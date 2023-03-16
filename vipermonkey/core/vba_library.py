@@ -1660,7 +1660,6 @@ class Eval(VbaLibraryFunc):
             return 0
         expr = utils.strip_nonvb_chars(utils.safe_str_convert(params[0])).strip()
 
-        print("EVAL!!")
         # Save original expression.
         orig_expr = expr
         
@@ -1799,7 +1798,6 @@ class Execute(VbaLibraryFunc):
             (isinstance(params[0], (VBA_Object, VbaLibraryFunc)))):
             return "NULL"
 
-        print("EXECUTE!!")
         # Based on some VBScript malware samples it looks like you can
         # call Execute() on a PE EXE in memory and have it run. Does
         # the "command" look like a PE file?
@@ -4818,7 +4816,7 @@ class WriteLine(VbaLibraryFunc):
         return "NULL"
 
 class WriteText(VbaLibraryFunc):
-    """Emulate File WriteText() method.
+    """Emulate ADODB.Stream.WriteText() method.
 
     """
 
@@ -4856,7 +4854,17 @@ class WriteText(VbaLibraryFunc):
             context.set(var_name, b"", force_global=True)
         final_txt = utils.safe_str_convert(context.get(var_name)) + utils.safe_str_convert(txt)
         context.set(var_name, final_txt, force_global=True)
+        #print("FINAL_TXT")
         #print(final_txt)
+
+        # Also chuck this into a fake opened file.
+        file_id = 'ADODB.Stream'
+        if (not context.file_is_open(file_id)):
+            context.open_file(file_id)
+        context.write_file(file_id, final_txt)
+        
+        # Success.
+        return 0
         
 class CurDir(VbaLibraryFunc):
     """Emulate CurDir() function (stubbed).
@@ -5263,7 +5271,7 @@ class ReadText(VbaLibraryFunc):
 
     def eval(self, context, params=None):
         params = params # pylint
-
+        
         # Doing base64 conversion with a VBA object?
         with_str = utils.safe_str_convert(context.with_prefix).strip()
         if (with_str.endswith("GetDecodedContentStream")):
@@ -5288,7 +5296,7 @@ class ReadText(VbaLibraryFunc):
             return "NULL"
 
         # Simulate the read.
-
+        
         # Get the ID of the file.
         file_id = list(context.open_files.keys())[0]
 
@@ -5296,13 +5304,16 @@ class ReadText(VbaLibraryFunc):
 
         # Get the data to read.
         raw_data = context.open_files[file_id]
-
+        
         # Return the data.
         return raw_data
 
     def return_type(self):
         return "STRING"
 
+class Read(ReadText):
+    pass
+    
 class CheckSpelling(VbaLibraryFunc):
     """Emulate Application.CheckSpelling() function (stubbed).
 
@@ -6798,7 +6809,7 @@ class Write(VbaLibraryFunc):
 
         # Get the data.
         data = utils.safe_str_convert(params[0])
-
+        
         # Save writes that look like they are writing URLs.
         if (("http:" in data) or ("https:" in data)):
             urls = utils.safe_str_convert(re.findall(URL_REGEX, utils.safe_str_convert(data)))
@@ -6833,13 +6844,16 @@ class Write(VbaLibraryFunc):
         # Get the ID of the file.
         file_id = files[0]
         log.info("Writing data to " + utils.safe_str_convert(file_id) + " .")
-
+        
         # Write the data.
         context.write_file(file_id, data)
 
         # Close the file if we just guessed at a file name.
         if guessed_file:
             context.close_file(file_id)
+
+        # Success.
+        return 0
 
 class DefaultFilePath(VbaLibraryFunc):
     """Emulate Options.DefaultFilePath() property. Stubbed.
@@ -6967,7 +6981,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                SubFolders, Files, Name, ExcelFormula, Tables, Cell, DecodeURIComponent,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
                End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync,
-               InstallProduct, BinaryGetURL):
+               InstallProduct, BinaryGetURL, Read):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
