@@ -380,7 +380,10 @@ class Context(object):
         # Track open files.
         self.open_files = {}
         self.file_id_map = {}
-
+        # Tracked as tuples, 1st element is raw file contents, 2nd
+        # element is integer of current file pointer location in data.
+        self.open_file_contents = {}
+        
         # Track the final contents of written files.
         self.closed_files = {}
 
@@ -875,6 +878,7 @@ class Context(object):
         @see get_interesting_fileid
         @see file_is_open
         @see open_file
+        @see get_file_contents
         @see write_file
         @see dump_all_files
         @see get_num_open_files
@@ -916,6 +920,7 @@ class Context(object):
         @see get_interesting_fileid
         @see file_is_open
         @see open_file
+        @see get_file_contents
         @see write_file
         @see dump_all_files
         @see get_num_open_files
@@ -933,6 +938,65 @@ class Context(object):
 
         # Don't reopen already opened files.
         return (fname in list(self.open_files.keys()))
+
+    def get_file_contents(self, fname):
+        """Get the contents of a file opened with open_file() and the current
+        file pointer in the file data.
+
+        @see get_interesting_fileid
+        @see file_is_open
+        @see open_file
+        @see get_file_contents
+        @see write_file
+        @see dump_all_files
+        @see get_num_open_files
+        @see close_file
+        @see dump_file
+
+        @param fname (str) The name of the file.
+
+        @return (tuple) If the file has been opened and was readable
+        by Vipermonkey, return a 2 element tuple where the 1st element
+        is the raw file contents (bytes like string) and the 2nd
+        element is the file pointer in the data (int). On error (None,
+        None) is returned.
+
+        """
+
+        # Got file contents?
+        if (fname not in self.open_file_contents):
+            return (None, None)
+
+        # We do have file contents.
+        return self.open_file_contents[fname]
+
+    def update_file_pointer(self, fname, fp):
+        """Update the file pointer index for the given opened file.
+
+        @param fname (str) The name of the open file for which to
+        update the file pointer.
+
+        @param fp (int) The new file pointer. If this is an invalid
+        value (too big) the file pointer will be advanced to the end
+        of the file data. If negative the file pointer will be set to
+        0.
+
+        """
+
+        # Is the file open and do we have read in data for it?
+        data, _ = self.get_file_contents(fname)
+        if (data is None):
+            return
+
+        # File pointer too small?
+        if (fp < 0):
+            fp = 0
+        # File pointer too big?
+        if (fp >= len(data)):
+            fp = len(data)
+
+        # Save the new file pointer.
+        self.open_file_contents[fname] = (data, fp)
         
     def open_file(self, fname, file_id="", append=False):
         """Simulate opening a file.
@@ -940,6 +1004,7 @@ class Context(object):
         @see get_interesting_fileid
         @see file_is_open
         @see open_file
+        @see get_file_contents
         @see write_file
         @see dump_all_files
         @see get_num_open_files
@@ -957,6 +1022,7 @@ class Context(object):
         """
         # Save that the file is opened.
         fname = safe_str_convert(fname)
+        orig_fname = fname
         fname = fname.replace(".\\", "").replace("\\", "/")
 
         # Don't reopen already opened files.
@@ -973,13 +1039,27 @@ class Context(object):
         # Are we appending to a file we wrote to previously?
         if append and (fname in self.closed_files):
             self.open_files[fname] = self.closed_files[fname]
-        
+
+        # Is this a file on the current file system that we can
+        # actually read?
+        local_fname = orig_fname.replace("C:\\", "").replace("\\", "").replace("C:", "")
+        if os.path.exists(local_fname):
+
+            # The VB may try to read this file, so read in the entire
+            # file now so we can simulate the file reads later. We are
+            # not going to just use the actual open file in Python to
+            # ensure that Vipermonkey emulation can't mess up the
+            # file.
+            with open(local_fname, "rb") as f:
+                self.open_file_contents[orig_fname] = (f.read(), 0)
+            
     def write_file(self, fname, data, binary=False):
         """Simulate writing to a file.
 
         @see get_interesting_fileid
         @see file_is_open
         @see open_file
+        @see get_file_contents
         @see write_file
         @see dump_all_files
         @see get_num_open_files
@@ -1095,6 +1175,7 @@ class Context(object):
         @see get_interesting_fileid
         @see file_is_open
         @see open_file
+        @see get_file_contents
         @see write_file
         @see dump_all_files
         @see get_num_open_files
@@ -1138,6 +1219,7 @@ class Context(object):
         @see get_interesting_fileid
         @see file_is_open
         @see open_file
+        @see get_file_contents
         @see write_file
         @see dump_all_files
         @see get_num_open_files
@@ -1155,6 +1237,7 @@ class Context(object):
         @see get_interesting_fileid
         @see file_is_open
         @see open_file
+        @see get_file_contents
         @see write_file
         @see dump_all_files
         @see get_num_open_files
@@ -1200,6 +1283,7 @@ class Context(object):
         @see get_interesting_fileid
         @see file_is_open
         @see open_file
+        @see get_file_contents
         @see write_file
         @see dump_all_files
         @see get_num_open_files

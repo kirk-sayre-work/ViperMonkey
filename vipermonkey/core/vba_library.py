@@ -971,11 +971,15 @@ class FileExists(VbaLibraryFunc):
 
         # Some files always exist.
         fname = utils.safe_str_convert(params[0])
+        # EXEs that always exist in Windows.
         if ("powershell" in fname.lower()):
             return True
         if ("cmd.exe" in fname.lower()):
             return True
         if ("explorer.exe" in fname.lower()):
+            return True
+        # The current file being analyzed by definition always exists.
+        if (fname == context.globals["WSCRIPT.SCRIPTFULLNAME".lower()]):
             return True
         
         # Since we don't know whether the interesting behavior depends
@@ -5263,6 +5267,62 @@ class GetParentFolderName(VbaLibraryFunc):
             
     def num_args(self):
         return 1
+
+class AtEndOfStream(VbaLibraryFunc):
+    """Emulate AtEndOfStream() file method.
+
+    """
+
+    def eval(self, context, params=None):
+
+        # Sanity check.
+        if (len(params) == 0):
+            return True
+
+        # Do we have data read in for this file?
+        fname = utils.safe_str_convert(params[0])
+        data, fp = context.get_file_contents(fname)
+        if (data is None):
+            log.warning("AtEndOfStream(): File " + fname + " is not read into Vipermonkey. Returning True.")
+            return True
+
+        # Is the file pointer at the end of the data?
+        return (fp >= len(data))
+    
+class ReadLine(VbaLibraryFunc):
+    """Emulate ReadLine() file method.
+
+    """
+
+    def eval(self, context, params=None):
+
+        # Sanity check.
+        if (len(params) == 0):
+            return "NULL"
+
+        # Do we have data read in for this file?
+        fname = utils.safe_str_convert(params[0])
+        data, fp = context.get_file_contents(fname)
+        if (data is None):
+            log.warning("ReadLine(): File " + fname + " is not read into Vipermonkey. Returning NULL.")
+            return "NULL"
+
+        # Is there another line in the file?
+        if (b"\n" not in data[fp:]):
+
+            # Just read in the rest of the file and advance the file
+            # pointer to EOF.
+            r = data[fp:]
+            new_fp = len(data)
+            context.update_file_pointer(fname, new_fp)
+            return r
+        
+        # Read the next line from the file.
+        new_fp = data[fp:].index(b"\n") + fp
+        r = data[fp:new_fp]
+        # Advance past newline.
+        context.update_file_pointer(fname, new_fp + 1)
+        return r
         
 class ReadText(VbaLibraryFunc):
     """Emulate ReadText() stream method (stubbed).
@@ -6981,7 +7041,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                SubFolders, Files, Name, ExcelFormula, Tables, Cell, DecodeURIComponent,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
                End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync,
-               InstallProduct, BinaryGetURL, Read):
+               InstallProduct, BinaryGetURL, Read, ReadLine, AtEndOfStream):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
