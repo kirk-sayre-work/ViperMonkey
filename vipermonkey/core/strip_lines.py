@@ -94,28 +94,76 @@ from core.utils import safe_str_convert
 #debug_strip = True
 debug_strip = False
 
-def is_useless_dim(line):
+def _get_declared_vars(line):
+    """Get the variable names declared in a given Dim line.
+
+    @param line (str) The Dim line to extract variables from.
+
+    @return (list) A list of declared variable names.
+
+    """
+
+    # Is this a Dim statement?
+    line = line.strip()
+    if (not line.startswith("Dim ")):
+        return []
+
+    # Pull out the variable names.
+    dim_pat = r"Dim\s+(\w+(?:\s*,\s*\w+)*)"
+    var_decls = re.findall(dim_pat, line)
+    # Got no matched variable names?
+    if (len(var_decls) == 0):        
+        return []
+    var_decls = var_decls[0].split(",")
+    r = []
+    for v in var_decls:
+        r.append(v.strip())
+    return r
+    
+def is_useless_dim(line, vba_code):
     """See if we can skip this Dim statement and still successfully
     emulate.  We only use Byte type information when emulating.
 
     @param line (str) The code line to check.
+
+    @param vba_code (str) The full VB code being processed.
 
     @return (boolean) True if this is a Dim statement that can be
     safely skipped, False if not.
 
     """
 
-    # Is this dimming a variable with a type we want to save? Also
-    # keep Dim statements that set an initial value.
+    # Is this a Dim statement?
     line = line.strip()
+    line_orig = line
     if (not line.startswith("Dim ")):
-        return False
-    r = (("Byte" not in line) and
-         ("Long" not in line) and
-         ("Integer" not in line) and
-         (":" not in line) and
-         ("=" not in line) and
-         (not line.strip().endswith("_")))
+        return False    
+    
+    # Data types we are interested in.
+    data_types = ["Boolean",
+                  "Byte",
+                  "Integer",
+                  "Long",
+                  "Double",
+                  "Date",
+                  "String",
+                  "Object",
+                  "Array",
+                  "Empty",
+                  "Null",
+                  "Nothing"]
+    
+    # Is this dimming a variable with a type we want to save?
+    r = True
+    for data_type in data_types:
+        if (data_type in line):
+            r = False
+            break
+
+    # Keep Dim statements that set an initial value.
+    r = r and ((":" not in line) and
+               ("=" not in line) and
+               (not line.strip().endswith("_")))
 
     # Does the variable name collide with a builtin VBA function name? If so,
     # keep the Dim statement.
@@ -124,9 +172,29 @@ def is_useless_dim(line):
         if (builtin in line):
             r = False
 
-    # Done.
-    return r
+    # Does this already looks like a Dim statement to keep?
+    if (not r):
+        return False
 
+    # This could be useless. Pull out the variable(s) declared in the
+    # Dim and see if the are referenced anywhere else in the code.
+    var_decls = _get_declared_vars(line_orig)
+    # To be cautious, if we did not pull any var names from the line just keep the line.
+    if (len(var_decls) == 0):
+        return False
+    # We pulled var names, check to see if they are referenced.
+    for var in var_decls:
+
+        # Referenced more than on just the Dim line?
+        if (vba_code.count(var) > 1):
+
+            # Looks like the variable is actually used, so keep the
+            # Dim line.
+            return False
+    
+    # Done. We have a Dim with no type or assigned value that is never
+    # used anywhere else, it is useless.
+    return True
 
 aggressive_strip = False
 def is_interesting_call(line, external_funcs, local_funcs):
@@ -3299,7 +3367,14 @@ def strip_useless_code(vba_code, local_funcs):
         # Does this line get stripped based on a useless function call?
         if (is_useless_call(line)):
             if (log.getEffectiveLevel() == logging.DEBUG):
-                log.debug("STRIP: Stripping Line (2): " + line)
+                log.debug("STRIP: Stripping Line (useless Call): " + line)
+            r += "' STRIPPED LINE\n"
+            continue
+
+        # Does this line get stripped based on a useless Dim statement?        
+        if (is_useless_dim(line, vba_code)):
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("STRIP: Stripping Line (useless Dim): " + line)
             r += "' STRIPPED LINE\n"
             continue
 
