@@ -1749,12 +1749,14 @@ class Context(object):
             
         # First try a case sensitive search. If that fails try case insensitive.
         r = None
+        got_case_sensitive = False
         try:
             r = self._get(name,
                           search_wildcard=search_wildcard,
                           case_insensitive=False,
                           local_only=local_only,
                           global_only=global_only)
+            got_case_sensitive = True
         except KeyError:
             r = self._get(name,
                           search_wildcard=search_wildcard,
@@ -1770,6 +1772,19 @@ class Context(object):
             tmp_name = "." + safe_str_convert(name)
             if (self.contains(tmp_name)):
                 r = self._get(tmp_name)
+
+        # Did we get something not useful with the case sensitive name?
+        if (got_case_sensitive and ((r is None) or (r == "NULL"))):
+
+            # See if we have a better value with the case insensitive name.
+            try:
+                r = self._get(name,
+                              search_wildcard=search_wildcard,
+                              case_insensitive=True,
+                              local_only=local_only,
+                              global_only=global_only)
+            except KeyError:
+                pass
             
         # Done.
         return r
