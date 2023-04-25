@@ -69,6 +69,7 @@ from core.statements import simple_statements_line, for_end, for_start, \
 from core.function_defn_visitor import function_defn_visitor
 from core.vba_object import VBA_Object
 from core.python_jit import to_python
+from core.javascript_jit import to_javascript
 from core.logger import log
 from core.expressions import expression, expr_const
 from core.utils import safe_str_convert
@@ -228,6 +229,9 @@ class Module(VBA_Object):
 
     def to_python(self, context, params=None, indent=0):
         return to_python(self.loose_lines, context, indent=indent, statements=True)
+
+    def to_javascript(self, params=None, indent=0):
+        return to_javascript(self.loose_lines, indent=indent, statements=True)
     
     def load_context(self, context):
         """Load functions/subs defined in the module into the given
@@ -335,6 +339,9 @@ class LooseLines(VBA_Object):
         
     def to_python(self, context, params=None, indent=0):
         return to_python(self.block, context, indent=indent, statements=True)
+
+    def to_javascript(self, params=None, indent=0):
+        return to_javascript(self.block, indent=indent, statements=True)
     
     def eval(self, context, params=None):
 

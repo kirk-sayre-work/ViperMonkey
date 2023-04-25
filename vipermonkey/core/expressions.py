@@ -76,6 +76,7 @@ from core.operators import AddSub, And, Concatenation, Eqv, FloorDivision, Mod, 
 from core import procedures
 from core.vba_object import eval_arg, eval_args, VbaLibraryFunc, VBA_Object
 from core.python_jit import to_python
+from core.javascript_jit import to_javascript
 from core import vba_context
 from core import utils
 from core import vba_conversion
@@ -230,6 +231,9 @@ class SimpleNameExpression(VBA_Object):
         
         # Just treat as a variable reference.
         return var_name
+
+    def to_javascript(self, params=None, indent=0):
+        return safe_str_convert(self.name)
     
     def eval(self, context, params=None):
         params = params # pylint warning
@@ -849,6 +853,16 @@ class MemberAccessExpression(VBA_Object):
             return last_rhs
         
         return ""
+
+    def to_javascript(self, params=None, indent=0):
+
+        # We can't handle simulated ExecQuery() results in JS code.
+        if (".Properties_" in str(self)):
+            raise ValueError("Can't handle simulated ExecQuery() results in JS JIT code")
+        r = to_javascript(self.lhs) + "." + to_javascript(self.rhs, statements=True)
+        if (str(self).startswith("WScript.")):
+            r = r.replace("WScript.", "")
+        return r
     
     def _handle_indexed_pages_access(self, context):
         """Handle getting the caption of a Page object referenced via
@@ -4495,7 +4509,25 @@ class Function_Call(VBA_Object):
 
         # Done.
         return r
-        
+
+    def to_javascript(self, params=None, indent=0):
+
+        # Get a list of the JS expressions for each parameter.
+        js_params = []
+        for p in self.params:
+            js_params.append(to_javascript(p, params))
+        print(js_params)
+            
+        # Is this a VBA internal function?
+        func_name = self.name
+        from core import vba_library
+        is_internal = (func_name.lower() in vba_library.VBA_LIBRARY)
+        r = ""
+        if is_internal:
+            r = vba_library.VBA_LIBRARY[func_name.lower()].to_javascript(js_params)
+
+        # Done.
+        return r
 
 # comma-separated list of parameters, each of them can be an expression:
 # TODO: Since the VB designers in their infinite wisdom decided to use the same operators

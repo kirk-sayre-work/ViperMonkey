@@ -82,6 +82,7 @@ from core.from_unicode_str import from_unicode_str
 from core.vba_object import eval_arg, eval_args, VbaLibraryFunc, VBA_Object
 from core.python_jit import _loop_vars_to_python, to_python, _updated_vars_to_python, _eval_python, \
     enter_loop, exit_loop
+from core.javascript_jit import to_javascript
 from core import procedures
 from core.var_in_expr_visitor import var_in_expr_visitor
 from core.contains_statement_visitor import contains_statement_visitor
@@ -1045,7 +1046,14 @@ class Let_Statement(VBA_Object):
             r = r[1:]
         r = " " * indent + r
         return r
-        
+
+    def to_javascript(self, params=None, indent=0):
+        r = " " * indent + safe_str_convert(self.name) + " " + \
+            safe_str_convert(self.op) + " " + \
+            to_javascript(self.expression, params=params)
+        print(r)
+        return r
+    
     def _handle_change_callback(self, var_name, context):
         """Handle calling the change callback handler function for a
         variable. This will emulate the change callback handler
@@ -4702,6 +4710,29 @@ class Call_Statement(VBA_Object):
         # Done.
         return r
 
+    def to_javascript(self, params=None, indent=0):
+
+        r = to_javascript(self.name)
+        return r
+        # Get a list of the JS expressions for each parameter.
+        js_params = []
+        for p in self.params:
+            js_params.append(to_javascript(p, params))
+        print("----")
+        print(self.name)
+        print(self.params)
+            
+        # Is this a VBA internal function?
+        func_name = self.name
+        from core import vba_library
+        is_internal = (func_name.lower() in vba_library.VBA_LIBRARY)
+        r = ""
+        if is_internal:
+            r = vba_library.VBA_LIBRARY[func_name.lower()].to_javascript(js_params)
+
+        # Done.
+        return r
+    
     def _handle_as_member_access(self, context):
         """Certain object method calls need to be handled as member access
         expressions. Given parsing limitations some of these are

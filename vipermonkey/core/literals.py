@@ -181,6 +181,9 @@ class String(VBA_Object):
             r = r.replace(chr(i), repl)
         return '"' + r + '"'
 
+    def to_javascript(self, params=None, indent=0):
+        return self.to_python(None)
+    
 
 # NOTE: QuotedString creates a regex, so speed should not be an issue.
 #quoted_string = (QuotedString('"', escQuote='""') | QuotedString("'", escQuote="''"))('value')

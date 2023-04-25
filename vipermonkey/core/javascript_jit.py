@@ -65,14 +65,12 @@ from core.lhs_var_visitor import lhs_var_visitor
 from core.var_in_expr_visitor import var_in_expr_visitor
 from core.let_statement_visitor import let_statement_visitor
 
-def to_javascript(arg, context, params=None, indent=0, statements=False):
+def to_javascript(arg, params=None, indent=0, statements=False):
     """Call arg.to_javascript() if arg is a VBAObject, otherwise just return
     arg as a str.
 
     @param arg (VBA_Object object) The code for which to generate
     JavaScript code.
-
-    @param context (Context object) The current program state.
 
     @param params (list) Any VB params used by the given VBA_Object.
 
@@ -87,22 +85,28 @@ def to_javascript(arg, context, params=None, indent=0, statements=False):
         
     # VBA Object?
     r = None
-    #print(type(arg))
-    #print(hasattr(arg, "to_javascript"))
-    #print(type(arg.to_javascript))
+    print(type(arg))
+    print(hasattr(arg, "to_javascript"))
     if (hasattr(arg, "to_javascript") and
         ((safe_str_convert(type(arg.to_javascript)) == "<type 'method'>") or
          (safe_str_convert(type(arg.to_javascript)) == "<class 'method'>") or
          (safe_str_convert(type(arg.to_javascript)) == "<type 'instancemethod'>") or
          (safe_str_convert(type(arg.to_javascript)) == "<class 'instancemethod'>"))):
-        r = arg.to_javascript(context, params=params, indent=indent)
+        r = arg.to_javascript(params=params, indent=indent)
 
     # Datetime object?
     elif (isinstance(arg, datetime.datetime)):
 
         # For now just treat this as a string.
         r = '"' + str(arg) + '"'
-        
+
+    # Boolean literal?
+    elif (isinstance(arg, bool)):
+        if arg:
+            r = "true"
+        else:
+            r = "false"
+            
     # String literal?
     elif (isinstance(arg, str)):
 
@@ -146,7 +150,7 @@ def to_javascript(arg, context, params=None, indent=0, statements=False):
         indent_str = " " * indent
         for statement in arg:
             try:
-                r += to_javascript(statement, context, indent=indent+4) + "\n"
+                r += to_javascript(statement, indent=indent+4) + "\n"
             except Exception as e:
                 #print(statement)
                 #print(e)
@@ -163,10 +167,10 @@ def to_javascript(arg, context, params=None, indent=0, statements=False):
             arg_str = list(filter(isprint, arg))
         r = " " * indent + arg_str
         
-    #print("--- to_javascript() ---")
-    #print(arg)
-    #print(type(arg))
-    #print(r)
+    print("--- to_javascript() ---")
+    print(arg)
+    print(type(arg))
+    print(r)
         
     # Done.
     return r

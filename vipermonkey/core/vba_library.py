@@ -5245,6 +5245,18 @@ class CreateObject(VbaLibraryFunc):
         # being created.
         return utils.safe_str_convert(obj_type)
 
+    @classmethod
+    def to_javascript(cls, params):
+        r = "WScript.CreateObject("
+        first = True
+        for p in params:
+            if not first:
+                r += ", "
+            first = False
+            r += p
+        r += ")"
+        return r
+            
 class GetParentFolderName(VbaLibraryFunc):
     """Emulate GetParentFolderName() method.
 
@@ -6431,6 +6443,18 @@ class Print(VbaLibraryFunc):
                 data_str = utils.safe_str_convert(data_str).replace("\x00", "")
                 context.report_action("Debug Print", data_str, '')
 
+    @classmethod
+    def to_javascript(cls, params):
+        r = "console.log("
+        first = True
+        for p in params:
+            if not first:
+                r += ", "
+            first = False
+            r += p
+        r += ")"
+        return r
+                
 class Debug(Print):
     """Emulate Debug() debugging function.
 

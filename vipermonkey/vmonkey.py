@@ -105,6 +105,7 @@ import core.excel as excel
 import core.read_ole_fields as read_ole_fields
 from core.utils import safe_print
 from core.utils import safe_str_convert
+from core.javascript_jit import to_javascript
 
 # for logging
 from core.logger import log
@@ -184,6 +185,92 @@ __version__ = '2.0.0'
 got_parse_error = False
 # Track whether emulation crashed with an exception.
 got_crash_error = False
+
+def convert_to_js(container, filename, data):
+    """Convert the given VBA/VBScript file to JavaScript.
+
+    @param container (str) Path and filename of container if the file is within
+    a zip archive, None otherwise.
+
+    @param filename (str) path and filename of file on disk, or within
+    the container.
+
+    @param data (bytes) content of the file if it is in a container,
+    None if it is a file on disk.
+
+    @return (str) The VBScript in the file converted to JavaScript.
+
+    """
+
+    # Check for files that do not exist.
+    if (isinstance(data, Exception)):
+        log.error("Cannot open file '" + safe_str_convert(filename) + "'.")
+        return None
+    
+    # Read in file contents if we have not already been provided data to analyze.
+    if not data:
+        # TODO: replace print by writing to a provided output file (sys.stdout by default)
+        if container:
+            display_filename = '%s in %s' % (filename, container)
+        else:
+            display_filename = filename
+        safe_print('='*79)
+        safe_print('FILE: ' + safe_str_convert(display_filename))
+        # FIXME: the code below only works if the file is on disk and not in a zip archive
+        # TODO: merge process_file and _process_file
+        try:
+            input_file = open(filename,'rb')
+            data = input_file.read()
+            input_file.close()
+        except IOError as e:
+            log.error("Cannot open file '" + safe_str_convert(filename) + "'. " + safe_str_convert(e))
+            return None
+
+    #TODO: handle olefile errors, when an OLE file is malformed
+    if (isinstance(data, Exception)):
+        data = None
+    vba = None
+    try:
+        vba = _get_vba_parser(data)
+    except Exception as e:
+
+        # Is this an unrecognized format?
+        if ("Failed to open file  is not a supported file type, cannot extract VBA Macros." not in safe_str_convert(e)):
+
+            # This is not something we can possibly fix.
+            log.error("Cannot extract VB to analyze. " + safe_str_convert(e))
+            return None                
+
+        # This may be VBScript with some null characters. Remove those and try again.
+        data = data.replace(b"\x00", b"")
+        try:
+                vba = _get_vba_parser(data)
+        except Exception as e:
+
+            # Can't get anything to process.
+            log.error(safe_str_convert(e))
+            return None
+
+    # Parse the VBA streams.
+    log.info("Parsing VB...")
+    comp_modules = parse_streams(vba, strip_useless=True)
+
+    # Do we have something to analyze?
+    if (comp_modules is None):
+        # Parse error.
+        return None
+    # No VBScript.
+    if (comp_modules == "empty"):
+        return ""
+
+    # We have VB. Convert it to JS.
+    r = ""
+    for module_info in comp_modules:
+        m = module_info[0]
+        r += to_javascript(m)
+
+    # Done.
+    return r
 
 def get_vb_contents_from_hta(vba_code):
     """Pull out Visual Basic code from .hta file contents.
@@ -1341,6 +1428,8 @@ def main():
                            'assigned during emulation (URLs and base64).')
     parser.add_option("-v", '--version', action="store_true", dest="print_version",
                       help='Print version information of packages used by ViperMonkey.')
+    parser.add_option("-J", '--javascript', action="store_true", dest="to_javascript",
+                      help='Convert given VBScript to JavaScript. Emulation will not be performed.')
     parser.add_option("-o", "--out-file", action="store", default=None, type="str",
                       help="JSON output file containing resulting IOCs, builtins, and actions")
     parser.add_option("-p", "--tee-log", action="store_true", default=False,
@@ -1367,10 +1456,11 @@ def main():
     # setup logging to the console
     # logging.basicConfig(level=LOG_LEVELS[options.loglevel], format='%(levelname)-8s %(message)s')
     colorlog.basicConfig(level=LOG_LEVELS[options.loglevel], format='%(log_color)s%(levelname)-8s %(message)s')
-
-    # Do the emulation.
+    
+    # Do the emulation or conversion.
     json_results = []
     curr_artifact_dir = options.artifacts_dir
+    converted_js = ""
     for container, filename, data in xglob.iter_files(args,
                                                       recursive=options.recursive,
                                                       zip_password=options.zip_password,
@@ -1379,8 +1469,16 @@ def main():
         # ignore directory names stored in zip files:
         if container and filename.endswith('/'):
             continue
+
+        # ??
         if options.scan_expressions:
             process_file_scanexpr(container, filename, data)
+
+        # Are we just converting the given VBScript sample to JavaScript?
+        elif options.to_javascript:
+            converted_js += convert_to_js(container, filename, data)
+
+        # Regular emulation.
         else:
             entry_points = None
             if (options.entry_points is not None):
@@ -1411,15 +1509,24 @@ def main():
                     json_results.append({"crash_error": got_crash_error})
                     
     if (options.out_file):
-        if isinstance(json_results, list):
-            if (len(json_results) == 0):
-                json_results = {}
-            else:
-                json_results = json_results[0]
-        with open(options.out_file, 'w') as json_file:
-            json_file.write(json.dumps(json_results, indent=2))
 
-        log.info("Saved results JSON to output file " + options.out_file)
+        # Just doing JS conversion?
+        if options.to_javascript:
+            with open(options.out_file, 'w') as out_file:
+                out_file.write(converted_js)
+            log.info("Saved JavaScript conversion results to output file " + options.out_file)
+                
+        # Saving emulation results?
+        else:
+            if isinstance(json_results, list):
+                if (len(json_results) == 0):
+                    json_results = {}
+                else:
+                    json_results = json_results[0]
+            with open(options.out_file, 'w') as json_file:
+                json_file.write(json.dumps(json_results, indent=2))
+
+            log.info("Saved results JSON to output file " + options.out_file)
 
 
 if __name__ == '__main__':

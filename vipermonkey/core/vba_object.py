@@ -125,6 +125,19 @@ class VbaLibraryFunc(object):
         log.warning("Using default modified parameter indices [] for " + safe_str_convert(type(self)))
         return []
 
+    @classmethod
+    def to_javascript(cls, params):
+        log.warning("VBA Library to_javascript() not implemented in " + safe_str_convert(cls.__name__) + ". Using default implementation.")
+        r = safe_str_convert(cls.__name__) + "("
+        first = True
+        for p in params:
+            if not first:
+                r += ", "
+            first = False
+            r += p
+        r += ")"
+        return r
+    
 def limits_exceeded(throw_error=False):
     """Check to see if we are about to exceed the maximum recursion
     depth. Also check to see if emulation is taking too long (if
@@ -320,6 +333,20 @@ class VBA_Object(object):
         """
         log.warning("to_python() not implemented in " + safe_str_convert(type(self)))
         raise NotImplementedError("to_python() not implemented in " + safe_str_convert(type(self)))
+
+    def to_javascript(self, params=None, indent=0):
+        """Transpile this VBA object to JavaScript code.
+
+        @param params (list) Any parameters provided to the object.
+        
+        @param indent (int) The number of spaces of indent to use at
+        the beginning of the generated JS code.
+
+        @return (str) The current VBA object converted to JS.
+
+        """
+        log.warning("to_javascript() not implemented in " + safe_str_convert(type(self)))
+        raise NotImplementedError("to_javascript() not implemented in " + safe_str_convert(type(self)))
 
 def _read_from_excel(arg, context):
     """Try to evaluate an argument by reading from the loaded Excel
