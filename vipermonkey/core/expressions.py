@@ -233,7 +233,15 @@ class SimpleNameExpression(VBA_Object):
         return var_name
 
     def to_javascript(self, params=None, indent=0):
-        return safe_str_convert(self.name)
+
+        # Translate some VBS specific constants if needed.
+        r = safe_str_convert(self.name)
+        vbs_constants = {
+            "vbCrLf" : "\"\\n\""
+        }
+        if (r in vbs_constants):
+            r = vbs_constants[r]
+        return r
     
     def eval(self, context, params=None):
         params = params # pylint warning
@@ -4514,9 +4522,15 @@ class Function_Call(VBA_Object):
 
         # Get a list of the JS expressions for each parameter.
         js_params = []
+        js_params_str = ""
+        first = True
         for p in self.params:
-            js_params.append(to_javascript(p, params))
-        print(js_params)
+            if not first:
+                js_params_str += ", "
+            first = False
+            js_p = to_javascript(p, params)
+            js_params_str += js_p
+            js_params.append(js_p)
             
         # Is this a VBA internal function?
         func_name = self.name
@@ -4525,6 +4539,8 @@ class Function_Call(VBA_Object):
         r = ""
         if is_internal:
             r = vba_library.VBA_LIBRARY[func_name.lower()].to_javascript(js_params)
+        else:
+            r = func_name + "(" + js_params_str + ")" 
 
         # Done.
         return r

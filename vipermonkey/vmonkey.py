@@ -105,7 +105,7 @@ import core.excel as excel
 import core.read_ole_fields as read_ole_fields
 from core.utils import safe_print
 from core.utils import safe_str_convert
-from core.javascript_jit import to_javascript
+from core.javascript_jit import transpile_javascript
 
 # for logging
 from core.logger import log
@@ -267,7 +267,7 @@ def convert_to_js(container, filename, data):
     r = ""
     for module_info in comp_modules:
         m = module_info[0]
-        r += to_javascript(m)
+        r += transpile_javascript(m)
 
     # Done.
     return r
@@ -1528,6 +1528,11 @@ def main():
 
             log.info("Saved results JSON to output file " + options.out_file)
 
+    else:
+        if options.to_javascript:
+            print("// ------ START TRANSPILED JAVASCRIPT ------")
+            print(converted_js)
+            print("// ------ END TRANSPILED JAVASCRIPT ------")
 
 if __name__ == '__main__':
     main()

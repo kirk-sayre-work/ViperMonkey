@@ -54,6 +54,7 @@ from collections import Iterable
 
 from core.vba_object import eval_args, VBA_Object
 from core.python_jit import to_python
+from core.javascript_jit import to_javascript
 from core.logger import log
 from core.utils import safe_str_convert
 from core import vba_conversion
@@ -665,7 +666,15 @@ class MultiOp(VBA_Object):
             context.in_bitwise_expression = False
 
         return '({})'.format(''.join(ret))
-        
+
+    def to_javascript(self, params=None, indent=0):
+
+        ret = [to_javascript(self.arg[0], params=params)]
+        for op, arg in zip(self.operators, self.arg[1:]):
+            ret.append(' {} {!s}'.format(op, to_javascript(arg, params=params)))
+
+        return '({})'.format(''.join(ret))        
+    
     def eval(self, context, params=None):
 
         # We are emulating some string or numeric
@@ -858,6 +867,16 @@ class Concatenation(VBA_Object):
             r += "coerce_to_str(" + to_python(arg, context, params=params) + ", zero_is_null=True)"
         return "(" + r + ")"
 
+    def to_javascript(self, params=None, indent=0):
+        r = ""
+        first = True
+        for arg in self.arg:
+            if (not first):
+                r += " + "
+            first = False
+            r += to_javascript(arg, params=params)
+        return "(" + r + ")"
+    
 # --- MOD OPERATOR -----------------------------------------------------------
 
 class Mod(VBA_Object):

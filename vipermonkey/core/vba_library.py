@@ -1058,7 +1058,12 @@ class Len(VbaLibraryFunc):
 
     def num_args(self):
         return 1
-        
+
+    @classmethod
+    def to_javascript(cls, params):
+        r = params[0] + ".length"
+        return r
+    
 class LenB(VbaLibraryFunc):
     """Emulate LenB() function.
 
@@ -1295,7 +1300,24 @@ class Mid(VbaLibraryFunc):
 
     def return_type(self):
         return "STRING"
-    
+
+    @classmethod
+    def to_javascript(cls, params):
+
+        # If length not specified, return up to the end of the string:
+        s_len = None
+        s_str = params[0]
+        s_start = params[1]
+        if (len(params) == 2):
+            s_len = s_str + ".length"
+        else:
+            s_len = params[2]
+        s_end = "(" + s_start + " + " + s_len + ")"
+
+        # Done.
+        r = s_str + ".slice(" + s_start + ", " + s_end + ")"
+        return r
+            
 class MidB(Mid):
     pass
 

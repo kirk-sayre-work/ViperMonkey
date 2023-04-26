@@ -54,6 +54,7 @@ from pyparsing import Suppress, Regex, CaselessKeyword, Optional, \
 
 from core.vba_object import eval_arg, VBA_Object
 from core.python_jit import to_python
+from core.javascript_jit import to_javascript
 from core import vb_str
 from core.utils import safe_str_convert
 
@@ -87,6 +88,11 @@ class Chr(VBA_Object):
         r = "core.vba_library.run_function(\"_Chr\", vm_context, [" + arg_str + "])"
         return r
 
+    def to_javascript(self, params=None, indent=0):    
+        arg_str = to_javascript(self.arg)
+        r = "String.fromCharCode(" + arg_str + ")"
+        return r
+        
     def return_type(self):
         return "STRING"
     

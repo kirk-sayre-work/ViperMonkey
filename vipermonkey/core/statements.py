@@ -684,6 +684,58 @@ class Dim_Statement(VBA_Object):
             
         # Done.
         return r
+
+    def to_javascript(self, params=None, indent=0):
+        
+        # Get JS code for the initial variable value(s).
+        init_val = ''
+        if (self.init_val is not None):
+            init_val = to_javascript(self.init_val)
+            
+        # Track each declared variable.
+        r = ""
+        for var in self.variables:
+
+            # Do we know the variable type?
+            curr_init_val = init_val
+            curr_type = var[2]
+            if (curr_type is not None):
+
+                # Get the initial value.
+                if ((curr_type == "Long") or (curr_type == "Integer")):
+                    curr_init_val = "0"
+                if (curr_type == "String"):
+                    curr_init_val = '""'
+                if (curr_type == "Boolean"):
+                    curr_init_val = "false"
+                
+                # Is this variable an array?
+                if (var[1]):
+                    curr_type += " Array"
+                    curr_init_val = []
+                    if ((var[3] is not None) and
+                        ((curr_type == "Byte Array") or (curr_type == "Integer Array"))):
+                        curr_init_val = safe_str_convert([0] * (var[3] + 1))
+                    if ((var[3] is not None) and (curr_type == "String Array")):
+                        curr_init_val = safe_str_convert([''] * var[3])
+
+            # Handle untyped arrays.
+            elif (var[1]):
+                curr_init_val = safe_str_convert([])
+
+            # Handle VB NULL values.
+            if (curr_init_val == '"NULL"'):
+                curr_init_val = "0"
+                
+            # Set the initial value of the declared variable.
+            if (curr_init_val == '"NULL_NO_OVERWRITE"'):
+                curr_init_val = '""'
+            var_name = safe_str_convert(var[0])
+            r1 = " " * indent + var_name + " = " + safe_str_convert(curr_init_val) + "\n"
+            r += r1
+            
+        # Done.
+        return r
     
     def eval(self, context, params=None):
 
@@ -1051,7 +1103,6 @@ class Let_Statement(VBA_Object):
         r = " " * indent + safe_str_convert(self.name) + " " + \
             safe_str_convert(self.op) + " " + \
             to_javascript(self.expression, params=params)
-        print(r)
         return r
     
     def _handle_change_callback(self, var_name, context):
@@ -2090,6 +2141,28 @@ class For_Statement(VBA_Object):
         # Done.
         return python_code
 
+    def to_javascript(self, params=None, indent=0):
+
+        # Get the loop variable.
+        loop_var = safe_str_convert(self.name)
+
+        # Get the start index, end index, and step of the loop.
+        start = to_javascript(self.start_value)
+        end = to_javascript(self.end_value)
+        step = to_javascript(self.step_value)
+
+        # Make the JS.
+        indent_str = " " * indent
+        r = indent_str + \
+            "for (" + loop_var + " = " + start + "; " + \
+            loop_var + " < " + end + "; " + \
+            loop_var + " += " + step + ") {\n"
+        r += to_javascript(self.statements, indent=indent + 4, statements=True)
+        r += "\n}"
+
+        # Done.
+        return r
+    
     def _handle_medium_loop(self, context, params, end, step):
         """Do short circuited emulation of loops used purely for obfuscation
         that just do the same # repeated assignment.
@@ -4712,15 +4785,27 @@ class Call_Statement(VBA_Object):
 
     def to_javascript(self, params=None, indent=0):
 
-        r = to_javascript(self.name)
-        return r
+        # The whole call is in the name if the name is a member access
+        # expression.
+        if isinstance(self.name, MemberAccessExpression):
+            r = to_javascript(self.name)
+            if (not r.strip().endswith(")")):
+                r = r.strip() + "()"
+            return r
+
+        # Got a regular call.
+
         # Get a list of the JS expressions for each parameter.
         js_params = []
+        js_params_str = ""
+        first = True
         for p in self.params:
-            js_params.append(to_javascript(p, params))
-        print("----")
-        print(self.name)
-        print(self.params)
+            if not first:
+                js_params_str += ", "
+            first = False
+            js_p = to_javascript(p, params)
+            js_params_str += js_p
+            js_params.append(js_p)
             
         # Is this a VBA internal function?
         func_name = self.name
@@ -4729,9 +4814,11 @@ class Call_Statement(VBA_Object):
         r = ""
         if is_internal:
             r = vba_library.VBA_LIBRARY[func_name.lower()].to_javascript(js_params)
-
+        else:
+            r = func_name + "(" + js_params_str + ")" 
+            
         # Done.
-        return r
+        return r        
     
     def _handle_as_member_access(self, context):
         """Certain object method calls need to be handled as member access

@@ -577,7 +577,11 @@ class Function(VBA_Object):
 
         # Done.
         return r
-        
+
+    def to_javascript(self, params=None, indent=0):
+        print("FUNCTION!!")
+        return "FUNC: " + str(self)
+    
     def eval(self, context, params=None):
 
         # create a new context for this execution:

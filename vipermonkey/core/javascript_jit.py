@@ -65,6 +65,52 @@ from core.lhs_var_visitor import lhs_var_visitor
 from core.var_in_expr_visitor import var_in_expr_visitor
 from core.let_statement_visitor import let_statement_visitor
 
+def _boilerplate_to_javascript(indent):
+    """Get starting boilerplate code for VB to JavaScript code.
+
+    @param indent (int) The number of spaces to indent the generated
+    JavaScript code.
+    
+    @return (str) The boilerplate JavaScript code for the beginning of a
+    JavaScript code block.
+
+    """
+    indent_str = " " * indent
+    boilerplate = ""
+    boilerplate += indent_str + "function CLng(s) {\n"
+    boilerplate += indent_str + "\n"
+    boilerplate += indent_str + "    // Handle VB hex strings.\n"
+    boilerplate += indent_str + "    if (s.startsWith(\"&H\")) {\n"
+    boilerplate += indent_str + "	s = s.slice(2);\n"
+    boilerplate += indent_str + "	return parseInt(s, 16);\n"
+    boilerplate += indent_str + "    }\n"
+    boilerplate += indent_str + "\n"
+    boilerplate += indent_str + "    // Assume regular int.\n"
+    boilerplate += indent_str + "    return parseInt(s);\n"
+    boilerplate += indent_str + "}\n"
+    boilerplate += "\n"
+    return boilerplate
+    
+def transpile_javascript(arg):
+    """Transpile the parsed VB code to Javascript. This is the top level
+    function for doing the transpiling.
+
+    @param arg (VBA_Object object) The code for which to generate
+    JavaScript code.
+
+    @return (str) The Javascript code for the given VB.
+
+    """
+
+    # Add in JS for some JS implementations of VB functions.
+    r = _boilerplate_to_javascript(0)
+
+    # Add in JS for actual VB program.
+    r += to_javascript(arg)
+
+    # Done.
+    return r
+    
 def to_javascript(arg, params=None, indent=0, statements=False):
     """Call arg.to_javascript() if arg is a VBAObject, otherwise just return
     arg as a str.
@@ -81,6 +127,7 @@ def to_javascript(arg, params=None, indent=0, statements=False):
     parameter is a list of VB statements (VBA_Object) to convert to
     JavaScript, if False arg is just a single item to convert as a unit.
 
+    @return (str) The Javascript code for the given VB.
     """
         
     # VBA Object?
@@ -147,10 +194,9 @@ def to_javascript(arg, params=None, indent=0, statements=False):
     # List of statements?
     elif (isinstance(arg, (list, pyparsing.ParseResults)) and statements):
         r = ""
-        indent_str = " " * indent
         for statement in arg:
             try:
-                r += to_javascript(statement, indent=indent+4) + "\n"
+                r += to_javascript(statement, indent=indent) + "\n"
             except Exception as e:
                 #print(statement)
                 #print(e)
