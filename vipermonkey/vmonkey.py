@@ -1531,7 +1531,10 @@ def main():
     else:
         if options.to_javascript:
             print("// ------ START TRANSPILED JAVASCRIPT ------")
-            print(converted_js)
+            if got_parse_error:
+                print("// PARSE ERROR!!")
+            else:
+                print(converted_js)
             print("// ------ END TRANSPILED JAVASCRIPT ------")
 
 if __name__ == '__main__':
