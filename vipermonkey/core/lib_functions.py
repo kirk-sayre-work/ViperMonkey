@@ -90,7 +90,7 @@ class Chr(VBA_Object):
 
     def to_javascript(self, params=None, indent=0):    
         arg_str = to_javascript(self.arg)
-        r = "String.fromCharCode(" + arg_str + ")"
+        r = "String.fromCharCode(CLng(" + arg_str + "))"
         return r
         
     def return_type(self):
