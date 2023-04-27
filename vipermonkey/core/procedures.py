@@ -72,6 +72,7 @@ from core.logger import log
 from core.tagged_block_finder_visitor import tagged_block_finder_visitor
 from core.vba_object import VBA_Object, eval_arg
 from core.python_jit import to_python, _check_for_iocs, _get_var_vals
+from core.javascript_jit import to_javascript
 from core import vba_conversion
 
 # Track the depth of functions we are working on in to_python() calls.
@@ -579,9 +580,35 @@ class Function(VBA_Object):
         return r
 
     def to_javascript(self, params=None, indent=0):
-        print("FUNCTION!!")
-        return "FUNC: " + str(self)
-    
+
+        # Define the function prototype.
+        func_name = safe_str_convert(self.name)
+        indent_str = " " * indent
+        r = ""
+        func_args = "("
+        first = True
+        for param in self.params:
+            if (not first):
+                func_args += ", "
+            first = False
+            func_args += to_javascript(param)
+        func_args += ")"
+        r += indent_str + "function " + func_name + func_args + " {\n"
+
+        # Init return value.
+        r += indent_str + " " * 4 + func_name + "_RETVAL = 0\n\n"
+
+        # Function body.
+        body_js = to_javascript(self.statements, indent=indent+4, statements=True)
+        body_js = body_js.replace(func_name, func_name + "_RETVAL")
+        r += body_js
+
+        # Function return value.
+        r += indent_str + " " * 4 + "return " + func_name + "_RETVAL\n}\n"
+
+        # Done.
+        return r
+        
     def eval(self, context, params=None):
 
         # create a new context for this execution:

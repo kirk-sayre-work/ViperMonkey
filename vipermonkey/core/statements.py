@@ -340,7 +340,15 @@ class Parameter(VBA_Object):
             init_str = "=" + to_python(self.init_val, context=context)
         r = name_str + init_str
         return r
-    
+
+    def to_javascript(self, params=None, indent=0):
+        name_str = safe_str_convert(self.name)
+        init_str = ""
+        if ((self.init_val is not None) and (len(safe_str_convert(self.init_val)) > 0)):
+            init_str = "=" + to_javascript(self.init_val)
+        r = name_str + init_str
+        return r
+        
 # 5.3.1.5 Parameter Lists
 #
 # MS-GRAMMAR: procedure-parameters = "(" [parameter-list] ")"
@@ -2147,7 +2155,7 @@ class For_Statement(VBA_Object):
         loop_var = safe_str_convert(self.name)
 
         # Get the start index, end index, and step of the loop.
-        start = to_javascript(self.start_value)
+        start = to_javascript(self.start_value) + "-1"
         end = to_javascript(self.end_value)
         step = to_javascript(self.step_value)
 

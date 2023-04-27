@@ -231,8 +231,14 @@ class Module(VBA_Object):
         return to_python(self.loose_lines, context, indent=indent, statements=True)
 
     def to_javascript(self, params=None, indent=0):
-        return to_javascript(self.loose_lines, indent=indent, statements=True)
-    
+        r = ""
+        for sub in list(self.subs.values()):
+            r += to_javascript(sub)
+        for func in list(self.functions.values()):
+            r += to_javascript(func)
+        r += to_javascript(self.loose_lines, indent=indent, statements=True)
+        return r
+            
     def load_context(self, context):
         """Load functions/subs defined in the module into the given
         context. The function/sub names will be associated with the
