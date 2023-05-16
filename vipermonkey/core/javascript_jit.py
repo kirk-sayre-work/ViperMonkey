@@ -93,7 +93,7 @@ def _boilerplate_to_javascript(indent):
     boilerplate += indent_str + "}\n"
     boilerplate += "\n"
     boilerplate += indent_str + "function StrReverse(str) {\n"
-    boilerplate += indent_str + "    return str.split("").reverse().join("");\n"
+    boilerplate += indent_str + '    return str.split("").reverse().join("");\n'
     boilerplate += indent_str + "}\n"
     boilerplate += "\n"
     return boilerplate
@@ -139,8 +139,8 @@ def to_javascript(arg, params=None, indent=0, statements=False):
         
     # VBA Object?
     r = None
-    print(type(arg))
-    print(hasattr(arg, "to_javascript"))
+    #print(type(arg))
+    #print(hasattr(arg, "to_javascript"))
     if (hasattr(arg, "to_javascript") and
         ((safe_str_convert(type(arg.to_javascript)) == "<type 'method'>") or
          (safe_str_convert(type(arg.to_javascript)) == "<class 'method'>") or
@@ -220,10 +220,10 @@ def to_javascript(arg, params=None, indent=0, statements=False):
             arg_str = list(filter(isprint, arg))
         r = " " * indent + arg_str
         
-    print("--- to_javascript() ---")
-    print(arg)
-    print(type(arg))
-    print(r)
+    #print("--- to_javascript() ---")
+    #print(arg)
+    #print(type(arg))
+    #print(r)
         
     # Done.
     return r
