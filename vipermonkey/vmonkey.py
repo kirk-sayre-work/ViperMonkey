@@ -105,6 +105,7 @@ import core.excel as excel
 import core.read_ole_fields as read_ole_fields
 from core.utils import safe_print
 from core.utils import safe_str_convert
+import core.utils as utils
 from core.javascript_jit import transpile_javascript
 
 # for logging
@@ -377,7 +378,7 @@ def parse_stream(subfilename,
     
     # Check for timeouts.
     core.vba_object.limits_exceeded(throw_error=True)
-    
+
     # Are the arguments all in a single tuple?
     if (stream_path is None):
         subfilename, stream_path, vba_filename, vba_code = subfilename
@@ -386,7 +387,7 @@ def parse_stream(subfilename,
     if (repr(stream_path).strip() == "'xlm_macro'"):
         log.warning("Skipping XLM macro stream...")
         return "empty"
-        
+    
     # Collapse long lines.
     vba_code = core.vba_collapse_long_lines(vba_code)
         
@@ -501,6 +502,10 @@ def parse_streams(vba, strip_useless=False):
     r = []
     got_vba = False
     for (subfilename, stream_path, vba_filename, vba_code) in vba.extract_macros():
+
+        # Unhide VBA strings now that olevba can't mess them up.
+        vba_code = utils._unhide_strings(vba_code, vba.str_map)
+        
         got_vba = True
         m = parse_stream(subfilename, stream_path, vba_filename, vba_code, strip_useless, local_funcs)
         if (m is None):
@@ -751,6 +756,12 @@ def _get_vba_parser(data):
     # Reset the parse error flag.
     global got_parse_error
     got_parse_error = False
+
+    # olevba messes up extended ASCII characters in VBScript
+    # samples. Hide all string literals in VBScript samples here so
+    # olevba does not mess up extended ASCII characters. The strings
+    # literals will be restored prior to parsing.
+    data, str_map = utils._hide_strings(data)
     
     # First just try the most common case where olevba can directly get the VBA.
     vba = None
@@ -767,6 +778,11 @@ def _get_vba_parser(data):
         # If this throws an exception it will get passed up.
         vba = VBA_Parser('', extracted_data, relaxed=True)
 
+    # Save the hidden string information so we can unhide the strings
+    # later.
+    if (vba is not None):
+        vba.str_map = str_map
+        
     # Return the vba parser.
     return vba
 

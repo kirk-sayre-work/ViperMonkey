@@ -565,3 +565,68 @@ def isascii(s):
     if (hsh is not None):
         cached_ascii[hsh] = r
     return r
+
+def _strip_single_line_comments(s):
+    s = safe_str_convert(s)
+    pat = r"'[^\n]{1,10000}\n"
+    return re.sub(pat, "\n", s + "\n")
+
+def _hide_strings(s):
+
+    # Don't hide strings in Office files or HTA files.
+    import core.filetype as filetype
+    s_str = safe_str_convert(s)
+    if (filetype.is_office_file(s, True) or ("</script>" in s_str)):
+        return (s, {})
+    
+    s = s_str
+    in_str_double = False
+    curr_str = None
+    all_strs = {}
+    counter = 1000000
+    r = ""
+    s = _strip_single_line_comments(s)
+    escaped = False
+    for i in range(0, len(s)):
+        
+        # Start/end double quoted string?
+        curr_char = s[i]
+        next_char = ""
+        if ((i + 1) < len(s)):
+            next_char = s[i + 1]
+        if ((curr_char == '"') and (next_char != '"') and (not escaped)):
+            
+            # Switch being in/out of string.
+            in_str_double = not in_str_double
+            
+            # Finished up a string we were tracking?
+            if (not in_str_double):
+                str_name = "HIDE_" + str(counter)
+                counter += 1
+                all_strs[str_name] = curr_str[1:]
+                r += '"' + str_name
+            else:
+                curr_str = ""
+
+        # Track whether the current " is escaped.
+        escaped = (not escaped) and (curr_char == '"') and (next_char == '"')
+                
+        # Save the current character if we are tracking a string.
+        if in_str_double:
+            curr_str += curr_char
+        else:
+
+            # Not in a string. Just save the original character in the
+            # result string.
+            r += curr_char
+        skip = False
+
+    # Done.
+    return (r, all_strs)
+
+def _unhide_strings(s, str_map):
+    s = safe_str_convert(s)
+    r = s
+    for str_name in str_map:
+        r = r.replace(str_name, str_map[str_name])
+    return r

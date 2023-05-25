@@ -126,7 +126,7 @@ class String(VBA_Object):
         super(String, self).__init__(original_str, location, tokens)
         self.gloss = None
         try:
-            self.value = tokens[0].encode("utf-8").decode("latin-1")
+            self.value = safe_str_convert(tokens[0])
         except:
             tmp_s = ""
             for b in tokens[0].encode("utf-8"):
@@ -186,7 +186,6 @@ class String(VBA_Object):
     
 
 # NOTE: QuotedString creates a regex, so speed should not be an issue.
-#quoted_string = (QuotedString('"', escQuote='""') | QuotedString("'", escQuote="''"))('value')
 quoted_string = QuotedString('"', escQuote='""', convertWhitespaceEscapes=False)('value')
 quoted_string.setParseAction(String)
 
