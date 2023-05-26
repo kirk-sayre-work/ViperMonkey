@@ -239,6 +239,7 @@ def convert_to_js(container, filename, data):
         if ("Failed to open file  is not a supported file type, cannot extract VBA Macros." not in safe_str_convert(e)):
 
             # This is not something we can possibly fix.
+            #traceback.print_exc()
             log.error("Cannot extract VB to analyze. " + safe_str_convert(e))
             return None                
 
@@ -1146,6 +1147,7 @@ def _process_file (filename,
 
                 # This is not something we can possibly fix.
                 got_crash_error = True
+                #traceback.print_exc()
                 log.error("Cannot extract VB to analyze. " + safe_str_convert(e))
                 return None                
 

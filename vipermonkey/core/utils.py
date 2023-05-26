@@ -566,35 +566,36 @@ def isascii(s):
         cached_ascii[hsh] = r
     return r
 
-def _strip_single_line_comments(s):
-    s = safe_str_convert(s)
-    pat = r"'[^\n]{1,10000}\n"
-    return re.sub(pat, "\n", s + "\n")
-
 def _hide_strings(s):
 
-    # Don't hide strings in Office files or HTA files.
-    import core.filetype as filetype
-    s_str = safe_str_convert(s)
-    if (filetype.is_office_file(s, True) or ("</script>" in s_str)):
-        return (s, {})
-    
-    s = s_str
+    s = safe_str_convert(s)
     in_str_double = False
+    in_comment = False
     curr_str = None
     all_strs = {}
     counter = 1000000
     r = ""
-    s = _strip_single_line_comments(s)
     escaped = False
     for i in range(0, len(s)):
-        
-        # Start/end double quoted string?
+
+        # Start/end VB comment?
         curr_char = s[i]
         next_char = ""
         if ((i + 1) < len(s)):
             next_char = s[i + 1]
-        if ((curr_char == '"') and (next_char != '"') and (not escaped)):
+        if (not in_str_double):
+
+            # Start?
+            if (curr_char == "'"):
+                in_comment = True
+
+            # End?
+            if (curr_char == "\n"):
+                in_comment = False
+        
+        # Start/end double quoted string?
+        #print(curr_char + "\t" + next_char + "\t" + str(in_str_double) + "\t" + str(escaped))
+        if ((curr_char == '"') and (next_char != '"') and (not escaped) and (not in_comment)):
             
             # Switch being in/out of string.
             in_str_double = not in_str_double
