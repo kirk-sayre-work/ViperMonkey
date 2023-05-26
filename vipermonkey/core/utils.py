@@ -566,6 +566,50 @@ def isascii(s):
         cached_ascii[hsh] = r
     return r
 
+def _rewrite_non_printable_chars(s):
+    r = ""
+    in_literal = False
+    have_prev = False
+    for c in s:
+
+        # Non-extended ASCII?
+        if (ord(c) <= 126):
+
+            # Already in a printable literal chunk?
+            if not in_literal:
+
+                # Start a literal chunk.
+                in_literal = True
+                if have_prev:
+                    r += " & "
+                r += '"'
+            have_prev = True
+            r += c
+            continue
+
+        # Extended ASCII. Use an explicit VB Chr() call to make sure
+        # we don't lose the character when processing.
+        chr_expr = "Chr(&H" + hex(ord(c)).replace("0x", "") + ")"
+
+        # If we are in a literal chunk we will need to close it out.
+        if in_literal:
+            r += '"'
+        in_literal = False
+
+        # If we have a previous expression we will need to add in the
+        # chr() call.
+        if have_prev:
+            r += " & "
+        have_prev = True
+        r += chr_expr
+
+    # Finish up by closing out a literal chunk if needed.
+    if in_literal:
+        r += '"'
+
+    # Done.
+    return r
+        
 def _hide_strings(s):
 
     s = safe_str_convert(s)
@@ -594,7 +638,7 @@ def _hide_strings(s):
                 in_comment = False
         
         # Start/end double quoted string?
-        #print(curr_char + "\t" + next_char + "\t" + str(in_str_double) + "\t" + str(escaped))
+        #print(curr_char + "\t" + next_char + "\t" + str(in_str_double) + "\t" + str(escaped) + "\t" + str(in_comment))
         if ((curr_char == '"') and (next_char != '"') and (not escaped) and (not in_comment)):
             
             # Switch being in/out of string.
@@ -604,7 +648,11 @@ def _hide_strings(s):
             if (not in_str_double):
                 str_name = "HIDE_" + str(counter)
                 counter += 1
-                all_strs[str_name] = curr_str[1:]
+                # Ugh, Non-printable ASCII chars in string literals
+                # are awful to deal with. Change those out to explicit
+                # chr() calls so we can actually analyze the sample.
+                curr_str = _rewrite_non_printable_chars(curr_str[1:])
+                all_strs[str_name] = curr_str
                 r += '"' + str_name
             else:
                 curr_str = ""
@@ -623,11 +671,14 @@ def _hide_strings(s):
         skip = False
 
     # Done.
+    #print(all_strs)
+    #print(r)
+    #sys.exit(0)
     return (r, all_strs)
 
 def _unhide_strings(s, str_map):
     s = safe_str_convert(s)
     r = s
     for str_name in str_map:
-        r = r.replace(str_name, str_map[str_name])
+        r = r.replace('"' + str_name + '"', str_map[str_name])
     return r
