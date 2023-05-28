@@ -612,6 +612,12 @@ def _rewrite_non_printable_chars(s):
         
 def _hide_strings(s):
 
+    # Only do this on VBS.
+    import core.filetype as filetype
+    if (filetype.is_office_file(s, True) or
+        ("</script>" in safe_str_convert(s))):
+        return (s, {})
+    
     s = safe_str_convert(s)
     in_str_double = False
     in_comment = False
