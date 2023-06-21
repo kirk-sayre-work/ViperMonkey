@@ -1349,6 +1349,11 @@ class Context(object):
                 count += 1
                 file_path = safe_str_convert(orig_file_path) + ' (' + safe_str_convert(count) + ')'
 
+            # Don't fill up the disk with variants of the same file.
+            if (count > 100):
+                log.warning("Too many versions of file '" + orig_file_path + "' exist, not simulating write().")
+                return
+                
             # Write out the dropped file.
             with open(file_path, 'wb') as f:
                 if isinstance(raw_data, bytes):                
