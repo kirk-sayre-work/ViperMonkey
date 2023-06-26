@@ -431,6 +431,57 @@ def fix_caret_calls(vba_code):
     # Done.
     return vba_code
 
+def fix_shorthand_bool_exprs(vba_code):
+    """Change boolean expressions like 'a < 10 > 0' to 'a < 10 And a >
+    0'.
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+
+    """
+
+    # Quick test.
+    test_pat = r'(?:\s*(?:[<>]|<=|=>|>=|=>)\s*(?:\d{1,100}|(?:"[^"]{0,1000}"))){2}'
+    if (re2.search(test_pat, vba_code) is None):
+        return vba_code
+
+    # Find wonky boolean tests like 'a < 10 > 0'.
+    wonk_pat = r"(?:[Ii][Ff]|[Ww][Hh][Ii][Ll][Ee]|[Uu][Nn][Tt][Ii][Ll])\s+((\w{1,100})((?:\s*(?:[<>]|<=|=>|>=|=>)\s*(?:\d{1,100}|(?:\"[^\"]{0,1000}\"))){2,}))"
+    exprs = re.findall(wonk_pat, vba_code)
+    if (len(exprs) == 0):
+        return vba_code
+    
+    # Rewrite things like 'a < 10 > 0' to 'a < 10 and a > 0'.
+    op_pat = r"([<>]|<=|=>|>=|=>)\s*(\d{1,100}|(?:\"[^\"]{0,1000}\"))"
+    for expr in exprs:
+
+        # Pull out the pieces of the wonky test.
+        full_expr = expr[0]
+        var = expr[1]
+        test = expr[2]
+
+        # Pull out the comparison operators and values being tested
+        # against.
+        rep_expr = ""
+        first = True
+        for op_info in re.findall(op_pat, test):
+
+            # String together with 'and's.
+            if (not first):
+                rep_expr += " And "
+            first = False
+        
+            # Compute the replacement expression.
+            op, val = op_info
+            rep_expr += var + " " + op + " " + val
+
+        # Rewrite the expression to something sensible that can be parsed.
+        vba_code = vba_code.replace(full_expr, rep_expr)
+
+    # Done.
+    return vba_code
+    
 def fix_weird_dollar_signs(vba_code):
     """Change things like 'WordBasic.[MacroFileName$]' to 'WordBasic.[MacroFileName]' (delete
     the dollar sign).
@@ -2758,6 +2809,12 @@ def fix_vba_code(vba_code):
         print("??DBG::FIX_VBA_CODE: 16.1.1")
         print(vba_code)
     vba_code = fix_weird_dollar_signs(vba_code)
+
+    # Fix things like "a < 10 > 0".
+    if debug_strip:
+        print("??DBG::FIX_VBA_CODE: 16.1.1.1")
+        print(vba_code)
+    vba_code = fix_shorthand_bool_exprs(vba_code)    
 
     # Hide some weird hard to parse array accesses.
     if debug_strip:
