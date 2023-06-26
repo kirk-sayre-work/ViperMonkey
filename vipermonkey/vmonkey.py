@@ -1494,7 +1494,9 @@ def main():
 
         # Are we just converting the given VBScript sample to JavaScript?
         elif options.to_javascript:
-            converted_js += convert_to_js(container, filename, data)
+            curr_js = convert_to_js(container, filename, data)
+            if (curr_js is not None):
+                converted_js += curr_js
 
         # Regular emulation.
         else:
