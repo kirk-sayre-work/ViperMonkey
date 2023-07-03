@@ -3004,7 +3004,7 @@ class While_Statement(VBA_Object):
         self._local_calls = None
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug('parsed %r as %s' % (self, self.__class__.__name__))
-
+            
     def __repr__(self):
         if (self.gloss is not None):
             return self.gloss
@@ -3659,7 +3659,7 @@ class Do_Statement(VBA_Object):
         self.body = tokens[0]
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug('parsed %r as %s' % (self, self.__class__.__name__))
-
+            
     def __repr__(self):
         if (self.gloss is not None):
             return self.gloss
