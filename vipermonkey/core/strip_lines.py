@@ -789,7 +789,8 @@ def fix_skipped_1st_arg1(vba_code):
     return vba_code
 
 def fix_skipped_1st_arg2(vba_code):
-    """Replace calls like \nfoo, 1, ... with \nfoo SKIPPED_ARG, 1, ... .
+    """Replace calls like \nfoo, 1, ... with \nfoo SKIPPED_ARG, 1,
+    ... . Also fix things like 'a + + b + "ff"' (double pluses).
 
     @param vba_code (str) The VB code to check and modify.
 
@@ -850,10 +851,10 @@ def fix_skipped_1st_arg2(vba_code):
     while (tmp_code != tmp_code1):
         tmp_code1 = tmp_code
         tmp_code = re.sub(plus_pat, '+', tmp_code)
-
+        
     # After that there can still be things like 'a = + '' + ...'. Fix those.
-    eq_plus_pat = r"= *\+"
-    tmp_code = re.sub(eq_plus_pat, '= ', tmp_code)
+    eq_plus_pat = r"([=\(]) *\+"
+    tmp_code = re.sub(eq_plus_pat, r'\1 ', tmp_code)
 
     # After that there can still be things like '* + '' + ...'. Fix those.
     times_plus_pat = r"\* *\+"
