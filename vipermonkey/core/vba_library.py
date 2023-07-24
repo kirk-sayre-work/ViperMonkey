@@ -1521,14 +1521,14 @@ class Item(BuiltInDocumentProperties):
             # Dict is 1st parameter.        
             with_dict = params[0]
             # Item index is 2nd parameter.
-            index = vba_conversion.coerce_to_int(params[1])
+            index = params[1]
 
         elif ((len(params) >= 2) and (isinstance(params[1], dict))):
 
             # Dict is 2nd parameter.
             with_dict = params[1]
             # Item index is 1st parameter.
-            index = vba_conversion.coerce_to_int(params[0])
+            index = params[0]
         
         # Are we reading from a With Scripting.Dictionary?
         elif ((context.with_prefix_raw is not None) and
@@ -1554,6 +1554,17 @@ class Item(BuiltInDocumentProperties):
             # Valid key?
             if (index in with_dict):
                 return with_dict[index]
+            else:
+
+                # Try converting key to int and redoing the lookup.
+                try:
+                    index = vba_conversion.coerce_to_int(index)
+                    if (index in with_dict):
+                        return with_dict[index]
+                except:
+                    pass
+
+            # Can't find key.
             return "NULL"
             
         # Not a workable Scripting.Dictionary.Item() call. Treat as
