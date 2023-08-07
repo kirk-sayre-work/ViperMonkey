@@ -2523,6 +2523,11 @@ def rename_constants(vba_code):
     # with unique names.
     for const_name in defined_constants:
 
+        # Leave constants with short names alone, too much risk of
+        # replacing improper things.
+        if (len(const_name) < 5):
+            continue
+        
         # Regular reference as a variable.
         rep_pat = const_name + r"(\s*[^\(^=^ ^\w^_])"
         vba_code = re.sub(rep_pat, const_name + r"_CONST\1", vba_code)
