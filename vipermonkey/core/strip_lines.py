@@ -2544,6 +2544,43 @@ def rename_constants(vba_code):
     # Done.
     return vba_code
 
+def resolve_simple_exprs(vba_code):
+    """Compute simple expressions like '364 - &H148' and replace them
+    with their values to make parsing easier.
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+
+    """
+
+    # Sanity check.
+    if (("&H" not in vba_code) and ("&h" not in vba_code)):
+        return vba_code
+    expr_pat = r"\d+\s*[\-\+]\s*&[Hh][0-9a-fA-F]{1,25}"
+    if (re.search(expr_pat, vba_code) is None):
+        return vba_code
+
+    # Pull out the expressions and replace them.
+    expr_pat1 = r"(\d+)\s*([\-\+])\s*&[Hh]([0-9a-fA-F]{1,25})"
+    for expr_str in re.findall(expr_pat, vba_code):
+
+        # Compute the value of the expression.
+        int_str, op, hex_str = re.findall(expr_pat1, expr_str)[0]
+        int_val = int(int_str)
+        hex_val = int("0x" + hex_str, 16)
+        val = 0
+        if (op == "-"):
+            val = int_val - hex_val
+        else:
+            val = int_val + hex_val
+
+        # Replace the expression with its final value.
+        vba_code = vba_code.replace(expr_str, str(val))
+
+    # Done.
+    return vba_code
+        
 def unwrap_nested_evals(vba_code):
     """Unwrap Eval() statements like 'Eval("Eval(""a"")")' to 'Eval(a)'.
 
@@ -2786,6 +2823,9 @@ def fix_vba_code(vba_code):
     # Some VBS malware nests Eval() statements as obfuscation. Unwrap
     # those.
     vba_code = unwrap_nested_evals(vba_code)
+
+    # Precompute some expression uesed for obfuscation.
+    vba_code = resolve_simple_exprs(vba_code)
     
     # Clear out lines broken up on multiple lines.
     if debug_strip:

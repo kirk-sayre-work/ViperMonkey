@@ -46,6 +46,7 @@ __version__ = '0.02'
 
 # --- IMPORTS ------------------------------------------------------------------
 
+import sys
 import re
 from core.curses_ascii import isprint
 import logging
@@ -110,13 +111,49 @@ class Chr(VBA_Object):
 
 
 # Chr, Chr$, ChrB, ChrW()
-chr_ = (
+full_chr_ = (
     Suppress(Regex(re.compile('Chr[BW]?\$?', re.IGNORECASE)))
     + Suppress('(')
     + expression
     + Suppress(')')
 )
-chr_.setParseAction(Chr)
+full_chr_.setParseAction(Chr)
+
+# Fast parsing for things like ChrW(a210).
+def quick_parse_simple_chr(tokens):
+    """Quickly parse a block of concatenated CHR() expressions.
+
+    @param tokens (PyParsing token list) The basic parsed items in the
+    block of concatenated CHR()s.
+
+    @return (list) The concat expression.
+
+    """
+
+    # Pull out the Chr function names and variables.
+    text = safe_str_convert(tokens[0]).strip()
+    pat = r"(Chr[BW]?\$?)\s*\(\s*(\w+)\s*\)"
+
+    # Construct Chr() expressions for each.
+    from core.expressions import SimpleNameExpression
+    from core.operators import Concatenation
+    op_list = []
+    for func_name, var_name_str in re.findall(pat, text):
+        var_name = SimpleNameExpression(None, None, None, name=var_name_str)
+        curr_chr = Chr(func_name + "(" + var_name_str + ")", 0, [var_name])
+        if (len(op_list) > 0):
+            op_list.append('&')
+        op_list.append(curr_chr)
+
+    # Return the concatenation expression.
+    r = Concatenation(text, 0, [op_list])
+    return r
+
+# Fast parsing for things like ChrW(a210) & ... with a bunch of Chr() calls.
+simple_chr = Regex(re.compile("Chr[BW]?\$?\s*\(\s*\w+\s*\)(?:\s*&\s*Chr[BW]?\$?\s*\(\s*\w+\s*\)){100,}"))
+simple_chr.setParseAction(quick_parse_simple_chr)
+
+chr_ = simple_chr | full_chr_
 
 # --- ASC --------------------------------------------------------------------
 
