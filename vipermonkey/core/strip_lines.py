@@ -2544,6 +2544,61 @@ def rename_constants(vba_code):
     # Done.
     return vba_code
 
+def unwrap_nested_evals(vba_code):
+    """Unwrap Eval() statements like 'Eval("Eval(""a"")")' to 'Eval(a)'.
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+
+    """
+
+    # Sanity check.
+    if ("Eval(" not in vba_code):
+        return vba_code
+
+    # Hide nested quotes to make unwrapping easier.
+    tmp = vba_code.replace('""', "__ESCAPED_QUOTE__")
+    pat = r"Eval\s*\(\s*\"[^\"]+\"\s*\)"
+
+    # Sanity check.
+    if (re.search(pat, tmp) is None):
+        return vba_code
+
+    # Pull out the Eval() expressions and unwrap them.    
+    for eval_str in re.findall(pat, tmp):
+
+        # Unhode the escaped quotes in the Eval().
+        eval_str = eval_str.replace("__ESCAPED_QUOTE__", '""')
+        orig_eval_str = eval_str
+
+        # Remove uneeded spaces in the Eval() expression.
+        eval_str = eval_str.strip()
+        pat = r"Eval\s*\(\s*\""
+        eval_str = re.sub(pat, 'Eval("', eval_str)
+        pat = r"\"\s*\)"
+        eval_str = re.sub(pat, '")', eval_str)
+
+        # Iteratively remove the wrapped Evals().
+        while (re.match(r'Eval\s*\(\s*"\s*Eval\s*\(', eval_str) is not None):
+
+            # Unwrap the current Eval().
+            eval_str = eval_str[len('Eval("'):eval_str.rindex('"')]
+            eval_str = eval_str.replace('""', '"')
+
+            # Remove uneeded spaces in the Eval() expression.
+            eval_str = eval_str.strip()
+            pat = r"Eval\s*\(\s*\""
+            eval_str = re.sub(pat, 'Eval("', eval_str)
+            pat = r"\"\s*\)"
+            eval_str = re.sub(pat, '")', eval_str)
+            
+        # Put the unwrapped Eval() back into the program.
+        vba_code = vba_code.replace(orig_eval_str, eval_str)
+
+    # Done.
+    return vba_code
+    
 def delete_bracket_constructs(vba_code):
     """We don't handle constructs like ([a1]), so remove them.
 
@@ -2727,6 +2782,10 @@ def fix_vba_code(vba_code):
     # We don't handle ([a1]) constructs for now. Delete them.
     # TODO: Actually handle these things.
     vba_code = delete_bracket_constructs(vba_code)
+
+    # Some VBS malware nests Eval() statements as obfuscation. Unwrap
+    # those.
+    vba_code = unwrap_nested_evals(vba_code)
     
     # Clear out lines broken up on multiple lines.
     if debug_strip:
