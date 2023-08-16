@@ -3374,7 +3374,7 @@ def strip_difficult_tuple_lines(vba_code):
 
         # Does this line have any tuples?
         line = line.strip()
-        if (re2.search(simple_tuple_pat, line) is None):
+        if (("." not in line) or (re2.search(simple_tuple_pat, line) is None)):
 
             # No, leave it untouched.
             r += line + "\n"

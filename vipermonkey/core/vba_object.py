@@ -579,6 +579,14 @@ def is_constant_math(arg):
     # Sanity check. If there are variables/function calls in the
     # expression it is not all literals.
     if (isinstance(arg, VBA_Object)):
+
+        # If an alphabetic character is in the expression, it's not
+        # all constants.
+        if (re.search("[a-zA-z]", str(arg)) is not None):
+            return False
+
+        # Simple test did not invalidate arg. Actually look for
+        # variables/funcs.
         var_visitor = var_in_expr_visitor(get_functions=True)
         arg.accept(var_visitor)
         if (len(var_visitor.variables) > 0):
