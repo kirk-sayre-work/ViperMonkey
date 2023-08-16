@@ -96,7 +96,6 @@ class Module(VBA_Object):
         for token in tokens:
             if (not hasattr(token, "accept")):
                 continue
-            print(token)
             func_visitor = function_defn_visitor()
             token.accept(func_visitor)
             for i in func_visitor.func_objects:

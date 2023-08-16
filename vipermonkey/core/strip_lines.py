@@ -2580,6 +2580,42 @@ def resolve_simple_exprs(vba_code):
 
     # Done.
     return vba_code
+
+def eliminate_duplicate_assigns(vba_code):
+    """Simplify blocks of assignments like 'cat = 12\ncat = 12\ncat =
+    12....' to 'cat = 12'
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+
+    """
+
+    # Do we have blocks of simple assignment statements.
+    block_pat = r"(?: *[a-zA-Z_0-9]{1,20}\s*=\s*\d+ *(?:(?:\r?\n)|:)){200,}"
+    if (re2.search(block_pat, vba_code) is None):
+        return vba_code
+
+    # We have simple assignment blocks. Simplyify them.
+    assign_pat = r"([a-zA-Z_0-9]{1,20})\s*=\s*(\d+)"
+    for block in re.findall(block_pat, vba_code):
+
+        # Pull out the variable and value for each assignment and make
+        # a new assignment block with no duplicate assignments.
+        new_block = ""
+        seen = set()
+        for var_name, var_val in re.findall(assign_pat, block):
+            new_assign = var_name + " = " + var_val
+            if (new_assign in seen):
+                continue
+            new_block += new_assign + "\n"
+            seen.add(new_assign)
+
+        # Update the code with the filtered assignment block.
+        vba_code = vba_code.replace(block, new_block)
+
+    # Done.
+    return vba_code
         
 def unwrap_nested_evals(vba_code):
     """Unwrap Eval() statements like 'Eval("Eval(""a"")")' to 'Eval(a)'.
@@ -2826,6 +2862,9 @@ def fix_vba_code(vba_code):
 
     # Precompute some expression uesed for obfuscation.
     vba_code = resolve_simple_exprs(vba_code)
+
+    # Eliminate duplicate assignments from blocks of assignments.
+    vba_code = eliminate_duplicate_assigns(vba_code)
     
     # Clear out lines broken up on multiple lines.
     if debug_strip:

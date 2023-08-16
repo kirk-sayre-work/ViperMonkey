@@ -935,6 +935,7 @@ class Let_Statement(VBA_Object):
         self.string_op = None
         self.index = None
         self.index1 = None
+        self.op = None
         if (original_str is None):
             return
 
@@ -962,7 +963,7 @@ class Let_Statement(VBA_Object):
         self.index1 = None
         if (tokens.index1 != ''):
             self.index1 = tokens.index1
-        self.op = tokens["op"]
+        self.op = tokens.op
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug('parsed %r as Let_Statement' % self)
 
