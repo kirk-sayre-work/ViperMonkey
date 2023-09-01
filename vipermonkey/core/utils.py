@@ -567,6 +567,12 @@ def isascii(s):
     return r
 
 def _rewrite_non_printable_chars(s):
+
+    # Got any non-printable characters?
+    if (re.search(r"[\x7f-\xff]", s) is None):
+        return s
+
+    # Got non-prinatble chars. Rewrite them.
     r = ""
     in_literal = False
     have_prev = False
@@ -609,13 +615,20 @@ def _rewrite_non_printable_chars(s):
 
     # Done.
     return r
-        
+
+hide_string_map = {}
 def _hide_strings(s):
 
+    # Got cached value? This operation could be compute intensive so we
+    # cache the results.
+    if (s in hide_string_map):
+        return hide_string_map[s]
+    
     # Only do this on VBS.
     import core.filetype as filetype
     if (filetype.is_office_file(s, True) or
         ("</script>" in safe_str_convert(s))):
+        hide_string_map[s] = (s, {})
         return (s, {})
     
     s = safe_str_convert(s)
@@ -626,8 +639,16 @@ def _hide_strings(s):
     counter = 1000000
     r = ""
     escaped = False
-    for i in range(0, len(s)):
+    i = -1
+    while (i < (len(s) - 1)):
 
+        # Can we jump to the end of a string?
+        i += 1
+        if (in_str_double and ('"' in s[i:])):
+            next_i = i + s[i:].index('"')
+            curr_str += s[i:next_i]
+            i = next_i
+                    
         # Start/end VB comment?
         curr_char = s[i]
         next_char = ""
@@ -679,12 +700,14 @@ def _hide_strings(s):
     # Done.
     #print(all_strs)
     #print(r)
+    #import sys
     #sys.exit(0)
+    hide_string_map[s] = (r, all_strs)
     return (r, all_strs)
 
 def _unhide_strings(s, str_map):
     s = safe_str_convert(s)
     r = s
     for str_name in str_map:
-        r = r.replace('"' + str_name + '"', str_map[str_name])
+        r = r.replace('"' + str_name + '"', '"' + str_map[str_name] + '"')
     return r

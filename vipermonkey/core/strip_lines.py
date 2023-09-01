@@ -799,9 +799,10 @@ def fix_skipped_1st_arg2(vba_code):
     """
 
     # Skipped this if unneeded.
+    hid_vba_code, _ = utils._hide_strings(vba_code)
     plus_pat = r"\+ *\+"
-    if ((re2.search(r".*\n\s*([0-9a-zA-Z_\.\(\)]+)\s*,.*", vba_code, re.DOTALL) is None) and
-        (re2.search(plus_pat, vba_code) is None)):
+    if ((re2.search(r".*\n\s*([0-9a-zA-Z_\.\(\)]+)\s*,.*", hid_vba_code, re.DOTALL) is None) and
+        (re2.search(plus_pat, hid_vba_code) is None)):
         #print("SKIPPED!!")
         return vba_code
     
@@ -1939,6 +1940,9 @@ def replace_bad_chars(vba_code):
 
     # Characters that change how we modify the code.
     interesting_chars = [r'"', r'#', r"'", r"!", r"+", r"^", r"PAT:[^\x00-\x7e]", ";", "&"]
+
+    # Hide strings to try to speed this up.
+    vba_code, str_map = utils._hide_strings(vba_code)
     
     # Replace bad characters unless they appear in a string.
     in_str = False
@@ -2147,7 +2151,10 @@ def replace_bad_chars(vba_code):
     if (re2.search(hex_pat, r) is not None):
         hex_pat = "(&H[0-9A-F]{1,25}) \^"
         r = re.sub(hex_pat, r"\1^", r)
-    
+
+    # Unhide the strings.
+    r = utils._unhide_strings(r, str_map)
+        
     # Done.
     return r
 

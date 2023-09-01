@@ -416,8 +416,10 @@ class Context(object):
                 self.globals = _globals
 
             # Save intermediate IOCs if any appear.
-            for var in list(_globals.keys()):
-                self.save_intermediate_iocs(_globals[var])
+            # Should already have been added when global var was set.
+            #for var in list(_globals.keys()):
+            #    print("INT: 1")
+            #    self.save_intermediate_iocs(_globals[var])
                 
         elif context is not None:
             if (copy_globals):
@@ -1962,6 +1964,10 @@ class Context(object):
             for v in value:
                 self.save_intermediate_iocs(v, reverse=reverse)
             return
+
+        # Don't add again if we already have it.
+        if (value in intermediate_iocs):
+            return
         
         # Strip NULLs and unprintable characters from the potential IOC.
         value = utils.strip_nonvb_chars(safe_str_convert(value))
@@ -2273,6 +2279,15 @@ class Context(object):
         if (no_overwrite and self.contains(name)):
             return
 
+        # Don't go through all the write processing if we are setting
+        # this var to it's existing value.
+        try:
+            old_val = self.get(name)
+            if (old_val == value):
+                return
+        except KeyError:
+            pass
+            
         # Treat things like document variables, form captions, etc. as global variables.
         if ("." in name):
             suffix = name[name.rindex("."):].strip().lower()
@@ -2447,9 +2462,9 @@ class Context(object):
                     conv_val = utils.b64_decode(value)
 
                     # If that did not work maybe we are encoding into base64.
-                    if ((name.lower().endswith(".nodetypedvalue")) and (conv_val is None)):
-                        #print("TRY ENCODE!!")
-                        conv_val = utils.b64_encode(value)
+                    #if ((name.lower().endswith(".nodetypedvalue")) and (conv_val is None)):
+                    #    #print("TRY ENCODE!!")
+                    #    conv_val = utils.b64_encode(value)
                     #print(conv_val)
 
                 # Set the decoded/encoded value if we got one.
