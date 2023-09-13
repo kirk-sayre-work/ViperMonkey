@@ -401,8 +401,15 @@ def parse_stream(subfilename,
     
     # Do not analyze the file if the VBA looks like garbage characters.
     if (read_ole_fields.is_garbage_vba(vba_code, no_html=True)):
-        log.warning("Failed to extract VBScript from HTA. Skipping.")
-        return "empty"
+
+        # We could have VB comments with lots of unprintable
+        # characters. See if we can strip those out.
+        vba_code = core.strip_lines.strip_nonprint_vbs_comments(vba_code)
+
+        # Still bad?
+        if (read_ole_fields.is_garbage_vba(vba_code, no_html=True)):
+            log.warning("VB code contains too many garbage characters. Skipping.")
+            return "empty"
 
     # Skip some XML that olevba gives for some 2007+ streams.
     if (vba_code.strip().startswith("<?xml")):
@@ -1243,7 +1250,14 @@ def _process_file (filename,
 
             # Do not analyze the file if the VBA looks like garbage.
             if (read_ole_fields.is_garbage_vba(vba_code)):
-                raise ValueError("VBA looks corrupted. Not analyzing.")
+
+                # We could have VB comments with lots of unprintable
+                # characters. See if we can strip those out.
+                vba_code = core.strip_lines.strip_nonprint_vbs_comments(vba_code)
+                
+                # Still bad?
+                if (read_ole_fields.is_garbage_vba(vba_code)):
+                    raise ValueError("VBA looks corrupted. Not analyzing.")
 
             # Read in text values from all of the various places in
             # Office 97/2000+ that text values can be hidden. So many

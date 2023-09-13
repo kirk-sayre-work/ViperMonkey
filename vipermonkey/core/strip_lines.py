@@ -2238,6 +2238,25 @@ def fix_class_constructor_calls(vba_code):
     # Done.
     return r
 
+def strip_nonprint_vbs_comments(vba_code):    
+    """Strip out VBS comments like "'FFFFF" where F is a non-printable
+    character.
+
+    @param vba_code (str) The code in which to strip unprinatble comments.
+
+    @return (str) The code with unprintable comments stripped.
+
+    """
+
+    # Do we have unprintable comments?
+    pat = r"'(?:[\x00-\x08]|[\x7f-\xff]){10,}(?:\r?\n|$)"
+    if (re2.search(pat, vba_code) is None):
+        return vba_code
+
+    # We have unprintable comments. Nuke them.
+    r = re.sub(pat, "\n", vba_code)
+    return r
+
 def fix_difficult_code(vba_code):
     """Replace characters whose ordinal value is > 128 with dNNN, where
     NNN is the ordinal value.
@@ -2327,6 +2346,10 @@ def fix_difficult_code(vba_code):
     # Comments like 'ddffd' at the end of an Else line are hard to parse.
     # Get rid of them.    
     vba_code = fix_comments_after_else(vba_code)
+
+    # Comments with all non-printable characters are also
+    # annoying. Nuke them
+    vba_code = strip_nonprint_vbs_comments(vba_code)
         
     # Skip the rest if it is not needed.
     if debug_strip:
