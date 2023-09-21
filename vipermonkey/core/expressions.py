@@ -721,10 +721,17 @@ class MemberAccessExpression(VBA_Object):
         raw_last_func = safe_str_convert(self.rhs[-1]).replace("('", "(").replace("')", ")").strip()
         if (not ((raw_last_func.startswith("Test(")) or
                  (raw_last_func.startswith("Replace(")) or
+                 (raw_last_func.startswith("Submatches(")) or
                  (raw_last_func == "Global") or
                  (raw_last_func == "Pattern"))):
             return None
-            
+
+        # Faking Submatches() by just returning the "object" (in our
+        # case should just be a string with the match result).
+        if (raw_last_func.startswith("Submatches(")):
+            r = exp_str[:exp_str.rindex(".")]
+            return r
+        
         # Got a RegEx method call. Use the simulated RegExp object for this.
         exp_str = safe_str_convert(self)
         call_str = raw_last_func
