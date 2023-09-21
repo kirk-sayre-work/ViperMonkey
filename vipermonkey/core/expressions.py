@@ -544,7 +544,7 @@ class MemberAccessExpression(VBA_Object):
         (conceptually) baz(3, bar(2, foo(1))). Note that the objects
         are broken out as function arguments in the calls.
 
-        @param resolve_vars (bollean) Whether to look up variables
+        @param resolve_vars (boolean) Whether to look up variables
         that appear as parameters in the context or not.
 
         @return (Function_Call object) The member access expression
@@ -2340,6 +2340,8 @@ class MemberAccessExpression(VBA_Object):
 
         # Find all the regex matches in the string.
         r = None
+        pat = safe_str_convert(pat)
+        mod_str = safe_str_convert(mod_str)
         try:
             r = re.findall(pat, mod_str)
         except Exception as e:
@@ -2411,6 +2413,40 @@ class MemberAccessExpression(VBA_Object):
             return None
         return (r is not None)
 
+    def _handle_regex_submatch(self, context, tmp_lhs):
+        """Handle calling Submatches() on the result of applying a Regx
+        expression. We are faking this by just returning the LHS
+        string (if it is a string) and hoping that there is just 1
+        match.
+
+        @param context (Context object) Context for the Python code
+        generation (local and global variables). Current program state
+        will be read from the context.
+
+        @param tmp_lhs (any) The evaluated LHS of the member access
+        expression.
+
+        @return (boolean) The (faked) results of doing the regex
+        Submatches() call if this is called on a string (LHS is a
+        string), None if not.
+
+        """
+
+        # Is the LHS a string?
+        #print("START: _handle_regex_submatch()")
+        #print(self)
+        #print(safe_str_convert(tmp_lhs).lower())
+        if (not isinstance(tmp_lhs, str)):
+            return None
+
+        # Are we calling the Submatch() method?
+        if (".Submatches(" not in safe_str_convert(self)):
+            return None
+
+        # Looks like it could be a submatch. Return the LHS (match
+        # result) and hope that is correct.
+        return tmp_lhs
+    
     def _read_member_expression_as_dict(self, context, tmp_lhs):
         """Handle member access expressions where the expression fields
         correspond to entries in a dict.
@@ -3543,6 +3579,14 @@ class MemberAccessExpression(VBA_Object):
             #print(call_retval)
             return call_retval
 
+        # Handle reading Regex submatches.
+        #print("HERE: 21.1.1")
+        call_retval = self._handle_regex_submatch(context, tmp_lhs)
+        if (call_retval is not None):
+            #print("OUT: 18.1.1")
+            #print(call_retval)
+            return call_retval        
+        
         # Handle simple 0-argument function calls.
         #print("HERE: 22")
         call_retval = self._handle_0_arg_call(context, rhs)
