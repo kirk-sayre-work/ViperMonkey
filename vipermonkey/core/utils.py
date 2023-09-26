@@ -600,6 +600,7 @@ def _rewrite_non_printable_chars(s):
         # If we are in a literal chunk we will need to close it out.
         if in_literal:
             r += '"'
+            have_prev = True
         in_literal = False
 
         # If we have a previous expression we will need to add in the
@@ -679,6 +680,10 @@ def _hide_strings(s):
                 # are awful to deal with. Change those out to explicit
                 # chr() calls so we can actually analyze the sample.
                 curr_str = _rewrite_non_printable_chars(curr_str[1:])
+                if curr_str.startswith('"'):
+                    curr_str = curr_str[1:]
+                if curr_str.endswith('"'):
+                    curr_str = curr_str[:-1]                    
                 all_strs[str_name] = curr_str
                 r += '"' + str_name
             else:

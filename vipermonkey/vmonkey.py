@@ -513,7 +513,8 @@ def parse_streams(vba, strip_useless=False):
 
         # Unhide VBA strings now that olevba can't mess them up.
         vba_code = utils._unhide_strings(vba_code, vba.str_map)
-        
+
+        # We have VB. Parse it.
         got_vba = True
         m = parse_stream(subfilename, stream_path, vba_filename, vba_code, strip_useless, local_funcs)
         if (m is None):

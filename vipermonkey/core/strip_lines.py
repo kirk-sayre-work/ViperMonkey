@@ -2153,6 +2153,9 @@ def replace_bad_chars(vba_code):
         r = re.sub(hex_pat, r"\1^", r)
 
     # Unhide the strings.
+    if debug_strip:
+        print("STR MAP!!")
+        print(str_map)
     r = utils._unhide_strings(r, str_map)
         
     # Done.
