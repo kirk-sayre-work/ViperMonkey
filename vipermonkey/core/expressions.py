@@ -1936,9 +1936,10 @@ class MemberAccessExpression(VBA_Object):
                 return False
         
         # Pull out the text to write to the text stream.
-        txt = None
         rhs_val = eval_arg(rhs.params[0], context)
-        txt = safe_str_convert(rhs_val, strict=True)
+        txt = rhs_val
+        if (not isinstance(txt, bytes)):
+            txt = safe_str_convert(rhs_val, strict=True)
         #print("TEXT!!")
         #print(txt)
         #print(type(txt))
@@ -1954,7 +1955,7 @@ class MemberAccessExpression(VBA_Object):
             except KeyError:
                 pass
             if (typ.lower() == "base64"):                
-                decoded = bytes(utils.b64_decode(txt), "latin-1")
+                decoded = bytes(utils.b64_decode(safe_str_convert(txt, strict=True)), "latin-1")
                 if (decoded is not None):
                     txt = decoded
             
@@ -1971,10 +1972,12 @@ class MemberAccessExpression(VBA_Object):
         var_val = context.get(var_name)
         if isinstance(var_val, VBA_Object):
             var_val = eval_arg(var_val, context)
-        var_val = bytes(safe_str_convert(var_val, strict=True), "latin-1")
+        if (not isinstance(var_val, bytes)):            
+            var_val = bytes(safe_str_convert(var_val, strict=True), "latin-1")
         if isinstance(txt, VBA_Object):
             txt = eval_arg(txt, context)
-        txt = bytes(safe_str_convert(txt, strict=True), "latin-1")
+        if (not isinstance(txt, bytes)):            
+            txt = bytes(safe_str_convert(txt, strict=True), "latin-1")
         final_txt = var_val + txt
         context.set(var_name, final_txt, force_global=True)
 
@@ -2106,9 +2109,10 @@ class MemberAccessExpression(VBA_Object):
             log.debug("var_name = " + var_name)
         val = None
         try:
-            #print("LOOK FOR: " + var_name)
+            #print("LOOK FOR 1: " + var_name)
             val = context.get(var_name)
             #print("YES")
+            #print(val)
         except KeyError:
             #print("NO")
             if (log.getEffectiveLevel() == logging.DEBUG):
@@ -2124,7 +2128,7 @@ class MemberAccessExpression(VBA_Object):
                 log.debug("var_name 1 = " + var_name)
             val = None
             try:
-                #print("LOOK FOR: " + var_name)
+                #print("LOOK FOR 2: " + var_name)
                 val = context.get(var_name)
                 #print("YES")
             except KeyError:
@@ -2138,7 +2142,7 @@ class MemberAccessExpression(VBA_Object):
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug("var_name 2 = " + var_name)
             try:
-                #print("LOOK FOR: " + var_name)
+                #print("LOOK FOR 3: " + var_name)
                 val = context.get(var_name)
                 #print("YES")
             except KeyError:
@@ -2151,6 +2155,8 @@ class MemberAccessExpression(VBA_Object):
         # TODO: Use context.open_file()/write_file()/close_file()
 
         # Make the dropped file directory if needed.
+        #print("VAL: ")
+        #print(val)
         out_dir = vba_context.out_dir
         if (not os.path.isdir(out_dir)):
             os.makedirs(out_dir)
@@ -2184,6 +2190,7 @@ class MemberAccessExpression(VBA_Object):
             # Write out the file.
             #print("WRITE TO: " + fname)
             f = open(fname, 'wb')
+            #print(val)
             if isinstance(val, bytes):
                 f.write(val)
             else:

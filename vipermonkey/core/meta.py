@@ -79,6 +79,8 @@ def get_metadata_exif(filename):
         field = line[:line.index(":")].strip().lower()
         val = line[line.index(":") + 1:].strip().replace("...", "\r\n")
         setattr(r, field, val)
+        if (" " in field):
+            setattr(r, field.replace(" ", "_"), val)
 
     # Done.
     return r
