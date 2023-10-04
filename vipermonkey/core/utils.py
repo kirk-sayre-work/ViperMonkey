@@ -666,6 +666,7 @@ def _hide_strings(s):
     r = ""
     escaped = False
     i = -1
+    #print("pos\tcurr\tnext\tdbl\tesc\tcomm")
     while (i < (len(s) - 1)):
 
         # Can we jump to the end of a string?
@@ -691,7 +692,7 @@ def _hide_strings(s):
                 in_comment = False
         
         # Start/end double quoted string?
-        #print(curr_char + "\t" + next_char + "\t" + str(in_str_double) + "\t" + str(escaped) + "\t" + str(in_comment))
+        #print(str(i) + "\t" + curr_char + "\t" + next_char + "\t" + str(in_str_double) + "\t" + str(escaped) + "\t" + str(in_comment))
         if ((curr_char == '"') and (next_char != '"') and (not escaped) and (not in_comment)):
             
             # Switch being in/out of string.
@@ -705,10 +706,10 @@ def _hide_strings(s):
                 # are awful to deal with. Change those out to explicit
                 # chr() calls so we can actually analyze the sample.
                 curr_str = _rewrite_non_printable_chars(curr_str[1:])
-                if curr_str.startswith('"'):
-                    curr_str = curr_str[1:]
-                if curr_str.endswith('"'):
-                    curr_str = curr_str[:-1]                    
+                #if curr_str.startswith('"'):
+                #    curr_str = curr_str[1:]
+                #if curr_str.endswith('"'):
+                #    curr_str = curr_str[:-1]                    
                 all_strs[str_name] = curr_str
                 r += '"' + str_name
             else:
