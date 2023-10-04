@@ -544,7 +544,7 @@ class MemberAccessExpression(VBA_Object):
         (conceptually) baz(3, bar(2, foo(1))). Note that the objects
         are broken out as function arguments in the calls.
 
-        @param resolve_vars (bollean) Whether to look up variables
+        @param resolve_vars (boolean) Whether to look up variables
         that appear as parameters in the context or not.
 
         @return (Function_Call object) The member access expression
@@ -721,10 +721,17 @@ class MemberAccessExpression(VBA_Object):
         raw_last_func = safe_str_convert(self.rhs[-1]).replace("('", "(").replace("')", ")").strip()
         if (not ((raw_last_func.startswith("Test(")) or
                  (raw_last_func.startswith("Replace(")) or
+                 (raw_last_func.startswith("Submatches(")) or
                  (raw_last_func == "Global") or
                  (raw_last_func == "Pattern"))):
             return None
-            
+
+        # Faking Submatches() by just returning the "object" (in our
+        # case should just be a string with the match result).
+        if (raw_last_func.startswith("Submatches(")):
+            r = exp_str[:exp_str.rindex(".")]
+            return r
+        
         # Got a RegEx method call. Use the simulated RegExp object for this.
         exp_str = safe_str_convert(self)
         call_str = raw_last_func
@@ -1929,9 +1936,10 @@ class MemberAccessExpression(VBA_Object):
                 return False
         
         # Pull out the text to write to the text stream.
-        txt = None
         rhs_val = eval_arg(rhs.params[0], context)
-        txt = safe_str_convert(rhs_val, strict=True)
+        txt = rhs_val
+        if (not isinstance(txt, bytes)):
+            txt = safe_str_convert(rhs_val, strict=True)
         #print("TEXT!!")
         #print(txt)
         #print(type(txt))
@@ -1947,7 +1955,7 @@ class MemberAccessExpression(VBA_Object):
             except KeyError:
                 pass
             if (typ.lower() == "base64"):                
-                decoded = bytes(utils.b64_decode(txt), "latin-1")
+                decoded = bytes(utils.b64_decode(safe_str_convert(txt, strict=True)), "latin-1")
                 if (decoded is not None):
                     txt = decoded
             
@@ -1964,10 +1972,12 @@ class MemberAccessExpression(VBA_Object):
         var_val = context.get(var_name)
         if isinstance(var_val, VBA_Object):
             var_val = eval_arg(var_val, context)
-        var_val = bytes(safe_str_convert(var_val, strict=True), "latin-1")
+        if (not isinstance(var_val, bytes)):            
+            var_val = bytes(safe_str_convert(var_val, strict=True), "latin-1")
         if isinstance(txt, VBA_Object):
             txt = eval_arg(txt, context)
-        txt = bytes(safe_str_convert(txt, strict=True), "latin-1")
+        if (not isinstance(txt, bytes)):            
+            txt = bytes(safe_str_convert(txt, strict=True), "latin-1")
         final_txt = var_val + txt
         context.set(var_name, final_txt, force_global=True)
 
@@ -2099,9 +2109,10 @@ class MemberAccessExpression(VBA_Object):
             log.debug("var_name = " + var_name)
         val = None
         try:
-            #print("LOOK FOR: " + var_name)
+            #print("LOOK FOR 1: " + var_name)
             val = context.get(var_name)
             #print("YES")
+            #print(val)
         except KeyError:
             #print("NO")
             if (log.getEffectiveLevel() == logging.DEBUG):
@@ -2117,7 +2128,7 @@ class MemberAccessExpression(VBA_Object):
                 log.debug("var_name 1 = " + var_name)
             val = None
             try:
-                #print("LOOK FOR: " + var_name)
+                #print("LOOK FOR 2: " + var_name)
                 val = context.get(var_name)
                 #print("YES")
             except KeyError:
@@ -2131,7 +2142,7 @@ class MemberAccessExpression(VBA_Object):
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug("var_name 2 = " + var_name)
             try:
-                #print("LOOK FOR: " + var_name)
+                #print("LOOK FOR 3: " + var_name)
                 val = context.get(var_name)
                 #print("YES")
             except KeyError:
@@ -2144,6 +2155,8 @@ class MemberAccessExpression(VBA_Object):
         # TODO: Use context.open_file()/write_file()/close_file()
 
         # Make the dropped file directory if needed.
+        #print("VAL: ")
+        #print(val)
         out_dir = vba_context.out_dir
         if (not os.path.isdir(out_dir)):
             os.makedirs(out_dir)
@@ -2177,6 +2190,7 @@ class MemberAccessExpression(VBA_Object):
             # Write out the file.
             #print("WRITE TO: " + fname)
             f = open(fname, 'wb')
+            #print(val)
             if isinstance(val, bytes):
                 f.write(val)
             else:
@@ -2340,6 +2354,8 @@ class MemberAccessExpression(VBA_Object):
 
         # Find all the regex matches in the string.
         r = None
+        pat = safe_str_convert(pat)
+        mod_str = safe_str_convert(mod_str)
         try:
             r = re.findall(pat, mod_str)
         except Exception as e:
@@ -2411,6 +2427,40 @@ class MemberAccessExpression(VBA_Object):
             return None
         return (r is not None)
 
+    def _handle_regex_submatch(self, context, tmp_lhs):
+        """Handle calling Submatches() on the result of applying a Regx
+        expression. We are faking this by just returning the LHS
+        string (if it is a string) and hoping that there is just 1
+        match.
+
+        @param context (Context object) Context for the Python code
+        generation (local and global variables). Current program state
+        will be read from the context.
+
+        @param tmp_lhs (any) The evaluated LHS of the member access
+        expression.
+
+        @return (boolean) The (faked) results of doing the regex
+        Submatches() call if this is called on a string (LHS is a
+        string), None if not.
+
+        """
+
+        # Is the LHS a string?
+        #print("START: _handle_regex_submatch()")
+        #print(self)
+        #print(safe_str_convert(tmp_lhs).lower())
+        if (not isinstance(tmp_lhs, str)):
+            return None
+
+        # Are we calling the Submatch() method?
+        if (".Submatches(" not in safe_str_convert(self)):
+            return None
+
+        # Looks like it could be a submatch. Return the LHS (match
+        # result) and hope that is correct.
+        return tmp_lhs
+    
     def _read_member_expression_as_dict(self, context, tmp_lhs):
         """Handle member access expressions where the expression fields
         correspond to entries in a dict.
@@ -3543,6 +3593,14 @@ class MemberAccessExpression(VBA_Object):
             #print(call_retval)
             return call_retval
 
+        # Handle reading Regex submatches.
+        #print("HERE: 21.1.1")
+        call_retval = self._handle_regex_submatch(context, tmp_lhs)
+        if (call_retval is not None):
+            #print("OUT: 18.1.1")
+            #print(call_retval)
+            return call_retval        
+        
         # Handle simple 0-argument function calls.
         #print("HERE: 22")
         call_retval = self._handle_0_arg_call(context, rhs)

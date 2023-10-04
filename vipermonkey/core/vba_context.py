@@ -63,6 +63,7 @@ import string
 import codecs
 import copy
 import struct
+import typing
 
 from core import vba_constants
 from core import utils
@@ -1966,6 +1967,8 @@ class Context(object):
             return
 
         # Don't add again if we already have it.
+        if (not isinstance(value, typing.Hashable)):
+            value = safe_str_convert(value)
         if (value in intermediate_iocs):
             return
         
