@@ -617,6 +617,27 @@ def _rewrite_non_printable_chars(s):
     # Done.
     return r
 
+def _delete_comments(s):
+    """Delete all of the full line comments from the given VB code.
+
+    @param s (str) The code.
+
+    @return (str) The code with comments deleted.
+
+    """
+    r = s
+    changed = True
+    while changed:
+        old_r = r
+        if isinstance(s, bytes):
+            pat = br"(?:^|(?:\r?\n)) *'[^\n]{10,}\n"
+            r = re.sub(pat, b"\n", r)
+        elif isinstance(s, str):
+            pat = r"\r?\n\s*'[^\n]{10,}\n"
+            r = re.sub(pat, "\n", r)
+        changed = (len(r) < len(old_r))
+    return r
+    
 hide_string_map = {}
 def _hide_strings(s):
 
@@ -631,6 +652,10 @@ def _hide_strings(s):
         ("</script>" in safe_str_convert(s))):
         hide_string_map[s] = (s, {})
         return (s, {})
+
+    # Could be a lot of comments that bog things down. Delete the
+    # comments.
+    s = _delete_comments(s)
     
     s = safe_str_convert(s)
     in_str_double = False
@@ -641,6 +666,7 @@ def _hide_strings(s):
     r = ""
     escaped = False
     i = -1
+    #print("pos\tcurr\tnext\tdbl\tesc\tcomm")
     while (i < (len(s) - 1)):
 
         # Can we jump to the end of a string?
@@ -666,7 +692,7 @@ def _hide_strings(s):
                 in_comment = False
         
         # Start/end double quoted string?
-        #print(curr_char + "\t" + next_char + "\t" + str(in_str_double) + "\t" + str(escaped) + "\t" + str(in_comment))
+        #print(str(i) + "\t" + curr_char + "\t" + next_char + "\t" + str(in_str_double) + "\t" + str(escaped) + "\t" + str(in_comment))
         if ((curr_char == '"') and (next_char != '"') and (not escaped) and (not in_comment)):
             
             # Switch being in/out of string.
@@ -680,10 +706,10 @@ def _hide_strings(s):
                 # are awful to deal with. Change those out to explicit
                 # chr() calls so we can actually analyze the sample.
                 curr_str = _rewrite_non_printable_chars(curr_str[1:])
-                if curr_str.startswith('"'):
-                    curr_str = curr_str[1:]
-                if curr_str.endswith('"'):
-                    curr_str = curr_str[:-1]                    
+                #if curr_str.startswith('"'):
+                #    curr_str = curr_str[1:]
+                #if curr_str.endswith('"'):
+                #    curr_str = curr_str[:-1]                    
                 all_strs[str_name] = curr_str
                 r += '"' + str_name
             else:
