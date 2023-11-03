@@ -2834,6 +2834,13 @@ def fix_vba_code(vba_code):
         print(vba_code)
     vba_code = vba_code.replace("End SubPrivate", "End Sub\nPrivate")
 
+    # Fix code that uses 'Endif' rather than 'End If'.
+    if debug_strip:
+        print("??DBG::FIX_VBA_CODE: 2.1")
+        print(vba_code)
+    if ("endif" in vba_code.lower()):
+        vba_code = re.sub(r"[Ee]nd[Ii]f\r?\n", r"End If\n", vba_code)
+    
     # Strip empty multi-statement lines like "::" from the VB.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 2.1")
