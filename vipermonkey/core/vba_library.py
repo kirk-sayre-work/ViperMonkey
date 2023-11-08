@@ -5418,6 +5418,9 @@ class ReadText(VbaLibraryFunc):
 
 class Read(ReadText):
     pass
+
+class ReadAll(ReadText):
+    pass
     
 class CheckSpelling(VbaLibraryFunc):
     """Emulate Application.CheckSpelling() function (stubbed).
@@ -6632,11 +6635,24 @@ class CreateTextFile(VbaLibraryFunc):
             except Exception as e:
                 mode = -1
             append = (mode == 8)
+            read_mode = (mode == 1)
             
         # Save that the file is opened.
         context.open_file(fname, append=append)
         context.report_action('File Access', fname, "")
 
+        # If we are appending or reading see if we can get the file
+        # contents.
+        if (append or read_mode):
+            tmp_fname = fname.replace("C:\\", "")
+            try:
+                data = ""
+                with open(tmp_fname, "r") as f:
+                    data = f.read()
+                context.write_file(fname, data)
+            except Exception as e:
+                log.warning("Cannot read file " + tmp_fname + ". " + utils.safe_str_convert(e))
+                
         # This could be an external WebDAV access.
         if (fname.startswith("\\\\")):
 
@@ -7098,7 +7114,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                SubFolders, Files, Name, ExcelFormula, Tables, Cell, DecodeURIComponent,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
                End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync,
-               InstallProduct, BinaryGetURL, Read, ReadLine, AtEndOfStream):
+               InstallProduct, BinaryGetURL, Read, ReadLine, AtEndOfStream, ReadAll):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
