@@ -570,7 +570,7 @@ def _rewrite_non_printable_chars(s):
 
     # Got any non-printable characters?
     if (re.search(r"[\x7f-\xff]", s) is None):
-        return s
+        return '"' + s + '"'
 
     # Got non-prinatble chars. Rewrite them.
     r = ""
@@ -666,6 +666,7 @@ def _hide_strings(s):
     r = ""
     escaped = False
     i = -1
+    skip_quote = False
     #print("pos\tcurr\tnext\tdbl\tesc\tcomm")
     while (i < (len(s) - 1)):
 
@@ -700,7 +701,7 @@ def _hide_strings(s):
             
             # Finished up a string we were tracking?
             if (not in_str_double):
-                str_name = "HIDE_" + str(counter)
+                str_name = "___HIDE_" + str(counter) + "___"
                 counter += 1
                 # Ugh, Non-printable ASCII chars in string literals
                 # are awful to deal with. Change those out to explicit
@@ -711,7 +712,8 @@ def _hide_strings(s):
                 #if curr_str.endswith('"'):
                 #    curr_str = curr_str[:-1]                    
                 all_strs[str_name] = curr_str
-                r += '"' + str_name
+                r += str_name
+                skip_quote = True
             else:
                 curr_str = ""
 
@@ -725,8 +727,9 @@ def _hide_strings(s):
 
             # Not in a string. Just save the original character in the
             # result string.
-            r += curr_char
-        skip = False
+            if ((not skip_quote) or (curr_char != '"')):
+                r += curr_char
+        skip_quote = False
 
     # Done.
     #print(all_strs)
@@ -740,5 +743,5 @@ def _unhide_strings(s, str_map):
     s = safe_str_convert(s)
     r = s
     for str_name in str_map:
-        r = r.replace('"' + str_name + '"', '"' + str_map[str_name] + '"')
+        r = r.replace(str_name, str_map[str_name])
     return r
