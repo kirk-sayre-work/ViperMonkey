@@ -1937,7 +1937,7 @@ def replace_bad_chars(vba_code):
     @return (str) The modified VB code.
 
     """
-
+    
     # Characters that change how we modify the code.
     interesting_chars = [r'"', r'#', r"'", r"!", r"+", r"^", r"PAT:[^\x00-\x7e]", ";", "&"]
 
@@ -2808,6 +2808,12 @@ def fix_vba_code(vba_code):
 
     """
 
+    # Imediately strip unprintable characters from the start of the code.
+    pos = 0
+    while ((pos < len(vba_code)) and (ord(vba_code[pos]) > 127)):
+        pos += 1
+    vba_code = vba_code[pos:]
+    
     # Strip comment lines from the code.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 1")
