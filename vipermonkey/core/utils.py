@@ -570,7 +570,7 @@ def _rewrite_non_printable_chars(s):
 
     # Got any non-printable characters?
     if (re.search(r"[\x7f-\xff]", s) is None):
-        return s
+        return '"' + s + '"'
 
     # Got non-prinatble chars. Rewrite them.
     r = ""
@@ -740,5 +740,5 @@ def _unhide_strings(s, str_map):
     s = safe_str_convert(s)
     r = s
     for str_name in str_map:
-        r = r.replace('"' + str_name + '"', '"' + str_map[str_name] + '"')
+        r = r.replace('"' + str_name + '"', str_map[str_name])
     return r
