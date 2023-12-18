@@ -5121,7 +5121,7 @@ class Run(VbaLibraryFunc):
         call_params = None
         if (len(params) > 1):
             call_params = params[1:]
-        
+
         # Can we find the function to call?
         try:
             s = context.get(func_name)
@@ -5130,7 +5130,8 @@ class Run(VbaLibraryFunc):
                 return 0
             context.report_action("Run", func_name, 'Interesting Function Call', strip_null_bytes=True)
             if hasattr(s, "eval"):
-                return s.eval(context=context, params=call_params)
+                r = s.eval(context=context, params=call_params)
+                return r
             else:
                 log.warning("Application.Run() failed. Cannot find function " + utils.safe_str_convert(func_name) + " (does not refer to function).")
                 return 0

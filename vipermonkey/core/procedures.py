@@ -184,7 +184,7 @@ class Sub(VBA_Object):
         caller_context = context
         context = Context(context=caller_context)
         context.in_procedure = True
-
+        
         # Save the name of the current function so we can handle exit function calls.
         context.curr_func_name = safe_str_convert(self.name)
         
@@ -261,7 +261,7 @@ class Sub(VBA_Object):
         # Variable updates can go in the local scope.
         old_global_scope = context.global_scope
         context.global_scope = False
-                    
+        
         # Emulate the function.
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug('evaluating Sub %s(%s)' % (self.name, params))
