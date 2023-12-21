@@ -4311,7 +4311,10 @@ class Function_Call(VBA_Object):
                     raise KeyError("func not found")
                 r = s.eval(context=context, params=params)
                 if (log.getEffectiveLevel() == logging.DEBUG):
-                    log.debug("External function " + safe_str_convert(s.name) + " returns " + safe_str_convert(r))
+                    try:
+                        log.debug("External function " + safe_str_convert(s.name) + " returns " + safe_str_convert(r))
+                    except:
+                        pass
                 return r
             except KeyError:
                 log.warning("External function " + safe_str_convert(self.name) + " not found.")
