@@ -5226,6 +5226,15 @@ class ExecQuery(VbaLibraryFunc):
         if (cmd.lower() == "Select * from Win32_ComputerSystem".lower()):
             return [{"TotalPhysicalMemory" : 1073741824},
                     {"TotalPhysicalMemory" : 1073741824}]
+        if (cmd.lower() == "Select * from Win32_Service".lower()):
+            return [{"DisplayName" : "Microsoft App-V ClientAppX Deployment Service (AppXSVC)",
+                     "displayname" : "Microsoft App-V ClientAppX Deployment Service (AppXSVC)"},
+                    {"DisplayName" : "Microsoft (R) Diagnostics Hub Standard Collector Service",
+                     "displayname" : "Microsoft (R) Diagnostics Hub Standard Collector Service"},
+                    {"DisplayName" : "Microsoft Edge Update Service (edgeupdate)",
+                     "displayname" : "Microsoft Edge Update Service (edgeupdate)"},
+                    {"DisplayName" : "Microsoft Edge Elevation Service (MicrosoftEdgeElevationService)",
+                     "displayname" : "Microsoft Edge Elevation Service (MicrosoftEdgeElevationService)"}]
         
         # Say it was successful.
         return ["", ""]
