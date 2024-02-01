@@ -429,6 +429,7 @@ class vb_RegExp(object):
     def __init__(self):
         self.Pattern = None
         self.Global = False
+        self.match_any = ["SOME_FILE_NAME", "**MATCH ANY**"]
 
     def __repr__(self):
         return "<RegExp Object: Pattern = '" + str(self.Pattern) + "', Global = " + str(self.Global) + ">"
@@ -461,8 +462,43 @@ class vb_RegExp(object):
         #print re.findall(pat, string)
         if (pat is None):
             return False
+        if (string in self.match_any):
+            return True
         return (re.match(pat, string) is not None)
 
+    def Execute(self, string):
+        """Emulation of the VB Regex object Execute() method.
+
+        @param string (str) The string to test against the already set
+        regex pattern.
+
+        @return (list) List of dicts mimicing a VB Match object.
+
+        """
+        pat = self._get_python_pattern()
+        #print "PAT: '" + pat + "'"
+        #print "STR: '" + string + "'"
+        #print re.findall(pat, string)
+        if (pat is None):
+            return []
+        if (string in self.match_any):
+            return [
+                {
+                    "FirstIndex" : 12,
+                    "Value" : "FAKE MATCH 1"
+                }
+            ]
+        strs = re.findall(pat, string)
+        r = []
+        fake_pos = 3
+        for s in strs:
+            r.append({
+                "FirstIndex" : fake_pos,
+                "Value" : s
+            })
+            fake_pos += 5
+        return r
+    
     def Replace(self, string, rep):
         """Emulation of the VB Regex object Replace() method. The already set
         regex pattern is used.

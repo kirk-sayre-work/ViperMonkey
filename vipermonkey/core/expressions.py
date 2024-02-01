@@ -2189,7 +2189,13 @@ class MemberAccessExpression(VBA_Object):
 
             # Write out the file.
             #print("WRITE TO: " + fname)
-            f = open(fname, 'wb')
+            try:
+                f = open(fname, 'wb')
+            except IsADirectoryError:
+                fname += "/OUTPUT_FILE.dat"
+                log.warning("Trying to save to a directory. Changing file name to " + fname)
+                f = open(fname, 'wb')
+
             #print(val)
             if isinstance(val, bytes):
                 f.write(val)
