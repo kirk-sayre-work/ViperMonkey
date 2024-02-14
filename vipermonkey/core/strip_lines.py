@@ -404,6 +404,68 @@ def hide_some_array_accesses(vba_code):
     # Done.
     return r
 
+def fix_orphan_named_params(vba_code):
+    """Fix orphaned named parameter expressions floating around not in
+    a function call (ex. e:=12).
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+
+    """
+
+    # Punt immediately if this is not applicable.
+    if (":=" not in vba_code):
+        return vba_code
+
+    # Find := expressions and see if they appear (probably) in a
+    # function call.
+    r = ""
+    prev_pos = 0
+    pos = vba_code.index(":=")
+    while (pos < len(vba_code)):
+
+        # Save the code up to the ":=".
+        r += vba_code[prev_pos:pos]
+        
+        # Grab a chunk of code preceding the := and see if it might be
+        # a function call.
+        chunk_size = 30
+        if ((pos - 30) < 0):
+            chunk_size = pos
+        chunk = vba_code[pos - chunk_size:pos+len(":=")][::-1]
+        poss_call = False
+        for c in chunk:
+            if ((c == "(") or (c == ".")):
+                poss_call = True
+                break
+            if (c == "="):
+                poss_call= False
+                break
+        if (not poss_call):
+
+            # Could not find the "(" indicating the start (maybe) of a
+            # function call. Change the ':=' into a regular '='
+            # assignment.
+            r += "="
+
+        else:
+            # Looks like a valid ":=".
+            r += ":="
+
+        # Move to the next ':='.
+        prev_pos = pos + len(":=")
+        if (":=" not in vba_code[prev_pos:]):
+            r += vba_code[prev_pos:]
+            break
+        pos = prev_pos + vba_code[prev_pos:].index(":=")
+
+    # Done.
+    #print("---")
+    #print(r)
+    #print("---")
+    return r
+
 def fix_caret_calls(vba_code):
     """Change things like 'Call Shell^(...)' to 'Call Shell(...)' (delete
     the caret).
@@ -2833,7 +2895,14 @@ def fix_vba_code(vba_code):
             vba_code = vba_code.strip()
             vba_code = vba_code[:vba_code.rindex("\n")]
             vba_code += "\n"
-    
+
+    # Fix orphaned named parameter expressions floating around not in
+    # a function call (ex. e:=12).
+    if debug_strip:
+        print("??DBG::FIX_VBA_CODE: 1.1")
+        print(vba_code)
+    vba_code = fix_orphan_named_params(vba_code)
+            
     # Fix dumb typo in some maldocs VBA.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 2")
