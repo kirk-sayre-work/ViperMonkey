@@ -6374,6 +6374,7 @@ class VbaConstants(object):
         self.globals["Empty".lower()] = "NULL"
         self.globals["Scripting.FileSystemObject.Drives.DriveLetter".lower()] = "B"
         self.globals["Wscript.ScriptName".lower()] = "__CURRENT_SCRIPT_NAME__"
+        self.globals["WScript".lower()] = "Windows Script Host"
         
         # List of _all_ Excel constants taken from
         # https://www.autohotkey.com/boards/viewtopic.php?t=60538&p=255925 . 
