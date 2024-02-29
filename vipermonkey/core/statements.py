@@ -4558,8 +4558,8 @@ _single_line_if_statement = Group( CaselessKeyword("If").suppress() + boolean_ex
                                               Group(simple_statements_line('statements')))
                                    ) + \
                                    Optional(
-                                       (Group(CaselessKeyword("Else").suppress() + Group(simple_statements_line('statements'))) ^
-                                        Group(CaselessKeyword("Else").suppress()))
+                                       (Group(Suppress(Optional(Literal(":"))) + CaselessKeyword("Else").suppress() + Suppress(Optional(Literal(":"))) + Group(simple_statements_line('statements'))) ^
+                                        Group(Optional(Literal(":")) + CaselessKeyword("Else").suppress()))
                                    ) + Suppress(Optional(Optional(Literal(":")) + CaselessKeyword("End") + CaselessKeyword("If")))
 single_line_if_statement = _single_line_if_statement
 single_line_if_statement.setParseAction(If_Statement)
