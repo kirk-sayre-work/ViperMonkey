@@ -7,4 +7,4 @@ pyparsing==2.2.0 # pyparsing 2.4.0 triggers a MemoryError on some samples (issue
 xlrd2
 xlrd
 unidecode
-regex
+regex<2022.1.18
