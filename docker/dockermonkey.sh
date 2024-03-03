@@ -32,13 +32,8 @@ if [[ $(docker ps -f status=running -f ancestor=$tag -l | tail -n +2) ]]; then
         echo "[+] Other ViperMonkey containers are running!"
 fi
 
-if [ "$(docker images -q $tag:latest 2> /dev/null)" == "" ]; then
-    echo "[*] Building image $tag..."
-    pushd $(dirname "$0")/..
-    docker build . -t $tag
-    popd
-fi
-echo "[*] Starting container..."
+echo "[*] Building and starting container..."
+docker build . -t $tag
 docker_id=$(docker run --rm -d -t $tag:latest)
 
 echo "[*] Attempting to copy file $1 into container ID $docker_id"
@@ -80,7 +75,7 @@ if [[ $# -ge 4 && $3 == "-i" ]]; then
 fi
 
 # Run ViperMonkey in the docker container.
-docker exec $docker_id sh -c "/opt/ViperMonkey/vipermonkey/vmonkey.py -s --ioc --jit '/root/$file_basename' $json $entry"
+docker exec $docker_id sh -c "/opt/ViperMonkey/vipermonkey/vmonkey.py -s --ioc '/root/$file_basename' $json $entry"
 
 # Copy out the JSON analysis report if needed.
 if [ "$json_file" != "" ]; then
