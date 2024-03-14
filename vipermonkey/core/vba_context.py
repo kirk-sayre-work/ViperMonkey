@@ -2286,7 +2286,7 @@ class Context(object):
         # this var to it's existing value.
         try:
             old_val = self.get(name)
-            if (old_val == value):
+            if ((old_val == value) and (not force_global)):
                 return
         except KeyError:
             pass

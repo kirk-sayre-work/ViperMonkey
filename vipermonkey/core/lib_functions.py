@@ -132,7 +132,7 @@ def quick_parse_simple_chr(tokens):
 
     # Pull out the Chr function names and variables.
     text = safe_str_convert(tokens[0]).strip()
-    pat = r"(Chr[BW]?\$?)\s*\(\s*(\w+)\s*\)"
+    pat = r"(Chr[BW]?\$?)\s*\(\s*(&?\w+)\s*\)"
 
     # Construct Chr() expressions for each.
     from core.expressions import SimpleNameExpression
@@ -150,7 +150,7 @@ def quick_parse_simple_chr(tokens):
     return r
 
 # Fast parsing for things like ChrW(a210) & ... with a bunch of Chr() calls.
-simple_chr = Regex(re.compile("Chr[BW]?\$?\s*\(\s*\w+\s*\)(?:\s*&\s*Chr[BW]?\$?\s*\(\s*\w+\s*\)){100,}"))
+simple_chr = Regex(re.compile("Chr[BW]?\$?\s*\(\s*&?\w+\s*\)(?:\s*&\s*Chr[BW]?\$?\s*\(\s*&?\w+\s*\))+"))
 simple_chr.setParseAction(quick_parse_simple_chr)
 
 chr_ = simple_chr | full_chr_

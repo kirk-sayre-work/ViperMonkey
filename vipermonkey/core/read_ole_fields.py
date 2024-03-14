@@ -1699,7 +1699,7 @@ def get_ole_text_method_1(vba_code, data, debug=False):
         print("\n\n\n")
 
     # Pull out the strings from the data.
-    ascii_pat = br"(?:[\r\n\x09\x20-\x7f]|\x0d\x0a){4,}|(?:(?:[\r\n\x09\x20-\x7f]\x00|\x0d\x00\x0a\x00)){4,}"
+    ascii_pat = br"(?:[\r\n\x09\x20-\x7f]|\x0d\x0a){4,}|(?:(?:[\b\r\n\x09\x20-\x7f]\x00|\x0d\x00\x0a\x00)){4,}"
     vals = re.findall(ascii_pat, data)
     tmp_vals = []
     for val in vals:
@@ -3555,7 +3555,7 @@ def get_shapes_text_values(fname, stream):
         # It looks like maybe(?) the shapes text appears as ASCII blocks bounded by
         # 0x0D bytes (or some other specific byte patterns). We will look for that.
         # <\x00\r\x0b\x00
-        pat = br"(?:\x0d|(?:<\x00\r\x0b\x00))(?:[\x20-\x7e]|[\r\n\t]){100,}(?:\x0d|(?:<\x00\())"
+        pat = br"(?:\x0d|(?:<\x00\r\x0b\x00))(?:[\x20-\x7e]|[\r\n\t\b]){100,}(?:\x0d|(?:<\x00\())"
         strs = re.findall(pat, data)
         #print(data)
         #print("^^^^^^^^^^^")
@@ -4568,15 +4568,17 @@ def _read_payload_embedded_obj_text(data, vm):
     log.info("Reading embedded object text fields...")
     for (var_name, caption_val, tag_val) in _get_embedded_object_values(data):
         tag_name = var_name.lower() + ".tag"
-        vm.doc_vars[tag_name] = tag_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA object tag text %r = %r to doc_vars." % \
-                      (tag_name, tag_val))
+        if (tag_name not in vm.doc_vars):
+            vm.doc_vars[tag_name] = tag_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA object tag text %r = %r to doc_vars." % \
+                          (tag_name, tag_val))
         caption_name = var_name.lower() + ".caption"
-        vm.doc_vars[caption_name] = caption_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA object caption text %r = %r to doc_vars." % \
-                      (caption_name, caption_val))    
+        if (caption_name not in vm.doc_vars):
+            vm.doc_vars[caption_name] = caption_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA object caption text %r = %r to doc_vars." % \
+                          (caption_name, caption_val))    
 
 def _read_payload_custom_doc_props(data, vm):
     """Read in and save custom document property names and values from
@@ -4593,9 +4595,10 @@ def _read_payload_custom_doc_props(data, vm):
     # Pull out custom document properties.
     log.info("Reading custom document properties...")
     for (var_name, var_val) in _read_custom_doc_props(data):
-        vm.doc_vars[var_name.lower()] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA custom doc prop variable %r = %r to doc_vars." % (var_name, var_val))
+        if (var_name.lower() not in vm.doc_vars):
+            vm.doc_vars[var_name.lower()] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA custom doc prop variable %r = %r to doc_vars." % (var_name, var_val))
     
 def _read_payload_textbox_text(data, vba_code, vm):
     """Read in and save text hidden in TextBox and RichText objects.
@@ -4713,10 +4716,13 @@ def _read_payload_textbox_text(data, vba_code, vm):
                                           "InlineShapes.Item('" + page_index + "').AlternativeText$",
                                           "StoryRanges.Item('" + page_index + "')",
                                           "me.StoryRanges.Item('" + page_index + "')"])
+            if ("\r" in var_val):
+                var_val = var_val[:var_val.rindex("\r")]
             for tmp_var_name in var_name_variants:
-                vm.doc_vars[tmp_var_name.lower()] = var_val
-                if (log.getEffectiveLevel() == logging.DEBUG):
-                    log.debug("Added potential VBA OLE form textbox text (2) %r = %r to doc_vars." % (tmp_var_name, var_val))
+                if (tmp_var_name.lower() not in vm.doc_vars):
+                    vm.doc_vars[tmp_var_name.lower()] = var_val
+                    if (log.getEffectiveLevel() == logging.DEBUG):
+                        log.debug("Added potential VBA OLE form textbox text (2) %r = %r to doc_vars." % (tmp_var_name, var_val))
 
                     
 got_inline_shapes = False                    
@@ -4738,8 +4744,9 @@ def _read_payload_inline_shape_text(data, vm):
     got_inline_shapes = False
     for (var_name, var_val) in _get_inlineshapes_text_values(data):
         got_inline_shapes = True
-        vm.doc_vars[var_name.lower()] = var_val
-        log.info("Added potential VBA InlineShape text %r = %r to doc_vars." % (var_name, var_val))
+        if (var_name.lower() not in vm.doc_vars):
+            vm.doc_vars[var_name.lower()] = var_val
+            log.debug("Added potential VBA InlineShape text %r = %r to doc_vars." % (var_name, var_val))
     
 def _read_payload_shape_text(data, vm):
     """Read in and save the text associated with Shape objects in a
@@ -4762,52 +4769,74 @@ def _read_payload_shape_text(data, vm):
     for (var_name, var_val) in shape_text:
         got_it = True
         var_name = var_name.lower()
-        vm.doc_vars[var_name] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA Shape text %r = %r to doc_vars." % (var_name, var_val))
-        vm.doc_vars["thisdocument."+var_name] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("thisdocument."+var_name, var_val))
-        vm.doc_vars["thisdocument."+var_name+".caption"] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("thisdocument."+var_name+".caption", var_val))
-        vm.doc_vars["activedocument."+var_name] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("activedocument."+var_name, var_val))
-        vm.doc_vars["activedocument."+var_name+".caption"] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("activedocument."+var_name+".caption", var_val))
-        vm.doc_vars["activedocument.shapes.range(['"+var_name+"'])"] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("activedocument.shapes.range(['"+var_name+"'])", var_val))
-        vm.doc_vars["activedocument.shapes.range(array(\""+var_name+"\"))"] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("activedocument.shapes.range(array(\""+var_name+"\"))", var_val))
+        if (var_name not in vm.doc_vars):
+            vm.doc_vars[var_name] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA Shape text %r = %r to doc_vars." % (var_name, var_val))
+        if ("thisdocument."+var_name not in vm.doc_vars):
+            vm.doc_vars["thisdocument."+var_name] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("thisdocument."+var_name, var_val))
+        if ("thisdocument."+var_name+".caption" not in vm.doc_vars):
+            vm.doc_vars["thisdocument."+var_name+".caption"] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("thisdocument."+var_name+".caption", var_val))
+        if ("activedocument."+var_name not in vm.doc_vars):
+            vm.doc_vars["activedocument."+var_name] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("activedocument."+var_name, var_val))
+        if ("activedocument."+var_name+".caption" not in vm.doc_vars):
+            vm.doc_vars["activedocument."+var_name+".caption"] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("activedocument."+var_name+".caption", var_val))
+        if ("activedocument.shapes.range(['"+var_name+"'])" not in vm.doc_vars):
+            vm.doc_vars["activedocument.shapes.range(['"+var_name+"'])"] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("activedocument.shapes.range(['"+var_name+"'])", var_val))
+        if ("activedocument.shapes.range(array(\""+var_name+"\"))" not in vm.doc_vars):
+            vm.doc_vars["activedocument.shapes.range(array(\""+var_name+"\"))"] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA Shape text %r = %r to doc_vars." % ("activedocument.shapes.range(array(\""+var_name+"\"))", var_val))
         tmp_name = "shapes('" + var_name + "').textframe.textrange.text"
-        vm.doc_vars[tmp_name] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA Shape text %r = %r to doc_vars." % (tmp_name, var_val))
+        if (tmp_name not in vm.doc_vars):
+            vm.doc_vars[tmp_name] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA Shape text %r = %r to doc_vars." % (tmp_name, var_val))
         tmp_name = "shapes('" + safe_str_convert(pos) + "').textframe.textrange.text"
-        vm.doc_vars[tmp_name] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA Shape text %r = %r to doc_vars." % (tmp_name, var_val))
+        if (tmp_name not in vm.doc_vars):
+            vm.doc_vars[tmp_name] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA Shape text %r = %r to doc_vars." % (tmp_name, var_val))
         tmp_name = "me.storyranges('" + safe_str_convert(pos) + "')"
-        vm.doc_vars[tmp_name] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA StoryRange text %r = %r to doc_vars." % (tmp_name, var_val))
+        if (tmp_name not in vm.doc_vars):
+            vm.doc_vars[tmp_name] = var_val.replace("\b", "")
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA StoryRange text %r = %r to doc_vars." % (tmp_name, var_val.replace("\b", "")))
+        tmp_name = "StoryRanges.Item('" + safe_str_convert(pos) + "')"
+        if (tmp_name not in vm.doc_vars):
+            vm.doc_vars[tmp_name] = var_val.replace("\b", "")
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA StoryRange text %r = %r to doc_vars." % (tmp_name, var_val.replace("\b", "")))
+        if (tmp_name.lower() not in vm.doc_vars):
+            vm.doc_vars[tmp_name.lower()] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA StoryRange text %r = %r to doc_vars." % (tmp_name.lower(), var_val))
         # activedocument.shapes('1').alternativetext
         tmp_name = "ActiveDocument.shapes('" + safe_str_convert(pos) + "').AlternativeText"
-        vm.doc_vars[tmp_name] = var_val
-        vm.doc_vars[tmp_name.lower()] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA Shape text %r = %r to doc_vars." % (tmp_name, var_val))
+        if (tmp_name not in vm.doc_vars):
+            vm.doc_vars[tmp_name] = var_val
+        if (tmp_name.lower() not in vm.doc_vars):
+            vm.doc_vars[tmp_name.lower()] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA Shape text %r = %r to doc_vars." % (tmp_name, var_val))
         pos += 1
     if (not got_it):
         shape_text = get_shapes_text_values(data, '1table')
         for (var_name, var_val) in shape_text:
-            vm.doc_vars[var_name.lower()] = var_val
-            if (log.getEffectiveLevel() == logging.DEBUG):
-                log.debug("Added potential VBA Shape text %r = %r to doc_vars." % (var_name, var_val))
+            if (var_name.lower() not in vm.doc_vars):
+                vm.doc_vars[var_name.lower()] = var_val
+                if (log.getEffectiveLevel() == logging.DEBUG):
+                    log.debug("Added potential VBA Shape text %r = %r to doc_vars." % (var_name, var_val))
     
 def _read_payload_doc_comments(data, vm):
     """Read in and save the comments in an Office document.
@@ -4847,12 +4876,14 @@ def _read_payload_doc_vars(data, orig_filename, vm):
     # Pull out document variables.
     log.info("Reading document variables...")
     for (var_name, var_val) in _read_doc_vars(data, orig_filename):
-        vm.doc_vars[var_name] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name, var_val))
-        vm.doc_vars[var_name.lower()] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))
+        if (var_name not in vm.doc_vars):
+            vm.doc_vars[var_name] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name, var_val))
+        if (var_name.lower() not in vm.doc_vars):
+            vm.doc_vars[var_name.lower()] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))
 
 def _read_shape_names(data, vm):
     """Read and save Shape names from Office 2007+ files.
@@ -4874,19 +4905,23 @@ def _read_shape_names(data, vm):
     for shape_id in shape_info:
         var_val = shape_info[shape_id]
         var_name = ".Shapes(" + str(shape_id) + ").Name"
-        vm.doc_vars[var_name] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name, var_val))
-        vm.doc_vars[var_name.lower()] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))
+        if (var_name not in vm.doc_vars):
+            vm.doc_vars[var_name] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name, var_val))
+        if (var_name.lower() not in vm.doc_vars):
+            vm.doc_vars[var_name.lower()] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))
         var_name = "ActiveSheet.Shapes(" + str(shape_id) + ").Name"
-        vm.doc_vars[var_name] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name, var_val))
-        vm.doc_vars[var_name.lower()] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))
+        if (var_name not in vm.doc_vars):
+            vm.doc_vars[var_name] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name, var_val))
+        if (var_name.lower() not in vm.doc_vars):
+            vm.doc_vars[var_name.lower()] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))
 
 def _read_shape_textframe_chars(data, vm):
     """Read and save Shape.TextFrame.Characters strings from Office 2007+ files.
@@ -4908,19 +4943,23 @@ def _read_shape_textframe_chars(data, vm):
     for shape_id in shape_info:
         var_val = shape_info[shape_id]
         var_name = ".Shapes(" + str(shape_id) + ").TextFrame.Characters.Text"
-        vm.doc_vars[var_name] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name, var_val))
-        vm.doc_vars[var_name.lower()] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))
+        if (var_name not in vm.doc_vars):
+            vm.doc_vars[var_name] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name, var_val))
+        if (var_name.lower() not in vm.doc_vars):
+            vm.doc_vars[var_name.lower()] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))
         var_name = "ActiveSheet.Shapes(" + str(shape_id) + ").TextFrame.Characters.Text"
-        vm.doc_vars[var_name] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name, var_val))
-        vm.doc_vars[var_name.lower()] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))            
+        if (var_name not in vm.doc_vars):
+            vm.doc_vars[var_name] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name, var_val))
+        if (var_name.lower() not in vm.doc_vars):
+            vm.doc_vars[var_name.lower()] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))            
 
 def _get_customxml(data):
     """Read CustomXML values from an Office 2007+ file.
@@ -4995,12 +5034,14 @@ def _read_shape_customxml(data, vm):
     for cid in info:
         var_val = info[cid]
         var_name = cid
-        vm.doc_vars[var_name] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential CustomXML VBA doc variable %r = %r to doc_vars." % (var_name, var_val))
-        vm.doc_vars[var_name.lower()] = var_val
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Added potential CustomXML VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))
+        if (var_name not in vm.doc_vars):
+            vm.doc_vars[var_name] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential CustomXML VBA doc variable %r = %r to doc_vars." % (var_name, var_val))
+        if (var_name.lower() not in vm.doc_vars):
+            vm.doc_vars[var_name.lower()] = var_val
+            if (log.getEffectiveLevel() == logging.DEBUG):
+                log.debug("Added potential CustomXML VBA doc variable %r = %r to doc_vars." % (var_name.lower(), var_val))
             
 def _read_simple_forms(data, vm):
     """Read in and save the tags and captions of forms represented in an
@@ -5060,18 +5101,24 @@ def _read_simple_forms(data, vm):
         # Add in ViperMonkey variables for the tag and caption.
         if (tag is not None):
             tmp_name = "thisdocument." + name + ".tag"
-            vm.doc_vars[tmp_name] = tag
+            if (tmp_name not in vm.doc_vars):
+                vm.doc_vars[tmp_name] = tag
             tmp_name = "activedocument." + name + ".tag"
-            vm.doc_vars[tmp_name] = tag
+            if (tmp_name not in vm.doc_vars):
+                vm.doc_vars[tmp_name] = tag
             tmp_name = name + ".tag"
-            vm.doc_vars[tmp_name] = tag
+            if (tmp_name not in vm.doc_vars):
+                vm.doc_vars[tmp_name] = tag
         if (caption is not None):
             tmp_name = "thisdocument." + name + ".caption"
-            vm.doc_vars[tmp_name] = caption
+            if (tmp_name not in vm.doc_vars):
+                vm.doc_vars[tmp_name] = caption
             tmp_name = "activedocument." + name + ".caption"
-            vm.doc_vars[tmp_name] = caption
+            if (tmp_name not in vm.doc_vars):
+                vm.doc_vars[tmp_name] = caption
             tmp_name = name + ".caption"
-            vm.doc_vars[tmp_name] = caption
+            if (tmp_name not in vm.doc_vars):
+                vm.doc_vars[tmp_name] = caption
             
 def read_payload_hiding_places(data, orig_filename, vm, vba_code, vba):
     """

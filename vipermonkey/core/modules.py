@@ -180,6 +180,11 @@ class Module(VBA_Object):
                         if (log.getEffectiveLevel() == logging.DEBUG):
                             log.debug("saving external func decl: %r" % curr_statement.name)
                         self.external_functions[curr_statement.name] = curr_statement
+                    if isinstance(curr_statement, If_Statement_Macro):
+                        for ext_func in curr_statement.external_functions:
+                            if (log.getEffectiveLevel() == logging.DEBUG):
+                                log.debug("saving external func decl: %r" % ext_func)
+                            self.external_functions[ext_func] = curr_statement.external_functions[ext_func]
                     
         self.name = self.attributes.get('VB_Name', None)
 
@@ -248,7 +253,6 @@ class Module(VBA_Object):
         load the functions/subs defined in the current module.
 
         """
-        
         for name, _sub in list(self.subs.items()):
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug('(1) storing sub "%s" in globals' % name)
@@ -268,6 +272,7 @@ class Module(VBA_Object):
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug('(1) storing external function "%s" in globals' % name)
             context.set(name, _function)
+            context.dll_func_true_names[_function.name] = _function.alias_name
         for name, _var in list(self.global_vars.items()):
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug('(1) storing global var "%s" = %s in globals (1)' % (name, safe_str_convert(_var)))

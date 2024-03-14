@@ -1835,6 +1835,19 @@ class Execute(VbaLibraryFunc):
             (isinstance(params[0], (VBA_Object, VbaLibraryFunc)))):
             return "NULL"
 
+        # Is this a RegExp.Execute() call?
+        if ((len(params) >= 2) and (params[1] == "RegExp")):
+
+            # We don't have the regex pattern, so just fake up some
+            # results and hope for the best.
+            log.info("Faking RexExp.Execute() call...")
+            return [
+                {
+                    "FirstIndex" : 12,
+                    "Value" : "FAKE MATCH 1"
+                }
+            ]
+        
         # Based on some VBScript malware samples it looks like you can
         # call Execute() on a PE EXE in memory and have it run. Does
         # the "command" look like a PE file?
@@ -3884,7 +3897,7 @@ class SubFolders(VbaLibraryFunc):
         # Terminate recursion when exploring a file system.
         dir = params[0]
         if (dir == "**MATCH ANY**"):
-            return []
+            return ["FAKE_SUBFOLDER_1"]
         
         # Lets have this match any logic and see what the VB does.
         return ["**MATCH ANY**"]
@@ -3907,7 +3920,7 @@ class Files(VbaLibraryFunc):
             return []
         
         # Lets have this match any logic and see what the VB does.
-        return ["SOME_FILE_NAME"]
+        return ["SOME_FILE_NAME", "**MATCH ANY**"]
 
 class Name(VbaLibraryFunc):
     """Fake Name field in File object.
@@ -5121,7 +5134,7 @@ class Run(VbaLibraryFunc):
         call_params = None
         if (len(params) > 1):
             call_params = params[1:]
-        
+
         # Can we find the function to call?
         try:
             s = context.get(func_name)
@@ -5130,7 +5143,8 @@ class Run(VbaLibraryFunc):
                 return 0
             context.report_action("Run", func_name, 'Interesting Function Call', strip_null_bytes=True)
             if hasattr(s, "eval"):
-                return s.eval(context=context, params=call_params)
+                r = s.eval(context=context, params=call_params)
+                return r
             else:
                 log.warning("Application.Run() failed. Cannot find function " + utils.safe_str_convert(func_name) + " (does not refer to function).")
                 return 0
@@ -5225,6 +5239,15 @@ class ExecQuery(VbaLibraryFunc):
         if (cmd.lower() == "Select * from Win32_ComputerSystem".lower()):
             return [{"TotalPhysicalMemory" : 1073741824},
                     {"TotalPhysicalMemory" : 1073741824}]
+        if (cmd.lower() == "Select * from Win32_Service".lower()):
+            return [{"DisplayName" : "Microsoft App-V ClientAppX Deployment Service (AppXSVC)",
+                     "displayname" : "Microsoft App-V ClientAppX Deployment Service (AppXSVC)"},
+                    {"DisplayName" : "Microsoft (R) Diagnostics Hub Standard Collector Service",
+                     "displayname" : "Microsoft (R) Diagnostics Hub Standard Collector Service"},
+                    {"DisplayName" : "Microsoft Edge Update Service (edgeupdate)",
+                     "displayname" : "Microsoft Edge Update Service (edgeupdate)"},
+                    {"DisplayName" : "Microsoft Edge Elevation Service (MicrosoftEdgeElevationService)",
+                     "displayname" : "Microsoft Edge Elevation Service (MicrosoftEdgeElevationService)"}]
         
         # Say it was successful.
         return ["", ""]

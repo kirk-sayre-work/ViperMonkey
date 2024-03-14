@@ -2189,7 +2189,13 @@ class MemberAccessExpression(VBA_Object):
 
             # Write out the file.
             #print("WRITE TO: " + fname)
-            f = open(fname, 'wb')
+            try:
+                f = open(fname, 'wb')
+            except IsADirectoryError:
+                fname += "/OUTPUT_FILE.dat"
+                log.warning("Trying to save to a directory. Changing file name to " + fname)
+                f = open(fname, 'wb')
+
             #print(val)
             if isinstance(val, bytes):
                 f.write(val)
@@ -4311,7 +4317,10 @@ class Function_Call(VBA_Object):
                     raise KeyError("func not found")
                 r = s.eval(context=context, params=params)
                 if (log.getEffectiveLevel() == logging.DEBUG):
-                    log.debug("External function " + safe_str_convert(s.name) + " returns " + safe_str_convert(r))
+                    try:
+                        log.debug("External function " + safe_str_convert(s.name) + " returns " + safe_str_convert(r))
+                    except:
+                        pass
                 return r
             except KeyError:
                 log.warning("External function " + safe_str_convert(self.name) + " not found.")
