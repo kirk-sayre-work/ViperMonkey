@@ -4643,12 +4643,12 @@ class CallByName(VbaLibraryFunc):
         if (len(params) >= 4):
             args = params[3]
         if (("run" in cmd.lower()) or ("create" in cmd.lower()) or ("wscript.shell" in obj.lower())):
-            context.report_action("Run", args, 'Interesting Function Call', strip_null_bytes=True)
+            context.report_action("Run", args, 'Interesting Function Call')
         # Accessing elements at pos and pos+1, so leave this as a for over the range().
         # pylint: disable=consider-using-enumerate
         for pos in range(0, len(params)):
             if ((utils.safe_str_convert(params[pos]).lower() == "wscript") and ((pos + 1) < len(params))):
-                context.report_action("Run", params[pos + 1], 'Interesting Function Call', strip_null_bytes=True)
+                context.report_action("Run", params[pos + 1], 'Interesting Function Call')
         # CallByName("['WinHttp.WinHttpRequest.5.1', 'Open', 1, 'GET', 'http://deciodc.org/bin/office1...")
         if ((("Open" in cmd) and ("WinHttpRequest" in obj)) or
             ((len(params) > 5) and (utils.safe_str_convert(params[3]).lower() == "get"))):
@@ -5141,7 +5141,7 @@ class Run(VbaLibraryFunc):
             if (s is None):
                 log.warning("Application.Run() failed. Cannot find function " + utils.safe_str_convert(func_name) + ".")
                 return 0
-            context.report_action("Run", func_name, 'Interesting Function Call', strip_null_bytes=True)
+            context.report_action("Run", func_name, 'Interesting Function Call')
             if hasattr(s, "eval"):
                 r = s.eval(context=context, params=call_params)
                 return r
@@ -5262,7 +5262,7 @@ class WinExec(VbaLibraryFunc):
             return "NULL"
 
         cmd = params[0]
-        context.report_action("Run", cmd, 'Interesting Command Execution', strip_null_bytes=True)
+        context.report_action("Run", cmd, 'Interesting Command Execution')
         return ''
 
 class CreateShortcut(VbaLibraryFunc):

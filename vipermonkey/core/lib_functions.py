@@ -139,7 +139,10 @@ def quick_parse_simple_chr(tokens):
     from core.operators import Concatenation
     op_list = []
     for func_name, var_name_str in re.findall(pat, text):
-        var_name = SimpleNameExpression(None, None, None, name=var_name_str)
+        if var_name_str.startswith("&H"):
+            var_name = int("0x" + var_name_str[2:], 16)
+        else:
+            var_name = SimpleNameExpression(None, None, None, name=var_name_str)
         curr_chr = Chr(func_name + "(" + var_name_str + ")", 0, [var_name])
         if (len(op_list) > 0):
             op_list.append('&')
