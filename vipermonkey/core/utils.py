@@ -787,5 +787,8 @@ def _unhide_strings(s, str_map):
     s = safe_str_convert(s)
     r = s
     for str_name in str_map:
-        r = r.replace('"' + str_name + '"', str_map[str_name])
+        if ('"' + str_name + '"' in r):
+            r = r.replace('"' + str_name + '"', str_map[str_name])
+        else:
+            r = r.replace(str_name, str_map[str_name])
     return r
