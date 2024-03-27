@@ -4330,7 +4330,7 @@ class Function_Call(VBA_Object):
         if self.name.lower() in context._log_funcs \
                 or any(self.name.lower().endswith(func.lower()) for func in Function_Call.log_funcs):
             if ("Scripting.Dictionary" not in safe_str_convert(params)):
-                context.report_action(self.name, params, 'Interesting Function Call', strip_null_bytes=True)
+                context.report_action(self.name, params, 'Interesting Function Call')
         try:
 
             # Get the (possible) function.

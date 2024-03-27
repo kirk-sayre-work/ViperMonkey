@@ -560,6 +560,9 @@ def strip_nonvb_chars(s):
     if (re.search(r"[^\x09-\x7e]", s) is None):
         return s
 
+    # Don't replace characters that appear in string literals.
+    s, str_map = _hide_strings(s)
+    
     # Patch for some string values.
     s = s.replace(chr(0x90), "u")
     
@@ -569,6 +572,11 @@ def strip_nonvb_chars(s):
     # Strip multiple 'NULL' substrings from the string.
     if (r.count("NULL") > 10):
         r = r.replace("NULL", "")
+
+    # Unhide the strings.
+    r = _unhide_strings(r, str_map)
+
+    # Done.
     return r
 
 cached_ascii = {}
