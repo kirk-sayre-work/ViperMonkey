@@ -691,9 +691,11 @@ def _hide_strings(s):
         return hide_string_map[s]
     
     # Only do this on VBS.
+    # </ms:script>
     import core.filetype as filetype
     if (filetype.is_office_file(s, True) or
-        ("</script>" in safe_str_convert(s))):
+        ("</script>" in safe_str_convert(s)) or
+        ("</ms:script>" in safe_str_convert(s))):
         hide_string_map[s] = (s, {})
         return (s, {})
 

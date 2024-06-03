@@ -1965,13 +1965,17 @@ class Context(object):
             for v in value:
                 self.save_intermediate_iocs(v, reverse=reverse)
             return
-
+        
         # Don't add again if we already have it.
         if (not isinstance(value, typing.Hashable)):
             value = safe_str_convert(value)
         if (value in intermediate_iocs):
             return
-        
+
+        # Skip processing the data if it is huge.
+        if (len(value) > 1000000):
+            return
+
         # Strip NULLs and unprintable characters from the potential IOC.
         value = utils.strip_nonvb_chars(safe_str_convert(value))
         if (len(re.findall(r"NULL", safe_str_convert(value))) > 20):

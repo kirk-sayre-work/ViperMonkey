@@ -3184,6 +3184,19 @@ class LoadXML(VbaLibraryFunc):
                 if (log.getEffectiveLevel() == logging.DEBUG):
                     log.debug("LoadXML(): Base64 decode fail.")
 
+        # XML containing JScript or VBScript code?
+        script_pat = r"language=\"[jv]script(?:\.encode)?\">\s*<!\[CDATA\[\s*(.+?)\]\]>\s*</ms:script>"
+        script = re.findall(script_pat, xml, re.DOTALL)
+        if script:
+
+            # Save the script as if it were dropped to disk.
+            log.info("Saving JS/VBS embedded in XML to disk.")
+            script = script[0]            
+            fname = "xml_script_" + str(random.randint(100, 10000)) + ".dat"
+            context.open_file(fname)
+            context.write_file(fname, script)
+            context.close_file(fname)
+            
         # Return the XML or base64 string.
         return xml
 
