@@ -1973,11 +1973,12 @@ class Context(object):
             return
 
         # Skip processing the data if it is huge.
+        value = safe_str_convert(value)
         if (len(value) > 1000000):
             return
 
         # Strip NULLs and unprintable characters from the potential IOC.
-        value = utils.strip_nonvb_chars(safe_str_convert(value))
+        value = utils.strip_nonvb_chars(value)
         if (len(re.findall(r"NULL", safe_str_convert(value))) > 20):
             value = value.replace("NULL", "")
         # ` is not interesting for b64 or URLs.
