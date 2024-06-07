@@ -377,6 +377,28 @@ class ExcelFormula(VbaLibraryFunc):
 
     def num_args(self):
         return 1
+
+class Prompt(VbaLibraryFunc):
+    """Emulate Window.Prompt() function (stubbed).
+
+    """
+
+    def eval(self, context, params=None):
+        context = context # pylint
+        params = params # pylint
+
+        return 'YES'
+
+class Confirm(VbaLibraryFunc):
+    """Emulate Window.Confirm() function (stubbed).
+
+    """
+
+    def eval(self, context, params=None):
+        context = context # pylint
+        params = params # pylint
+
+        return True  
     
 class GetSaveAsFilename(VbaLibraryFunc):
     """Emulate GetSaveAsFilename() function (stubbed).
@@ -7150,7 +7172,8 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                SubFolders, Files, Name, ExcelFormula, Tables, Cell, DecodeURIComponent,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
                End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync,
-               InstallProduct, BinaryGetURL, Read, ReadLine, AtEndOfStream, ReadAll):
+               InstallProduct, BinaryGetURL, Read, ReadLine, AtEndOfStream, ReadAll,
+               Prompt, Confirm):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
