@@ -6686,6 +6686,7 @@ class CreateTextFile(VbaLibraryFunc):
         
         # Are we appending to an existing file?
         append = False
+        read_mode = False
         if (len(params) >= 2):
             mode = None
             try:
