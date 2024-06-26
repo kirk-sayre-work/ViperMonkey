@@ -772,20 +772,11 @@ def _get_vba_parser(data):
     # literals will be restored prior to parsing.
     data, str_map = utils._hide_strings(data)
     
-    # First just try the most common case where olevba can directly get the VBA.
-    vba = None
-    try:
-        vba = VBA_Parser('', data, relaxed=True)
-    except Exception as e:
-
-        if (log.getEffectiveLevel() == logging.DEBUG):
-            log.debug("Creating VBA_PArser() Failed. Trying as HTA. " + safe_str_convert(e))
-        
-        # If that did not work see if we can pull HTA wrapped VB from the data.
-        extracted_data = bytes(get_vb_contents_from_hta(data), "latin-1")
-        
-        # If this throws an exception it will get passed up.
-        vba = VBA_Parser('', extracted_data, relaxed=True)
+    # First just try the most common case where olevba can directly
+    # get the VBA. Extract VBS from a HTA sample if this is a HTA
+    # sample. If not HTA just use original sample contents.
+    extracted_data = bytes(get_vb_contents_from_hta(data), "latin-1")
+    vba = VBA_Parser('', extracted_data, relaxed=True)
 
     # Save the hidden string information so we can unhide the strings
     # later.
