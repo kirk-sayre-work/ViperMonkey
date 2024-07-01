@@ -96,6 +96,10 @@ def _boilerplate_to_javascript(indent):
     boilerplate += indent_str + '    return str.split("").reverse().join("");\n'
     boilerplate += indent_str + "}\n"
     boilerplate += "\n"
+    boilerplate += indent_str + "function Replace(s, sub, rep) {\n"
+    boilerplate += indent_str + "    return s.replaceAll(sub, rep);\n"
+    boilerplate += indent_str + "}\n"
+    boilerplate += "\n"
     return boilerplate
     
 def transpile_javascript(arg):
