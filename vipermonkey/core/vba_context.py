@@ -2299,7 +2299,7 @@ class Context(object):
         # Treat things like document variables, form captions, etc. as global variables.
         if ("." in name):
             suffix = name[name.rindex("."):].strip().lower()
-            fields = set([".caption", ".tag", ".text", ".name", ".alternativetext", ".controltiptext"])
+            fields = set([".caption", ".tag", ".text", ".name", ".alternativetext", ".controltiptext", ".nodetypedvalue"])
             if (suffix in fields):
                 force_global = True
         
