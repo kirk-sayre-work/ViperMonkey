@@ -389,10 +389,13 @@ def b64_encode(value):
     except Exception as e:
         return None
 
-def b64_decode(value):
+def b64_decode(value, binary=False):
     """Base64 decode a string.
 
     @param value (str) The string to decode.
+
+    @param binary (boolean) If True return the raw binary decode
+    results, if False convert to ASCII.
 
     @return (str) On success return the base64 decode results, on
     error return None.
@@ -412,6 +415,8 @@ def b64_decode(value):
         
             # Return the decoded value.
             conv_val = base64.b64decode(tmp_str)
+            if binary:
+                return conv_val
             return safe_str_convert(conv_val)
     
     # Base64 conversion error.

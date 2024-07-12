@@ -2467,12 +2467,13 @@ class Context(object):
                     #print("B64!!")
                     #print(value)
                     # Try base64 decoding first.
-                    conv_val = utils.b64_decode(value)
+                    conv_val = utils.b64_decode(value, binary=True)
 
                     # If that did not work maybe we are encoding into base64.
                     #if ((name.lower().endswith(".nodetypedvalue")) and (conv_val is None)):
                     #    #print("TRY ENCODE!!")
                     #    conv_val = utils.b64_encode(value)
+                    #print("!!***!!")
                     #print(conv_val)
 
                 # Set the decoded/encoded value if we got one.
