@@ -515,8 +515,8 @@ class Context(object):
 
         # Fake script name.
         if self.filename:
-            self.globals["WSCRIPT.SCRIPTFULLNAME".lower()] = "C:\\" + self.filename
-            self.globals["['WSCRIPT'].SCRIPTFULLNAME".lower()] = "C:\\" + self.filename
+            self.globals["WSCRIPT.SCRIPTFULLNAME".lower()] = "C:\\Windows\\system32\\" + self.filename
+            self.globals["['WSCRIPT'].SCRIPTFULLNAME".lower()] = "C:\\Windows\\system32\\" + self.filename
         
     def __repr__(self):
         r = ""
