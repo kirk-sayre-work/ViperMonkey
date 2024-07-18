@@ -372,6 +372,9 @@ def fix_python_overlap(var_name):
     if ((not var_name.endswith(".Pattern")) and
         (not var_name.endswith(".Global"))):
         var_name = var_name.replace(".", "")
+    # VB variables are case insensitive, Python vars are case
+    # sensitive.
+    var_name = var_name.lower()
     return var_name
 
 def b64_encode(value):

@@ -137,7 +137,8 @@ class Sub(VBA_Object):
             tmp_context.set(param.name, "__FUNC_ARG__")
 
         # Save the name of the current function so we can handle exit function calls.
-        tmp_context.curr_func_name = safe_str_convert(self.name)
+        python_func_name = utils.fix_python_overlap(safe_str_convert(self.name))
+        tmp_context.curr_func_name = python_func_name
 
         # Global variable initialization goes first.
         r = global_var_init_str
@@ -152,13 +153,13 @@ class Sub(VBA_Object):
             first = False
             func_args += utils.fix_python_overlap(to_python(param, tmp_context))
         func_args += ")"
-        r += indent_str + "def " + safe_str_convert(self.name) + func_args + ":\n"
+        r += indent_str + "def " + python_func_name + func_args + ":\n"
 
         # Init return value.
         r += indent_str + " " * 4 + "import core.vba_library\n"
         r += indent_str + " " * 4 + "global vm_context\n\n"
         r += indent_str + " " * 4 + "# Function return value.\n"
-        r += indent_str + " " * 4 + safe_str_convert(self.name) + " = 0\n\n"
+        r += indent_str + " " * 4 + python_func_name + " = 0\n\n"
 
         # Global variables used in the function.
         r += indent_str + " " * 4 + "# Referenced global variables.\n"
@@ -503,8 +504,9 @@ class Function(VBA_Object):
     def to_python(self, context, params=None, indent=0):
 
         # Are we supposed to treat this like a 0 argument function call?
+        python_func_name = utils.fix_python_overlap(safe_str_convert(self.name))
         if context.only_func_calls:
-            return safe_str_convert(self.name) + "()"
+            return  python_func_name + "()"
         
         # Get the global variables read in the function body.
         tmp_context = Context(context=context, _locals=context.locals, copy_globals=True)
@@ -524,7 +526,7 @@ class Function(VBA_Object):
             tmp_context.set(param.name, "__FUNC_ARG__")
 
         # Save the name of the current function so we can handle exit function calls.
-        tmp_context.curr_func_name = safe_str_convert(self.name)
+        tmp_context.curr_func_name = python_func_name
 
         # Global variable initialization goes first.
         r = global_var_init_str
@@ -538,7 +540,7 @@ class Function(VBA_Object):
             first = False
             func_args += utils.fix_python_overlap(to_python(param, tmp_context))
         func_args += ")"
-        r += indent_str + "def " + safe_str_convert(self.name) + func_args + ":\n"
+        r += indent_str + "def " + python_func_name + func_args + ":\n"
 
         # Print debug info.
         if (log.getEffectiveLevel() == logging.DEBUG):
@@ -550,7 +552,7 @@ class Function(VBA_Object):
         r += indent_str + " " * 4 + "import core.vba_library\n"
         r += indent_str + " " * 4 + "global vm_context\n\n"
         r += indent_str + " " * 4 + "# Function return value.\n"
-        r += indent_str + " " * 4 + safe_str_convert(self.name) + " = 0\n\n"
+        r += indent_str + " " * 4 + python_func_name + " = 0\n\n"
 
         # Global variables used in the function.
         r += indent_str + " " * 4 + "# Referenced global variables.\n"
@@ -574,7 +576,7 @@ class Function(VBA_Object):
             r += indent_str + " " * 4 + "print(" + safe_str_convert(self.name) + ")\n"
         
         # Return the function return val.
-        r += "\n" + indent_str + " " * 4 + "return " + safe_str_convert(self.name) + "\n"
+        r += "\n" + indent_str + " " * 4 + "return " + python_func_name + "\n"
 
         # Done.
         return r
