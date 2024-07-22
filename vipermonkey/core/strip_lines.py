@@ -594,6 +594,26 @@ def fix_bad_puts(vba_code):
     # Fix them.
     vba_code = re.sub(r"([^A-Za-z])Close +#([A-Za-z_])", r"\1Close \2", vba_code)
     return vba_code
+
+def fix_bogus_escaped_quotes(vba_code):
+    """Fix lines with double quotes escaped like '" "' rather than '""'.
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+
+    """
+
+    # Do we have any badly escaped quotes?
+    pat = r'" +"'
+    if (not re2.search(pat, vba_code)):
+        return vba_code
+
+    # We have badly escaped double quotes (spaces between the escaped
+    # quotes). Replace all these with a more sensible '""' escaped
+    # quote.
+    r = re.sub(pat, '""', vba_code)
+    return r
     
 def fix_unbalanced_quotes(vba_code):
     """Fix lines with missing double quotes.
@@ -1936,9 +1956,11 @@ def reduce_chr_obfuscation(vba_code):
     chr_pat0c = r'[Cc][Hh][Rr] *\( *\-?\d{1,10} *[\+\-] *\(?"?&[Hh][0-9A-fa-f]{1,10}"? *\)? *\)'
     chr_pat1c = r'[Cc][Hh][Rr] *\( *(\-?\d{1,10}) *([\+\-]) *\(?"?(&[Hh][0-9A-fa-f]{1,10})"? *\)? *\)'
     chr_pat0 = "(?:" + chr_pat0a + ")|(?:" + chr_pat0b + ")|(?:" + chr_pat0c + ")"
+    changed = False
     for chr_exp in re2.findall(chr_pat0, vba_code):
 
         # Pull out the pieces of the expression.
+        changed = True
         pieces = re2.findall(chr_pat1a, chr_exp)
         if (len(pieces) == 0):
             pieces = re2.findall(chr_pat1b, chr_exp)
@@ -1985,6 +2007,8 @@ def reduce_chr_obfuscation(vba_code):
 
     # We may have string concats we can simplify now that the chr()
     # obfuscation has been removed.
+    if (not changed):
+        return vba_code
     vba_code = reduce_str_concats(vba_code)
     
     # Done.
@@ -3034,6 +3058,13 @@ def fix_vba_code(vba_code):
         print("??DBG::FIX_VBA_CODE: 14")
         print(vba_code)
     vba_code = fix_difficult_code(vba_code)
+
+    # Fix lines with double quotes escaped like '" "' rather than
+    # '""'.
+    if debug_strip:
+        print("??DBG::FIX_VBA_CODE: 14.1")
+        print(vba_code)
+    vba_code = fix_bogus_escaped_quotes(vba_code)
     
     # Fix function calls with a skipped 1st argument.
     if debug_strip:
