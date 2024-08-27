@@ -4406,16 +4406,21 @@ class Randomize(VbaLibraryFunc):
             log.debug("Randomize(): Stubbed out as NOP")
         return ''
 
+curr_rand_num = 0.0
 class Rnd(VbaLibraryFunc):
     """Emulate Rnd() RNG function.
 
     """
 
     def eval(self, context, params=None):
+        global curr_rand_num
         context = context # pylint
         params = params # pylint
 
-        return random.random()
+        # Make emulation deterministic.
+        #return random.random()
+        curr_rand_num = (curr_rand_num + .0000001) % 1
+        return curr_rand_num
 
     def num_args(self):
         return 0
