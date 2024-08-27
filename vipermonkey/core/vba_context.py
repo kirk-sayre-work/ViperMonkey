@@ -69,6 +69,7 @@ from core import vba_constants
 from core import utils
 from core.utils import safe_str_convert
 from core import excel
+from core import read_ole_fields
 
 def to_hex(s):
     """Convert a string to a VBA hex string.
@@ -1977,7 +1978,11 @@ class Context(object):
         if (len(value) > 1000000):
             return
 
-        # Strip NULLs and unprintable characters from the potential IOC.
+        # Skip processing if the data looks like binary data.
+        if read_ole_fields.is_garbage_vba(value):
+            return
+        
+        # Strip NULLs and unprintable characters from the potential IOC.        
         value = utils.strip_nonvb_chars(value)
         if (len(re.findall(r"NULL", safe_str_convert(value))) > 20):
             value = value.replace("NULL", "")

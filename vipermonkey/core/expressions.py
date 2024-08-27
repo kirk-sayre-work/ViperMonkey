@@ -1988,7 +1988,10 @@ class MemberAccessExpression(VBA_Object):
                 context.set(var_name, b"", force_global=True)
             context.set(var_name, final_txt, force_global=True)
             #print("VAR NAME: " + var_name)
-        
+
+        # Set the size of the data saved by the write.
+        context.set("adodb.stream.size", len(final_txt), force_global=True)
+            
         # We handled the write.
         return True
 
@@ -2103,6 +2106,17 @@ class MemberAccessExpression(VBA_Object):
             #print("OUT: 1")
             return False
 
+        # The filename could have been incorrectly pulled. Try to fix
+        # that.
+        if (filename == "NULL"):
+            rhs = self.rhs
+            if isinstance(rhs, list):
+                rhs = rhs[0]
+            if (isinstance(rhs, Function_Call) and (rhs.name == "SaveToFile")):
+
+                # The filename is the 1st argument.
+                filename = rhs.params[0].eval(context)
+        
         # We have a call to SaveToFile(). Get the value to save from .ReadText
         var_name = memb_str[:memb_str.lower().index(".savetofile")] + ".ReadText"
         if (log.getEffectiveLevel() == logging.DEBUG):

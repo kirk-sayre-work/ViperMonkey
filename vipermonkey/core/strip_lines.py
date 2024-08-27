@@ -2663,6 +2663,35 @@ def rename_constants(vba_code):
     # Done.
     return vba_code
 
+def rename_activex_method_overlaps(vba_code):
+    """Rename user defined functions or subs that overlap with ActiveX
+    method names. Differentiating the 2 is hard when emulating.
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+
+    """
+
+    # See if we have any overlaps with ActiveX method names of interest.
+    r = vba_code
+    activex_names = [
+        "SaveToFile"
+    ]
+    for name in activex_names:
+
+        # Any functions with this ActiveX method name?
+        pat = r"(?:Sub|Function) +" + name
+        if (not re2.search(pat, r)):
+            continue
+
+        # Rename function/sub when called and defined.
+        pat = r"([^\.]" + name + ")"
+        r = re.sub(pat, r"\1__", r)
+        
+    # Returned the modified code.
+    return r
+    
 def resolve_simple_exprs(vba_code):
     """Compute simple expressions like '364 - &H148' and replace them
     with their values to make parsing easier.
@@ -3124,6 +3153,13 @@ def fix_vba_code(vba_code):
         print("??DBG::FIX_VBA_CODE: 17.5")
         print(vba_code)
     vba_code = rename_constants(vba_code)
+
+    # Rename user defined subs/functions that overlap with ActiveX
+    # method names.
+    if debug_strip:
+        print("??DBG::FIX_VBA_CODE: 17.5.1")
+        print(vba_code)
+    vba_code = rename_activex_method_overlaps(vba_code)
 
     # Fix bogus calls like 'foo"ARG STR"'.
     if debug_strip:
