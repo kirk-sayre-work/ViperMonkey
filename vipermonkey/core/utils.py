@@ -677,17 +677,16 @@ def _delete_comments(s):
     @return (str) The code with comments deleted.
 
     """
-    r = s
-    changed = True
-    while changed:
-        old_r = r
-        if isinstance(s, bytes):
-            pat = br"(?:^|(?:\r?\n)) *'[^\n]{10,}\n"
-            r = re.sub(pat, b"\n", r)
-        elif isinstance(s, str):
-            pat = r"\r?\n\s*'[^\n]{10,}\n"
-            r = re.sub(pat, "\n", r)
-        changed = (len(r) < len(old_r))
+    if isinstance(s, bytes):
+        r = b""
+        for line in s.split(b"\n"):
+            if (not line.replace(b'\x00', b'').strip().startswith(b"'")):
+                r += line + b"\n"
+    else:
+        r = ""
+        for line in s.split("\n"):
+            if (not line.strip().startswith("'")):
+                r += line + "\n"
     return r
     
 hide_string_map = {}
