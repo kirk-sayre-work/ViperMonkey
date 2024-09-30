@@ -630,8 +630,8 @@ def _rewrite_non_printable_chars(s):
     have_prev = False
     for c in s:
 
-        # Non-extended ASCII?
-        if (ord(c) <= 126):
+        # Printable ASCII?
+        if ((ord(c) <= 126) and (ord(c) > 31)):
 
             # Already in a printable literal chunk?
             if not in_literal:
