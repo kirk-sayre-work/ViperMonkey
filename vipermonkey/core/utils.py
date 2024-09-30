@@ -84,8 +84,12 @@ def safe_str_convert(s, strict=False):
 
         # Handle bytes-like objects.
         if isinstance(s, bytes):
-            s = s.decode('latin-1')            
-
+            # Look at BOM to see if this is UTF-16.
+            if ((len(s) >= 2) and (s[0] == 0xff) and (s[1] == 0xfe)):
+                s = s.decode('utf-16')
+            else:
+                s = s.decode('latin-1')            
+                
         # Strip unprintable characters if needed.
         if (strict and isinstance(s, str)):
             s = ''.join(list(filter(_test_char, s)))
@@ -665,7 +669,7 @@ def _rewrite_non_printable_chars(s):
     # Finish up by closing out a literal chunk if needed.
     if in_literal:
         r += '"'
-
+        
     # Done.
     return r
 
@@ -708,9 +712,9 @@ def _hide_strings(s):
 
     # Could be a lot of comments that bog things down. Delete the
     # comments.
-    s = _delete_comments(s)
-    
-    s = safe_str_convert(s)
+    s = _delete_comments(safe_str_convert(s))
+
+    # Actually hide the strings.
     in_str_double = False
     in_comment = False
     curr_str = None
