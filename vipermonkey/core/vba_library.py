@@ -4406,7 +4406,16 @@ class Randomize(VbaLibraryFunc):
             log.debug("Randomize(): Stubbed out as NOP")
         return ''
 
+
 curr_rand_num = 0.0
+def reset_rnd():
+    """Reset the deterministic counter used for Rnd() emulation back to
+    0.0.
+
+    """
+    global curr_rand_num
+    curr_rand_num = 0.0
+    
 class Rnd(VbaLibraryFunc):
     """Emulate Rnd() RNG function.
 

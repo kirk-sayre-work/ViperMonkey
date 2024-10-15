@@ -100,6 +100,7 @@ def _boilerplate_to_python(indent):
     boilerplate += indent_str + "except (NameError, UnboundLocalError):\n"
     boilerplate += indent_str + " " * 4 + "vm_context = context\n"
     boilerplate += "\nvar_updates = {}\n"
+    boilerplate += "core.vba_library.reset_rnd()\n"
     return boilerplate
 
 def _get_local_func_type(expr, context):
