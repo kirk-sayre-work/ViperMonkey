@@ -716,6 +716,19 @@ class MsgBox(VbaLibraryFunc):
 
     def num_args(self):
         return 1
+
+class InputBox(VbaLibraryFunc):
+    """Emulate InputBox() function. Stubbed to just track the message
+    box call as an action and always return a 'match any' string.
+
+    """
+
+    def eval(self, context, params=None):
+        context.report_action('User Input', utils.safe_str_convert(params), 'InputBox', strip_null_bytes=True)
+        return "**MATCH ANY**"
+
+    def num_args(self):
+        return 2
     
 class Kill(VbaLibraryFunc):
     """Emulate Kill() function.
@@ -7188,7 +7201,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
                End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync,
                InstallProduct, BinaryGetURL, Read, ReadLine, AtEndOfStream, ReadAll,
-               Prompt, Confirm):
+               Prompt, Confirm, InputBox):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
