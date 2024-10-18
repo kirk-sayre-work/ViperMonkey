@@ -330,7 +330,7 @@ class ViperMonkey(StubbedEngine):
                              'autoexit', 'document_beforeclose', 'workbook_open',
                              'workbook_activate', 'auto_close', 'workbook_close',
                              'workbook_deactivate', 'documentopen', 'app_documentopen',
-                             'main']
+                             'main', 'window_onload', 'window_onunload']
 
         # List of user-specified entry points. If non-empty only these entry points
         # will be used.

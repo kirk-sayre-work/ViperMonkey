@@ -607,12 +607,19 @@ def fix_bogus_escaped_quotes(vba_code):
     # Do we have any badly escaped quotes?
     pat = r'" +"'
     if (not re2.search(pat, vba_code)):
+        vba_code = 'Public Const vbSpaceConst As String = " "\n\n' + vba_code
         return vba_code
 
     # We have badly escaped double quotes (spaces between the escaped
     # quotes). Replace all these with a more sensible '""' escaped
     # quote.
     r = re.sub(pat, '""', vba_code)
+
+    # Define our own constant for space characters to avoid code
+    # rewriting problems with the changes made in this function. Do
+    # this here so we don't replace " " with "".
+    r = 'Public Const vbSpaceConst As String = " "\n\n' + r
+    
     return r
     
 def fix_unbalanced_quotes(vba_code):
@@ -656,7 +663,7 @@ def fix_unbalanced_quotes(vba_code):
     # More ambiguous EOL comments. Something like "a = 12 : 'stuff 'more stuff" could have
     # 'stuff ' potentially parsed as a string. Just wipe out the comments in this case
     # (ex. "a = 12 : 'stuff 'more stuff" => "a = 12 :").
-    vba_code = re.sub(r"(\n[^'^\n]+)'[^'^\"^\n]+'[^'^\"^\n]+\n", r"\1\n", vba_code, re.DOTALL)
+    vba_code = re.sub(r"(\n[^'^\n]+)'[^'^\"^\n]+'[^'^\"^\s]+\n", r"\1\n", vba_code, re.DOTALL)
     if debug_strip:
         print("??DBG::UNBALANCED_QUOTES: 5")
         print(vba_code)
@@ -2002,9 +2009,13 @@ def reduce_chr_obfuscation(vba_code):
             curr_char = " vbVerticalTab "
         elif (val == 34):
             curr_char = ' """" '
+        elif (val == 32):
+            # Use synthetic constant for " " here to make subsequent
+            # code modifications easier.
+            curr_char = " vbSpaceConst "
 
         vba_code = vba_code.replace(chr_exp, curr_char)
-
+        
     # We may have string concats we can simplify now that the chr()
     # obfuscation has been removed.
     if (not changed):
