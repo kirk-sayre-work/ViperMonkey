@@ -3071,7 +3071,7 @@ def fix_vba_code(vba_code):
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 12")
         print(vba_code)
-    space_subs = re.findall(r"\n\s*Sub\s*\w+\s+\w+\s*\(", vba_code)
+    space_subs = re.findall(r"\n *Sub *\w+ +\w+ *\(", vba_code)
     for space_sub in space_subs:
         start = space_sub.index("Sub") + len("Sub")
         end = space_sub.rindex("(")
