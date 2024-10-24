@@ -622,20 +622,28 @@ def isascii(s):
         cached_ascii[hsh] = r
     return r
 
+def is_unprintable(c):
+    return ((ord(c) > 0x7e) or
+            ((ord(c) < 0x20) and (c != "\n") and (c != "\t") and (c != "\r")))
+
 def _rewrite_non_printable_chars(s):
 
     # Got any non-printable characters?
-    if (re.search(r"[\x7f-\xff]", s) is None):
+    if ((re.search(r"[\x7f-\xff]", s) is None) and
+        (re.search(r"[\x00-\x1f]", s) is None)):
         return '"' + s + '"'
 
     # Got non-prinatble chars. Rewrite them.
     r = ""
     in_literal = False
     have_prev = False
+    #print("++++++++++")
+    #print(s)
     for c in s:
 
         # Printable ASCII?
-        if ((ord(c) <= 126) and (ord(c) > 31)):
+        #print("'" + str(c.encode()) + "' : " + str(ord(c)))
+        if (not is_unprintable(c)):
 
             # Already in a printable literal chunk?
             if not in_literal:
@@ -750,7 +758,7 @@ def _hide_strings(s):
                 in_comment = False
         
         # Start/end double quoted string?
-        #print(str(i) + "\t" + curr_char + "\t" + next_char + "\t" + str(in_str_double) + "\t" + str(escaped) + "\t" + str(in_comment))
+        #print(str(i) + "\t" + str(curr_char.encode()) + "\t" + str(next_char.encode()) + "\t" + str(in_str_double) + "\t" + str(escaped) + "\t" + str(in_comment))
         if ((curr_char == '"') and (next_char != '"') and (not escaped) and (not in_comment)):
             
             # Switch being in/out of string.
