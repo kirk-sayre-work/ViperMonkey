@@ -950,7 +950,8 @@ def _report_analysis_results(vm, data, display_int_iocs, orig_filename, out_file
     # Print table of all recorded actions
     if (len(vm.actions) > 0):
         safe_print('\nRecorded Actions:')
-        safe_print(vm.dump_actions())
+        act_table = vm.dump_actions()
+        safe_print(act_table)
         safe_print('')
 
     # Report intermediate IOCs.

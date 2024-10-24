@@ -844,6 +844,7 @@ class ViperMonkey(StubbedEngine):
                 if (len(new_params) > 50000):
                     new_params = new_params[:25000] + "... <SNIP> ..." + new_params[-25000:]
                 action = (action[0], new_params, action[2])
+            action = (safe_str_convert(action[0]), safe_str_convert(action[1]), safe_str_convert(action[2]))
             t.add_row(action)
         return t
 
