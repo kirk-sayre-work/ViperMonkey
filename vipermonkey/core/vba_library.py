@@ -54,6 +54,7 @@ from datetime import date
 import time
 import math
 import re
+import os
 import random
 from from_unicode_str import from_unicode_str
 import decimal
@@ -765,6 +766,13 @@ class FileLen(VbaLibraryFunc):
         if ((params is None) or (len(params) == 0)):
             return -1
         context.report_action('Check File Length', "FileLen(" + utils.safe_str_convert(params) + ")", '---', strip_null_bytes=True)
+
+        if (params[0].startswith("C:\\")):
+            params[0] = params[0].replace("C:\\", "")
+
+        if (os.path.exists(params[0])):
+            return os.path.getsize(params[0])
+
         return -1
 
     def num_args(self):

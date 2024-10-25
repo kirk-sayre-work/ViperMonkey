@@ -65,6 +65,7 @@ from pyparsing import CaselessKeyword, Combine, delimitedList, FollowedBy, \
     ParseException, ParseResults, Regex, Suppress, White, ZeroOrMore, \
     CharsNotIn
 
+import vba_constants
 from identifiers import identifier, lex_identifier, TODO_identifier_or_object_attrib, \
     TODO_identifier_or_object_attrib_loose, enum_val_id, unrestricted_name, \
     reserved_type_identifier, typed_name
@@ -96,6 +97,7 @@ from logger import log
 import sys
 import re
 import base64
+import os
 from curses_ascii import isprint
 import hashlib
 
@@ -4453,7 +4455,25 @@ class Call_Statement(VBA_Object):
         # Evaluate the fully qualified object method call.
         r = eval_arg(full_expr, context)
         return r
-        
+    
+    def _handle_get_file_read(self, context, start, end, file_path):
+        """
+            handle file reads through Get operator. Get #fileNumber, start, array_output.
+            
+            read the target file from the start to end. The return data is stored back into the context.
+        """
+        if (file_path.startswith("C:\\")): file_path = file_path.replace("C:\\", "")
+
+        if not os.path.exists(file_path):
+            log.warning("File read for '"+file_path+"' failed, file not found")
+            return None
+
+        if start == "": start = 0
+
+        file = open(file_path, "rb")
+        file.seek(start)
+        return file.read(end)
+
     def eval(self, context, params=None):
 
         # pylint.
@@ -4603,6 +4623,22 @@ class Call_Statement(VBA_Object):
                 # Try to handle that.
                 if (log.getEffectiveLevel() == logging.DEBUG):
                     log.debug("Did not find procedure.")
+                if (("Get" in func_name) and ("#" in call_params[0])):
+                    for line in context.globals.get("['thisdocument'].paragraphs"):
+                        if "Open" not in line or call_params[0] not in line: continue
+                        tokens = line.split(" ")
+                        
+                        if "(" in tokens[1] and ")" in tokens[1]: tokens[1] = tokens[1][1:len(tokens[1])-1]
+                        variable_name = context.globals.get(tokens[1])
+                        if variable_name is None:
+                            constants = vba_constants.VbaConstants()
+                            variable_name = constants.globals.get(tokens[1].lower())
+                            if variable_name is None: break
+
+                        new_content = self._handle_get_file_read(context, call_params[1], len(call_params[2]), variable_name)
+                        if new_content is not None: context.set(self.params[2], new_content)
+                        break
+                            
                 if ((func_name == "Application.Run") or (func_name == "Run")):
 
                     # Pull the name of what is being run from the 1st arg.
