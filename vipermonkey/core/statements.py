@@ -4626,8 +4626,10 @@ class Call_Statement(VBA_Object):
                 if (("Get" in func_name) and ("#" in call_params[0])):
                     for line in context.globals.get("['thisdocument'].paragraphs"):
                         if "Open" not in line or call_params[0] not in line: continue
+
                         tokens = line.split(" ")
-                        
+                        if len(tokens) < 2: continue
+
                         if "(" in tokens[1] and ")" in tokens[1]: tokens[1] = tokens[1][1:len(tokens[1])-1]
                         variable_name = context.globals.get(tokens[1])
                         if variable_name is None:
