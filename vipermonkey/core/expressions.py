@@ -126,6 +126,21 @@ file_pointer.setParseAction(lambda t: "#" + str(t[0]))
 file_pointer_loose = (decimal_literal ^ lex_identifier)
 file_pointer_loose.setParseAction(lambda t: "#" + str(t[0]))
 
+# --- Regex Result -------------------------------------------------
+
+class RegexResult(dict):
+
+    def __init__(self, match, first_index):
+        self.match = match
+        self.FirstIndex = int(first_index)
+        
+    def __repr__(self):
+        return str(self.match)
+
+    def __str__(self):
+        return str(self.match)
+
+
 # --- SIMPLE NAME EXPRESSION -------------------------------------------------
 
 missed_var_count = {}
@@ -730,6 +745,12 @@ class MemberAccessExpression(VBA_Object):
             return context.get(var_name)
         return None
     
+    def _handle_firstindex(self, context, tmp_lhs):
+        if ".FirstIndex" not in str(self): return None
+
+        if (isinstance(tmp_lhs, RegexResult)): return tmp_lhs.FirstIndex
+        return None
+
     def _handle_table_cell(self, context):
         """Handle reading a value from a table cell. Handles things like
         "ActiveDocument.Tables(1).Cell(1, 1).Range".
@@ -2088,12 +2109,19 @@ class MemberAccessExpression(VBA_Object):
             return None
 
         # Find all the regex matches in the string.
-        r = None
         try:
-            r = re.findall(pat, mod_str)
+            matches = re.finditer(pat, mod_str)
+            match_objects = []
+            for match in matches:
+                # create RegexResult so that ViperMonkey can access fields like FirstIndex
+                match_object = RegexResult(str(match), int(match.start()))
+                match_objects.append(match_object)
+            return match_objects
         except Exception as e:
             log.error("Regex.Execute() failed. " + safe_str_convert(e))
-        return r
+            return None
+
+        return match_objects
 
     def _handle_regex_test(self, context, tmp_lhs):
         """Handle application of a RegEx object to a string via the RegEx
@@ -2719,7 +2747,7 @@ class MemberAccessExpression(VBA_Object):
 
     def eval(self, context, params=None):
         params = params # pylint warning
-        
+
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("MemberAccess eval of " + safe_str_convert(self))
 
@@ -2740,6 +2768,10 @@ class MemberAccessExpression(VBA_Object):
 
         # Always emulate WScriptShell() Exec() methods.
         self._handle_exec(context)
+
+        call_retval = self._handle_firstindex(context, tmp_lhs)
+        if (call_retval is not None):
+            return call_retval
             
         # Excel UsedRange call?
         #print "HERE: 1"
