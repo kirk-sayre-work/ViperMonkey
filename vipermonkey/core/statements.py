@@ -973,7 +973,10 @@ class Let_Statement(VBA_Object):
         if (self.index is None):
             self.gloss = 'Let %s %s %r' % (self.name, self.op, self.expression)
             return self.gloss
-        self.gloss = 'Let %s(%r) %s %r' % (self.name, self.index, self.op, self.expression)
+        if (self.index1 is None):
+            self.gloss = 'Let %s(%r) %s %r' % (self.name, self.index, self.op, self.expression)
+            return self.gloss
+        self.gloss = 'Let %s(%r, %r) %s %r' % (self.name, self.index, self.index1, self.op, self.expression)
         return self.gloss
 
     def _handle_excel_formula_assign(self, context):

@@ -6910,7 +6910,15 @@ class Not(VbaLibraryFunc):
             log.warning("Cannot compute Not(" + utils.safe_str_convert(params) + ").")
             return "NULL"
         return (not params[0])
-                
+
+class Now(VbaLibraryFunc):
+    """Emulate Now() function, stubbed out to always match anything.
+
+    """
+
+    def eval(self, context, params=None):
+        return "**MATCH ANY**"
+    
 class InternetOpenA(VbaLibraryFunc):
     """Emulate InternetOpenA() function from wininet.dll
     (stubbed). Always returns True.
@@ -7201,7 +7209,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
                End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync,
                InstallProduct, BinaryGetURL, Read, ReadLine, AtEndOfStream, ReadAll,
-               Prompt, Confirm, InputBox):
+               Prompt, Confirm, InputBox, Now):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 

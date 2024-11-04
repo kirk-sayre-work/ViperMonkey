@@ -504,7 +504,7 @@ class Context(object):
         self.exit_func = False
         
         # Add in a global for the current time.
-        self.globals["Now".lower()] = datetime.now()
+        #self.globals["Now".lower()] = datetime.now()
 
         # Fake up a user name.
         rand_name = ''.join(random.choice(string.ascii_uppercase + string.digits + " ") for _ in range(random.randint(10, 50)))
