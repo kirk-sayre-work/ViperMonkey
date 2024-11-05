@@ -451,6 +451,7 @@ class Function(VBA_Object):
     
     def __init__(self, original_str, location, tokens):
         super(Function, self).__init__(original_str, location, tokens)
+        self.byref_params = {}
         self.return_type = None
         if (hasattr(tokens, "return_type")):
             self.return_type = tokens.return_type
@@ -573,6 +574,7 @@ class Function(VBA_Object):
 
         # Set the default parameter values.
         for param in self.params:
+            if ("ByRef" in str(param)): self.byref_params[param] = None
             init_val = None
             if (param.init_val is not None):
                 init_val = eval_arg(param.init_val, context=context)

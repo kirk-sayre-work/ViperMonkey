@@ -3461,7 +3461,6 @@ class Function_Call(VBA_Object):
     
     def __init__(self, original_str, location, tokens, old_call=None):
         super(Function_Call, self).__init__(original_str, location, tokens)
-
         # Copy constructor?
         if (old_call is not None):
             self.name = old_call.name
@@ -3720,6 +3719,7 @@ class Function_Call(VBA_Object):
                 # Call function.
                 #print "WHERE: 5"
                 r = f.eval(context=context, params=params)                        
+                
                         
                 # Set the values of the arguments passed as ByRef parameters.
                 #print "WHERE: 6"
@@ -3730,11 +3730,11 @@ class Function_Call(VBA_Object):
                             if (context.contains(arg_var_name)):
 
                                 # Don't overwrite functions.
-                                if (not isinstance(f, (VbaLibraryFunc, procedures.Function, procedures.Sub))):
+                                # Not sure how this prevents us to overwrite functions
+                                if (not isinstance(context.get(arg_var_name), (VbaLibraryFunc, procedures.Function, procedures.Sub))):
                                     context.set(arg_var_name, f.byref_params[byref_param_info])
                         except IndexError:
                             break
-
                 # We are out of the called function, so if we exited the called function early
                 # it does not apply to the current function.
                 context.exit_func = False

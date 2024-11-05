@@ -255,6 +255,9 @@ def coerce_to_int(obj):
                 return int(obj)
             except ValueError:
                 pass
+
+        if obj.isdigit():
+            return ord(obj)
             
         # Hex string?
         hex_pat = r"&h[0-9a-f]+"
@@ -271,10 +274,16 @@ def coerce_to_int(obj):
     try:
         return int(obj)
     except ValueError as e:
+        pass
+    
+    # Try converting char to ascii
+    try:
+        return ord(obj)
+    except ValueError as e:
+        pass
 
-        # Punt and just return NULL.
-        log.error("int conversion failed. Returning NULL. " + safe_str_convert(e))
-        return 0
+    log.error("int conversion failed. Returning NULL. " + safe_str_convert(e))
+    return 0
 
 def coerce_to_num(obj):
     """Coerce a VBA object (integer, Null, etc) to a int or float.

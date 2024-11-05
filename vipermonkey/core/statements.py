@@ -961,7 +961,7 @@ class Let_Statement(VBA_Object):
                 index_str += i
             index_str = "[" + index_str + "]"
             if (op == "="):
-                r += py_var + " = update_array(" + py_var + ", " + index_str + ", " + val + ")"
+                r += py_var + " = update_array(" + py_var + ", " + index_str + ", " + val + ")\n"
             else:
                 r += py_var + "[" + index + "] " + op + " " + val
 
@@ -2168,7 +2168,6 @@ class For_Statement(VBA_Object):
         return r
     
     def eval(self, context, params=None):
-
         # Exit if an exit function statement was previously called.
         if (context.exit_func):
             log.info("Exiting " + str(type(self)) + " due to explicit function exit.")
@@ -2214,7 +2213,7 @@ class For_Statement(VBA_Object):
         # See if we can convert the loop to Python and directly emulate it.
         if (_eval_python(self, context, params=params, add_boilerplate=True)):
             return
-        
+        log.debug("this should not hit, eval python should do the trick")
         # Set end to valid values.
         if ((VBA_Object.loop_upper_bound > 0) and (end > VBA_Object.loop_upper_bound)):
 
@@ -2253,6 +2252,7 @@ class For_Statement(VBA_Object):
         context.clear_general_errors()
         while (((step > 0) and (context.get(self.name) <= end)) or
                ((step < 0) and (context.get(self.name) >= end))):
+
 
             # We have already handled any gotos from the previous loop iteration.
             context.goto_executed = False
@@ -4462,6 +4462,7 @@ class Call_Statement(VBA_Object):
             
             read the target file from the start to end. The return data is stored back into the context.
         """
+
         if (file_path.startswith("C:\\")): file_path = file_path.replace("C:\\", "")
 
         if not os.path.exists(file_path):
@@ -4472,7 +4473,7 @@ class Call_Statement(VBA_Object):
 
         file = open(file_path, "rb")
         file.seek(start)
-        return file.read(end)
+        return list(file.read(end))
 
     def eval(self, context, params=None):
 

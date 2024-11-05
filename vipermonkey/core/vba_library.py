@@ -104,12 +104,11 @@ def member_access(var, field, globals_calling_scope=None):
     # Were we given the globals in the calling scope?
     if (globals_calling_scope is None):
         globals_calling_scope = {}
-    
+
     # Reading a field from a dict?
     field = utils.safe_str_convert(field)
     field_l = field.lower()
     if (isinstance(var, dict)):
-
         # Regular member access?
         if (field_l in var):
             return var[field_l]
@@ -1976,6 +1975,7 @@ class StrConv(VbaLibraryFunc):
 
         # Do the conversion.
         r = params[0]
+        save_r = r
         if (isinstance(r, str)):
             if (conv):
                 if (conv == 1):
@@ -1995,7 +1995,6 @@ class StrConv(VbaLibraryFunc):
                     # The string is being converted from unicode to ascii. Mark this
                     # by representing the string with the from_unicode_str class.
                     r = from_unicode_str(r)
-
         elif (isinstance(r, list)):
 
             # Handle list of ASCII values.
@@ -2017,11 +2016,14 @@ class StrConv(VbaLibraryFunc):
                 r = tmp
 
             else:
-                log.error("StrConv: Unhandled type.")
                 r = ''
-                        
+                if (isinstance(save_r, list)):
+                    r = ''.join(save_r)
+                else: log.error("StrConv: Unhandled type.")
+
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("StrConv: return %r" % r)
+
         return r
 
     def return_type(self):
