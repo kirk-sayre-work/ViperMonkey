@@ -307,7 +307,6 @@ def _get_var_vals(item, context, global_only=False):
     r = {}
     zero_arg_funcs = set()
     for var in var_names:
-
         # Don't try to convert member access expressions that involve
         # method calls to Python variables. These should be handled
         # later as actual calls.
@@ -679,6 +678,7 @@ def _updated_vars_to_python(loop, context, indent):
         var_dict_str += '"' + var + '" : ' + py_var
     var_dict_str += "}"
     save_vals = indent_str + "try:\n"
+    save_vals += indent_str + " " * 4 + "loging.debug(var_updates)\n"
     save_vals += indent_str + " " * 4 + "var_updates\n"
     save_vals += indent_str + " " * 4 + "var_updates.update(" + var_dict_str + ")\n"
     save_vals += indent_str + "except (NameError, UnboundLocalError):\n"
@@ -809,7 +809,6 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
     be used.
 
     """
-    params = params # pylint
     
     # Are we actually doing this?
     if (not context.do_jit):
@@ -884,7 +883,6 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
             return False
         
         # Run the Python code.
-        
         # Have we already run this exact loop?
         if (code_python in jit_cache):
             var_updates = jit_cache[code_python]
@@ -893,13 +891,11 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
             if (var_updates == "ERROR"):
                 log.error("Previous run of Python JIT loop emulation failed. Using fallback emulation for loop.")
                 return False
-
         # No cached results. Run the loop.
         elif (namespace is None):
 
             # JIT code execution goes not involve emulating VB GOTOs.
             context.goto_executed = False
-        
             # Magic. For some reason exec'ing in locals() makes the dynamically generated
             # code recognize functions defined in the dynamic code. I don't know why.
             if (not context.throttle_logging):
@@ -918,7 +914,7 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
 
         # Cache the loop results.
         jit_cache[code_python] = var_updates
-        
+
         # Update the context with the variable values from the JIT code execution.
         try:
             for updated_var in var_updates.keys():
@@ -927,7 +923,6 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
                 context.set(updated_var, var_updates[updated_var])
         except (NameError, UnboundLocalError):
             log.warning("No variables set by Python JIT code.")
-
         # Update shellcode bytes from the JIT emulation.
         import vba_context
         vba_context.shellcode = var_updates["__shell_code__"]
@@ -973,7 +968,6 @@ def update_array(old_array, indices, val):
     @return (list) The updated array.
 
     """
-
     # Sanity check.
     if (not isinstance(old_array, list)):
         old_array = []
