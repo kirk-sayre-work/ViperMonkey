@@ -678,7 +678,6 @@ def _updated_vars_to_python(loop, context, indent):
         var_dict_str += '"' + var + '" : ' + py_var
     var_dict_str += "}"
     save_vals = indent_str + "try:\n"
-    save_vals += indent_str + " " * 4 + "loging.debug(var_updates)\n"
     save_vals += indent_str + " " * 4 + "var_updates\n"
     save_vals += indent_str + " " * 4 + "var_updates.update(" + var_dict_str + ")\n"
     save_vals += indent_str + "except (NameError, UnboundLocalError):\n"
