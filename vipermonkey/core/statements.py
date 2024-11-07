@@ -2213,7 +2213,6 @@ class For_Statement(VBA_Object):
         # See if we can convert the loop to Python and directly emulate it.
         if (_eval_python(self, context, params=params, add_boilerplate=True)):
             return
-        log.debug("this should not hit, eval python should do the trick")
         # Set end to valid values.
         if ((VBA_Object.loop_upper_bound > 0) and (end > VBA_Object.loop_upper_bound)):
 
