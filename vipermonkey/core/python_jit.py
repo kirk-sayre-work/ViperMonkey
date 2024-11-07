@@ -92,6 +92,7 @@ def _boilerplate_to_python(indent):
     boilerplate += indent_str + "from core.vba_conversion import coerce_to_num\n"
     boilerplate += indent_str + "from core.vba_conversion import coerce_to_int\n"
     boilerplate += indent_str + "from core.vba_conversion import coerce_to_str\n"
+    boilerplate += indent_str + "from core.vba_conversion import coerce_to_ascii\n"
     boilerplate += indent_str + "from core.vba_conversion import coerce_to_int_list\n\n"
     boilerplate += indent_str + "try:\n"
     boilerplate += indent_str + " " * 4 + "vm_context\n"
@@ -899,6 +900,8 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
             # code recognize functions defined in the dynamic code. I don't know why.
             if (not context.throttle_logging):
                 log.info("Evaluating Python JIT code...")
+            logging.debug(code_python)
+            raw_input()
             exec code_python in locals()
         else:
 

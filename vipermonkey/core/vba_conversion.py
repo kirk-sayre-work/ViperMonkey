@@ -220,6 +220,17 @@ def coerce_args_to_str(args):
     return [coerce_to_str(arg) for arg in args]
     # return map(lambda arg: str(arg), args)
 
+def coerce_to_ascii(obj):
+    if ((obj is None) or (obj == "NULL")):
+        return 0
+    if (isinstance(obj, int)):
+        return obj
+    try:
+        return ord(obj)
+    except Exception as e:
+        return 0
+
+
 def coerce_to_int(obj):
     """Coerce a VBA object (integer, Null, etc) to a int.
 
@@ -256,8 +267,6 @@ def coerce_to_int(obj):
             except ValueError:
                 pass
 
-        if obj.isdigit():
-            return ord(obj)
             
         # Hex string?
         hex_pat = r"&h[0-9a-f]+"
@@ -277,10 +286,6 @@ def coerce_to_int(obj):
         pass
     
     # Try converting char to ascii
-    try:
-        return ord(obj)
-    except ValueError as e:
-        pass
 
     log.error("int conversion failed. Returning NULL. " + safe_str_convert(e))
     return 0

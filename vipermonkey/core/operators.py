@@ -220,7 +220,7 @@ class Xor(VBA_Object):
             if (not first):
                 r += " ^ "
             first = False
-            r += "coerce_to_int(" + to_python(arg, context, params=params) + ")"
+            r += "coerce_to_ascii(" + to_python(arg, context, params=params) + ")"
         return "(" + r + ")"
     
 # --- AND --------------------------------------------------------
