@@ -853,6 +853,7 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
                           code_python + "\n" + \
                           _check_for_iocs(loop, tmp_context, 0) + "\n" + \
                           _updated_vars_to_python(loop, tmp_context, 0)
+        logging.debug(code_python)
         if (log.getEffectiveLevel() == logging.DEBUG):
             safe_print("JIT CODE!!")
             safe_print(code_python)
@@ -872,8 +873,9 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
             non_ascii_pat1 = r'"[^"]*(?:\\x7f|\\x[89a-f][0-9a-f])[^"]*"'
             if ((re.search(non_ascii_pat1, code_python) is not None) or
                 (re.search(non_ascii_pat, code_python) is not None)):
-                log.warning("VBA code contains Microsoft specific extended ASCII strings. Not JIT emulating.")
-                return False
+                log.warning("VBA code contains Microsoft specific extended ASCII strings.")
+                # not doing JIT emulation in long loop causes ViperMonkey to become extremenly slow
+                #return False
 
         # Check for dynamic code execution in called functions.
         if (('"Execute", ' in code_python) or
@@ -900,8 +902,6 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
             # code recognize functions defined in the dynamic code. I don't know why.
             if (not context.throttle_logging):
                 log.info("Evaluating Python JIT code...")
-            logging.debug(code_python)
-            raw_input()
             exec code_python in locals()
         else:
 

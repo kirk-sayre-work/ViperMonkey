@@ -3726,7 +3726,8 @@ class Function_Call(VBA_Object):
                 if (hasattr(f, "byref_params")):
                     for byref_param_info in f.byref_params.keys():
                         try:
-                            arg_var_name = safe_str_convert(self.params[byref_param_info[1]])
+                            # we can pass arguments with () at the end so we should remove it
+                            arg_var_name = safe_str_convert(self.params[byref_param_info[1]]).replace("(","").replace(")","").replace("'","").replace("'","")
                             if (context.contains(arg_var_name)):
 
                                 # Don't overwrite functions.
