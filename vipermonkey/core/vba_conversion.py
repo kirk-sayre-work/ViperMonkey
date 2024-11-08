@@ -346,6 +346,11 @@ def coerce_to_num(obj):
     # Try regular int.
     return int(obj)
 
+def coerce_args_to_ascii(args):
+    """Coerce a list of arguments to their ascii values
+    """
+    return [coerce_to_ascii(arg) for arg in args]
+
 def coerce_args_to_int(args):
     """Coerce a list of arguments to ints.  
     

@@ -197,6 +197,9 @@ class Xor(VBA_Object):
         try:
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug("Compute xor " + safe_str_convert(self.arg))
+            for arg in evaluated_args:
+                if (not isinstance(arg, int)):
+                    return reduce(lambda x, y: x ^ y, vba_conversion.coerce_args_to_ascii(evaluated_args))
             return reduce(lambda x, y: x ^ y, vba_conversion.coerce_args(evaluated_args, preferred_type="int"))
         except (TypeError, ValueError):
             # Try converting strings to ints.
