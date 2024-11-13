@@ -4621,12 +4621,17 @@ class Call_Statement(VBA_Object):
                 # Try to handle that.
                 if (log.getEffectiveLevel() == logging.DEBUG):
                     log.debug("Did not find procedure.")
+                
+                # possible script locations for vbs
+                script_locs = ["range.text", "me.content", "activedocument.rage","me.range","me.content.text","me.range.text"]
+
                 if (("Get" in func_name) and ("#" in call_params[0])):
                     handled_read = False
                     for key, module in context.globals.items():
                         if handled_read: break
-                        if ("Sub" != type(module).__name__ ): continue
-                        for line in module.statements:
+                        if (key not in script_locs and "Sub" != type(module).__name__ ): continue
+                        vba_code = module.statements if "Sub" in type(module).__name__ else module.splitlines()
+                        for line in vba_code:
                             if "Open" not in str(line) or call_params[0] not in str(line): continue
                             tokens = str(line).split(" ")
                             if len(tokens) < 2: continue
