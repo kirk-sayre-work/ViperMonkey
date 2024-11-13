@@ -767,7 +767,7 @@ class FileLen(VbaLibraryFunc):
         context.report_action('Check File Length', "FileLen(" + utils.safe_str_convert(params) + ")", '---', strip_null_bytes=True)
 
         if (params[0].startswith("C:\\")):
-            params[0] = params[0].replace("C:\\", "")
+            params[0] = params[0].replace("C:\\", "/").replace("\\","/")
 
         if (os.path.exists(params[0])):
             return os.path.getsize(params[0])
