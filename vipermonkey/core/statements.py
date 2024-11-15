@@ -4460,7 +4460,7 @@ class Call_Statement(VBA_Object):
             
             read the target file from the start to end. The return data is stored back into the context.
         """
-        if (file_path.startswith("C:\\")): file_path = file_path.replace("C:\\", "")
+        if (file_path.startswith("C:\\")): file_path = file_path.replace("C:\\", "/").replace("\\","/")
 
         if not os.path.exists(file_path):
             log.warning("File read for '"+file_path+"' failed, file not found")
