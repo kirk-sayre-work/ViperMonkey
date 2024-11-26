@@ -4628,19 +4628,24 @@ class Call_Statement(VBA_Object):
                 if (("Get" in func_name) and ("#" in call_params[0])):
                     handled_read = False
                     for key, module in context.globals.items():
-                        if handled_read: break
-                        if (key not in script_locs and "Sub" != type(module).__name__ ): continue
+                        if handled_read: 
+                            break
+                        if (key not in script_locs and "Sub" != type(module).__name__ ): 
+                            continue
                         vba_code = module.statements if "Sub" in type(module).__name__ else module.splitlines()
                         for line in vba_code:
-                            if "Open" not in str(line) or call_params[0] not in str(line): continue
+                            if "Open" not in str(line) or call_params[0] not in str(line): 
+                                continue
                             tokens = str(line).split(" ")
-                            if len(tokens) < 2: continue
+                            if len(tokens) < 2: 
+                                continue
 
                             if "(" in tokens[1] and ")" in tokens[1]: tokens[1] = tokens[1][1:len(tokens[1])-1]
                             variable_name = context.globals.get(tokens[1])
                             if variable_name is None:
                                 variable_name = get_constant(tokens[1].lower())
-                                if variable_name is None: break
+                                if variable_name is None: 
+                                    break
                             new_content = self._handle_get_file_read(context, call_params[1], len(call_params[2]), variable_name)
                             if new_content is not None: context.set(self.params[2], new_content)
                             handled_read = True

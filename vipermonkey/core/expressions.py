@@ -2110,18 +2110,11 @@ class MemberAccessExpression(VBA_Object):
 
         # Find all the regex matches in the string.
         try:
-            matches = re.finditer(pat, mod_str)
-            match_objects = []
-            for match in matches:
-                # create RegexResult so that ViperMonkey can access fields like FirstIndex
-                match_object = RegexResult(str(match), int(match.start()))
-                match_objects.append(match_object)
-            return match_objects
+            # create RegexResult so that ViperMonkey can access fields like FirstIndex
+            return [RegexResult(str(match), int(match.start())) for match in re.finditer(pat, mod_str)]
         except Exception as e:
             log.error("Regex.Execute() failed. " + safe_str_convert(e))
             return None
-
-        return match_objects
 
     def _handle_regex_test(self, context, tmp_lhs):
         """Handle application of a RegEx object to a string via the RegEx
@@ -3727,7 +3720,13 @@ class Function_Call(VBA_Object):
                     for byref_param_info in f.byref_params.keys():
                         try:
                             # we can pass arguments with () at the end so we should remove it
-                            arg_var_name = safe_str_convert(self.params[byref_param_info[1]]).replace("(","").replace(")","").replace("'","").replace("'","")
+                            arg_var_name = (
+                               safe_str_convert(self.params[byref_param_info[1]])
+                                .replace("(", "")
+                                .replace(")", "")
+                                .replace("'", "")
+                                .replace("'", "")
+                            )
                             if (context.contains(arg_var_name)):
 
                                 # Don't overwrite functions.
