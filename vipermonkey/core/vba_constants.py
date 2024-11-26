@@ -47,6 +47,7 @@ __version__ = '0.08'
 # --- IMPORTS ------------------------------------------------------------------
 
 import random
+import logging
 
 from utils import safe_str_convert
 
@@ -61,6 +62,16 @@ def is_constant(name):
     """
     name = safe_str_convert(name).lower()
     return (name in all_vba_constants.globals)
+
+def set_document_name(filename):
+    global all_vba_constants
+
+    doc_const = ["ActiveDocument.FullName", "ThisDocument.FullName", "ActiveDocument.Name", "ThisDocument.Name", "Application.ActiveDocument.FullName", "Application.ThisDocument.FullName", "Application.ActiveDocument.Name", "Application.ThisDocument.Name"]
+
+    for const in doc_const:
+        all_vba_constants.globals[const.lower()] = filename
+
+
 
 def get_constant(name):
     """Use this to get the value of a VBA constant.
