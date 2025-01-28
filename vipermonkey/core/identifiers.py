@@ -167,10 +167,7 @@ TODO_identifier_or_object_attrib = base_attrib ^ Suppress(Literal("{")) + base_a
 
 base_attrib_loose = Combine(
     Combine(Literal('.') + lex_identifier)
-    | Combine(entity_name + Optional(Literal('.') + lex_identifier))
-    + Optional(CaselessLiteral('$'))
-    + Optional(CaselessLiteral('#'))
-    + Optional(CaselessLiteral('%'))
+    | Combine(entity_name + Optional(Literal('.') + lex_identifier)) + Optional(CaselessLiteral('$')) + Optional(CaselessLiteral('#')) + Optional(CaselessLiteral('%'))
     | Combine(entity_name + Literal('.') + lex_identifier + Literal('.') + lex_identifier)
 )
 
