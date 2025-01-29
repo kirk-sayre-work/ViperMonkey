@@ -396,6 +396,8 @@ def parse_streams(vba, strip_useless=False):
     # Parse the VBA streams.
     r = []
     for (subfilename, stream_path, vba_filename, vba_code) in vba.extract_macros():
+        # strip unicode characters, they break parsing
+        vba_code = vba_code.decode('ascii', errors='ignore').encode()
         m = parse_stream(subfilename, stream_path, vba_filename, vba_code, strip_useless, local_funcs)
         if (m is None):
             continue
