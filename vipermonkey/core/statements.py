@@ -2787,7 +2787,7 @@ class For_Each_Statement(VBA_Object):
         """
 
         # Get the loop variable.
-        loop_var = safe_str_convert(self.item)
+        loop_var = safe_str_convert(self.item).lower()
 
         # Make a copy of the context so we can mark variables as loop index variables.
         #tmp_context = Context(context=context, _locals=context.locals, copy_globals=True)
