@@ -573,7 +573,7 @@ class Function(VBA_Object):
         if (log.getEffectiveLevel() == logging.DEBUG):
             r += indent_str + " " * 4 + "print(\"RETURN:\")\n"
             r += indent_str + " " * 4 + "print(\"" + safe_str_convert(self.name) + "\")\n"
-            r += indent_str + " " * 4 + "print(" + safe_str_convert(self.name) + ")\n"
+            r += indent_str + " " * 4 + "print(" + safe_str_convert(self.name.lower()) + ")\n"
         
         # Return the function return val.
         r += "\n" + indent_str + " " * 4 + "return " + python_func_name + "\n"
