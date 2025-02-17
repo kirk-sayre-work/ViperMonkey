@@ -1550,13 +1550,31 @@ def convert_colons_to_linefeeds(vba_code):
     # Unhide If statement colons.
     r = r.replace("__COLON__", ":")
 
-    # Ugh. '&' in Dim statements can now be messed up. Fix them.
+    # Ugh. '&' in Dim statements can now be messed up. Fix them. Also
+    # fix "." With references in If statements.
     tmp_r = ""
+    if_pat = r"[Ii][Ff] +.*?\. +(?:(?:[^=]+=)|(?:[^<]+<>)) *[\"']?\w+[\"']?.*?Then$"
+    with_pat = r"\. +(?:(?:[^=]+=)|(?:[^<]+<>)) *[\"']?\w+[\"']?"
     for line in r.split("\n"):
+
+        # Handling a Dim statement?
         if ((not line.strip().startswith("Dim")) and
             (not line.strip().startswith("ReDim"))):
+
+            # No Dim statement. How about a "." With access in an If
+            # statement?
+            line = line.strip()
+            if ((line.lower().startswith("if ")) and
+                (" . " in line) and
+                (re.search(if_pat, line))):
+                for exp in re.findall(with_pat, line):
+                    line = line.replace(exp, "(" + exp + ")")
+
+            # Done (maybe) modifying line.
             tmp_r += line + "\n"
             continue
+
+        # Fix the Dim statement
         line = line.replace(" & ", "&")
         tmp_r += line + "\n"
     r = tmp_r
