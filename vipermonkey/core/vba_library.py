@@ -5242,6 +5242,12 @@ class Exec(VbaLibraryFunc):
         cmd = utils.safe_str_convert(params[0])
         context.report_action("Execute Command", cmd, 'Shell function', strip_null_bytes=True)
 
+        # Fake up STDOUT for certain commands.
+        if ("diskdrive get caption" in cmd):
+            fake_var = "0.StdOut.ReadAll"
+            fake_stdout = "Caption                 SerialNumber\nAwesomeDisk 7642 SATA 1024GB  69372017327X"
+            context.set(fake_var, fake_stdout)
+            
         # Say it was successful.
         return 0
 
