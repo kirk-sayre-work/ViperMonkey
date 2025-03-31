@@ -369,6 +369,8 @@ class Not(VBA_Object):
             val = self.arg
             if (isinstance(val, VBA_Object)):
                 val = val.eval(context)
+            if isinstance(val, bool):
+                return (not val)
             return (~ int(val))
         except Exception as e:
             log.error("Cannot compute Not " + safe_str_convert(self.arg) + ". " + safe_str_convert(e))

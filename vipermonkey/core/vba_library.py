@@ -3697,11 +3697,11 @@ class CBool(VbaLibraryFunc):
         if ((params is None) or (len(params) < 1)):
             return "NULL"
         val = params[0]
-        r = 0
-        # We actually want to explicitly check for True.
+        r = True
+        # We actually want to explicitly check for False.
         # pylint: disable=singleton-comparison
-        if ((val is True) or (val == 1)):
-            r = 1
+        if ((val is False) or (val == 0)):
+            r = False
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("CBool: %r returns %r" % (self, r))
         return r
