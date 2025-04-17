@@ -141,6 +141,8 @@ def quick_parse_simple_chr(tokens):
     for func_name, var_name_str in re.findall(pat, text):
         if var_name_str.startswith("&H"):
             var_name = int("0x" + var_name_str[2:], 16)
+        elif var_name_str.isdigit():
+            var_name = int(var_name_str)
         else:
             var_name = SimpleNameExpression(None, None, None, name=var_name_str)
         curr_chr = Chr(func_name + "(" + var_name_str + ")", 0, [var_name])
