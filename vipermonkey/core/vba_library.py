@@ -4796,6 +4796,8 @@ class Raise(VbaLibraryFunc):
     def eval(self, context, params=None):
         msg = "Raise exception " + utils.safe_str_convert(params)
         context.set_error(msg)
+        if (len(params) >= 2):
+            context.set("Err.Description", utils.safe_str_convert(params[1]))
             
 class Close(VbaLibraryFunc):
     """Emulate File Close statement.

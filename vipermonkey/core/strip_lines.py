@@ -3770,7 +3770,8 @@ def strip_useless_code(vba_code, local_funcs):
             (not line.strip().startswith("Function ")) and
             (not line.strip().startswith("Sub ")) and
             (not line.strip().startswith("End Sub")) and
-            (not line.strip().startswith("End Function"))):
+            (not line.strip().startswith("End Function")) and
+            (not line.strip().startswith("Err.Raise"))):
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug("STRIP: Stripping Line (1): " + line)
             r += "' STRIPPED LINE\n"
