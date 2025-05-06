@@ -433,13 +433,20 @@ def fix_orphan_named_params(vba_code):
         chunk_size = 30
         if ((pos - 30) < 0):
             chunk_size = pos
-        chunk = vba_code[pos - chunk_size:pos+len(":=")][::-1]
+        #chunk = vba_code[pos - chunk_size:pos+len(":=")][::-1]
+        chunk = vba_code[pos - chunk_size:pos][::-1]
         poss_call = False
+        chunk_pos = -1
         for c in chunk:
+            chunk_pos += 1
             if ((c == "(") or (c == ".")):
                 poss_call = True
                 break
-            if (c == "="):
+            # There could be multiple legitimate named params in the
+            # function call. Handle that by looking for ":=" in the
+            # "=" chunk check.
+            if ((c == "=") and
+                ((chunk_pos + 1 >= len(chunk)) or (chunk[chunk_pos + 1] != ":"))):
                 poss_call= False
                 break
         if (not poss_call):
