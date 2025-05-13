@@ -2020,8 +2020,11 @@ class Execute(VbaLibraryFunc):
                 try:
                     log.warning("Parsing failed on shortened command. Trying original command with all code rewriting performed...")
                     command = strip_lines.strip_useless_code(orig_command, set())
+                    command = strip_lines.fix_unbalanced_parens(command)
+                    command = command.replace("\\r", "").replace("\\n", "\n").replace("\\t", "\t") + "\n"
                     obj = modules.module.parseString(command, parseAll=True)[0]
-                except ParseException:
+                except ParseException as e:
+                    print(e)
                     pass
 
             # Was is parsed?

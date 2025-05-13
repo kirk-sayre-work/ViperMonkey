@@ -94,8 +94,17 @@ def safe_str_convert(s, strict=False):
         if (strict and isinstance(s, str)):
             s = ''.join(list(filter(_test_char, s)))
 
+        # Could have an improperly converted bytes-like string. Try to
+        # fix that.
+        r = str(s)
+        if r.startswith("b'"):
+            r = r[len("b'"):]
+            if r.endswith("'"):
+                r = r[:-1]
+            r = r.replace("\\r", "").replace("\\n", "\n").replace("\\t", "\t")
+                
         # Done.
-        return str(s)
+        return r
     
     except (UnicodeDecodeError, UnicodeEncodeError, SystemError):
         if isinstance(s, bytes):

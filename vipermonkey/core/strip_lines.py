@@ -628,7 +628,44 @@ def fix_bogus_escaped_quotes(vba_code):
     r = 'Public Const vbSpaceConst As String = " "\n\n' + r
     
     return r
+
+def fix_unbalanced_parens(vba_code):
+    """Last ditch attempt to fix unbalanced parentheses in the given
+    code. This just adds missing ')' to the end of the code or missing
+    '(' to the start of the code and hopes for the best.
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+
+    """
+
+    # Don't mess with parens in strings.
+    hid_vba_code, str_map = utils._hide_strings(vba_code)
+
+    # Do we have unbalanced parens?
+    lcount = hid_vba_code.count("(")
+    rcount = hid_vba_code.count(")")
+    if (lcount == rcount):
+        return vba_code
+
+    # Parens are unbalanced.
     
+    # Need more left parens?
+    hid_vba_code = hid_vba_code.strip()
+    if (rcount > lcount):
+        r = "("*(rcount - lcount) + hid_vba_code
+
+    # Need more right parens?
+    if (lcount > rcount):
+        r = hid_vba_code + ")"*(lcount - rcount)
+
+    # Unhide the strings in the "fixed" code.
+    r = utils._unhide_strings(r, str_map)
+
+    # Done.
+    return r
+        
 def fix_unbalanced_quotes(vba_code):
     """Fix lines with missing double quotes.
 
