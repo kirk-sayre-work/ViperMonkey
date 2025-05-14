@@ -944,6 +944,7 @@ class Let_Statement(VBA_Object):
         string_ops = set(["mid", "mid$"])
         self.string_op = None
         # Assigning to a string operation call like Mid()?
+        # One way to parse Mid() assignment.
         if (hasattr(self.name, "__len__") and
             (len(self.name) > 0) and
             (self.name[0].lower() in string_ops)):
@@ -964,6 +965,11 @@ class Let_Statement(VBA_Object):
         if (tokens.index1 != ''):
             self.index1 = tokens.index1
         self.op = tokens.op
+        # Another way to parse Mid() assignment.
+        if ((self.name.lower() in string_ops) and self.index and self.index1):
+            self.string_op = {}
+            self.string_op["op"] = self.name.lower()
+            self.string_op["args"] = [self.index, self.index1]
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug('parsed %r as Let_Statement' % self)
 
@@ -1037,7 +1043,7 @@ class Let_Statement(VBA_Object):
 
         # Regular assignment?
         python_var_name = safe_str_convert(self.name)
-        if (self.index is None):
+        if ((self.index is None) or (self.string_op is not None)):
             
             # Annoying Mid() assignment?
             if ((self.string_op is not None) and
@@ -1045,13 +1051,15 @@ class Let_Statement(VBA_Object):
                 
                 # Get the string to modify, substring start index, and substring length.
                 args = self.string_op["args"]
-                if (len(args) < 3):
+                if (len(args) < 2):
                     context.in_bitwise_expression = old_in_bitwise
                     return "ERROR: Wrong # args to mid. " + safe_str_convert(self)
                 the_str_var = to_python(args[0], context)
                 start = to_python(args[1], context)
-                size = to_python(args[2], context)
                 rhs = to_python(self.expression, context)
+                size = 1
+                if (len(args) > 2):
+                    size = to_python(args[2], context)
                 
                 # Modify the string in Python.
                 start_chunk = the_str_var + "[:" + start + "-1]"
@@ -1229,12 +1237,14 @@ class Let_Statement(VBA_Object):
 
             # Get the string to modify, substring start index, and substring length.
             args = self.string_op["args"]
-            if (len(args) < 3):
+            if (len(args) < 2):
                 return False
             the_str = eval_arg(args[0], context)
             the_str_var = args[0]
             start = vba_conversion.int_convert(eval_arg(args[1], context), leave_alone=True)
-            size = vba_conversion.int_convert(eval_arg(args[2], context), leave_alone=True)
+            size = 1
+            if (len(args) > 2):
+                size = vba_conversion.int_convert(eval_arg(args[2], context), leave_alone=True)
             
             # Sanity check.
             if ((not isinstance(the_str, str)) and (not isinstance(the_str, list))):
