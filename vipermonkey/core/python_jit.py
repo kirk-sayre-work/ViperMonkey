@@ -324,7 +324,7 @@ def _get_var_vals(item, context, global_only=False):
         try:
 
             # Try to get the current value.
-            val = context.get(var, global_only=global_only)
+            val = context.get(var.lower(), global_only=global_only)
             orig_val = val
             
             # We have been kind of fuzzing the distinction between global and
@@ -464,7 +464,7 @@ def _loop_vars_to_python(loop, context, indent):
     sorted_vars.sort()
     for var in sorted_vars:
         val = to_python(init_vals[var], context)
-        var_name = safe_str_convert(var)
+        var_name = safe_str_convert(var).lower()
         if ((not var_name.endswith(".Pattern")) and
             (not var_name.endswith(".Global"))):
             var_name = var_name.replace(".", "")

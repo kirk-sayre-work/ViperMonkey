@@ -2081,6 +2081,10 @@ class For_Statement(VBA_Object):
         # Get the loop variable.
         loop_var = safe_str_convert(self.name)
 
+        # Ugh. VB variables are case insensitive. Normalize all
+        # variable names to lower case to try to handle that.
+        loop_var = loop_var.lower()
+        
         # Make a copy of the context so we can mark variables as loop index variables.
         #tmp_context = Context(context=context, _locals=context.locals, copy_globals=True)
         tmp_context = context

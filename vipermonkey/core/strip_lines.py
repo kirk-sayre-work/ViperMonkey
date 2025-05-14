@@ -617,11 +617,18 @@ def fix_bogus_escaped_quotes(vba_code):
         vba_code = 'Public Const vbSpaceConst As String = " "\n\n' + vba_code
         return vba_code
 
+    # Leave " " in lines like `Replace(a, " ", "")` alone.
+    legit_pat = r'" +" *,'
+    r = re.sub(legit_pat, '__GOOD_QUOTE__', vba_code)
+    
     # We have badly escaped double quotes (spaces between the escaped
     # quotes). Replace all these with a more sensible '""' escaped
     # quote.
-    r = re.sub(pat, '""', vba_code)
+    r = re.sub(pat, '""', r)
 
+    # Unhide the valid " " strings.
+    r = r.replace('__GOOD_QUOTE__', '" ",')
+    
     # Define our own constant for space characters to avoid code
     # rewriting problems with the changes made in this function. Do
     # this here so we don't replace " " with "".

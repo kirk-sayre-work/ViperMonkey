@@ -228,6 +228,10 @@ class SimpleNameExpression(VBA_Object):
         if (isinstance(value, procedures.Function) and
             (value.min_param_length == 0)):
             return var_name + "()"
+
+        # Ugh. VB variables are case insensitive. Normalize all
+        # variable names to lower case to try to handle that.
+        var_name = var_name.lower()
         
         # Just treat as a variable reference.
         return var_name
