@@ -406,8 +406,12 @@ def _get_var_vals(item, context, global_only=False):
         var = utils.fix_python_overlap(var)
             
         # Save the variable value.
+        if isinstance(val, bytes):
+            val = safe_str_convert(val)
+        if isinstance(val, str):
+            val = val.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
         r[var] = val
-
+        
         # Save the regex pattern if this is a regex object.
         if (safe_str_convert(val) == "RegExp"):
             if (context.contains("RegExp.pattern")):

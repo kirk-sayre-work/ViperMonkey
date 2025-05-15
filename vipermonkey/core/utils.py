@@ -711,7 +711,7 @@ def _delete_comments(s):
     return r
     
 hide_string_map = {}
-def _hide_strings(s):
+def _hide_strings(s, delete_comments=True):
 
     # Got cached value? This operation could be compute intensive so we
     # cache the results.
@@ -729,7 +729,9 @@ def _hide_strings(s):
 
     # Could be a lot of comments that bog things down. Delete the
     # comments.
-    s = _delete_comments(safe_str_convert(s))
+    s = safe_str_convert(s)
+    if delete_comments:
+        s = _delete_comments(s)
 
     # Actually hide the strings.
     in_str_double = False
@@ -756,14 +758,17 @@ def _hide_strings(s):
         next_char = ""
         if ((i + 1) < len(s)):
             next_char = s[i + 1]
+        prev_char = ""
+        if (i > 0):
+            prev_char = s[i - 1]
         if (not in_str_double):
 
             # Start?
             if (curr_char == "'"):
                 in_comment = True
 
-            # End?
-            if (curr_char == "\n"):
+            # End? Also handle escaped \n.
+            if ((curr_char == "\n") or ((curr_char == "n") and (prev_char == "\\"))):
                 in_comment = False
         
         # Start/end double quoted string?

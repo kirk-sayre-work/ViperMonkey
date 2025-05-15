@@ -1938,12 +1938,15 @@ class Execute(VbaLibraryFunc):
 
         # Fix newlines.
         command = utils.strip_nonvb_chars(utils.safe_str_convert(params[0]))
+        hidden_command, str_map = utils._hide_strings(command, delete_comments=False)
+        hidden_command = hidden_command.replace("\\r", "\r").replace("\\n", "\n").replace("\\t", "\t") + "\n"
+        command = utils._unhide_strings(hidden_command, str_map)
         command = command.replace("\r\n", "\n").replace("\r", "\n")
             
         # Save the command.
         if (log.getEffectiveLevel() == logging.DEBUG):
             print("-- ORIGINAL EVALED CODE --")
-            print(params[0])
+            print(command)
             print("-- END ORIGINAL EVALED CODE --")
         context.report_action('Execute Command', command, 'Execute() String', strip_null_bytes=True)
         command += "\n"
@@ -2021,7 +2024,6 @@ class Execute(VbaLibraryFunc):
                     log.warning("Parsing failed on shortened command. Trying original command with all code rewriting performed...")
                     command = strip_lines.strip_useless_code(orig_command, set())
                     command = strip_lines.fix_unbalanced_parens(command)
-                    command = command.replace("\\r", "").replace("\\n", "\n").replace("\\t", "\t") + "\n"
                     obj = modules.module.parseString(command, parseAll=True)[0]
                 except ParseException as e:
                     print(e)
@@ -6556,12 +6558,12 @@ class Print(VbaLibraryFunc):
             return
                 
         # Print #NN to a file ID?
-        if (len(params) == 2):
+        if ((len(params) == 2) and (params[1] != 'Windows Script Host')):
             self._handle_file_print(context, params)
             return
         
         # Regular Debug.Print() ?
-        if (len(params) != 1):
+        if (len(params) == 0):
             log.warning("Wrong # of arguments for Print " + utils.safe_str_convert(params))
             return
 

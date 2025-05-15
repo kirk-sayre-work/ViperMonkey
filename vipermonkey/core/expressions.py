@@ -2841,7 +2841,7 @@ class MemberAccessExpression(VBA_Object):
         # TODO: It would be cleaner to funnel these special purpose things
         # through here, that is, implement all that stuff as emulated funcs
         # in vba library.
-        skip_list = [".SaveToFile", ".Add"]
+        skip_list = [".SaveToFile", ".Add", ".Echo"]
         exp_str = str(self)
         for skip_func in skip_list:
             if (skip_func in exp_str):

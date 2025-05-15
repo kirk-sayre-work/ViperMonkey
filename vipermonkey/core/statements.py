@@ -966,7 +966,7 @@ class Let_Statement(VBA_Object):
             self.index1 = tokens.index1
         self.op = tokens.op
         # Another way to parse Mid() assignment.
-        if ((self.name.lower() in string_ops) and self.index and self.index1):
+        if ((safe_str_convert(self.name).lower() in string_ops) and self.index and self.index1):
             self.string_op = {}
             self.string_op["op"] = self.name.lower()
             self.string_op["args"] = [self.index, self.index1]
