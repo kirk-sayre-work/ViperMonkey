@@ -2964,7 +2964,7 @@ def _remove_empty_multistatement_lines(vba_code):
         return vba_code
 
     # We have them, just delete.
-    r = re.sub(pat, "", vba_code)
+    r = re.sub(pat, "\n", vba_code)
     return r
 
 def _remove_cruft_multistatement_lines(vba_code):
