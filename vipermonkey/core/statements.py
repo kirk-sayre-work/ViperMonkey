@@ -3691,6 +3691,12 @@ class Do_Statement(VBA_Object):
         Convert this loop to Python code.
         """
 
+        # Handle loops with no guard by setting a very small upper
+        # bound for infinite loop checks.
+        upper_bound = VBA_Object.loop_upper_bound
+        if (len(safe_str_convert(self.guard).strip()) == 0):
+            upper_bound = 5
+        
         # Boilerplate used by the Python.
         indent_str = " " * indent
 
@@ -3719,7 +3725,7 @@ class Do_Statement(VBA_Object):
         loop_body += "safe_print(\"Done \" + str(" + prog_var + ") + \" iterations of Do While loop '" + loop_str + "'\")\n"
         loop_body += indent_str + " " * 4 + prog_var + " += 1\n"
         # No infinite loops.
-        loop_body += indent_str + " " * 4 + "if (" + prog_var + " > " + safe_str_convert(VBA_Object.loop_upper_bound) + ") or " + \
+        loop_body += indent_str + " " * 4 + "if (" + prog_var + " > " + safe_str_convert(upper_bound) + ") or " + \
                      "(vm_context.get_general_errors() > max_errors):\n"
         loop_body += indent_str + " " * 8 + "raise ValueError('Infinite Loop')\n"
         enter_loop()
@@ -3763,11 +3769,14 @@ class Do_Statement(VBA_Object):
         # Assign all const variables first.
         do_const_assignments(self.body, context)
         
-        # Some loop guards check the readystate value on an object. To simulate this
-        # will will just go around the loop a small fixed # of times.
+        # Some loop guards check the readystate value on an object. To
+        # simulate this will will just go around the loop a small
+        # fixed # of times. Also check for loops with no guard
+        # (infinite loops).
         max_loop_iters = VBA_Object.loop_upper_bound
-        if (".readyState" in safe_str_convert(self.guard)):
-            log.info("Limiting # of iterations of a .readyState loop.")
+        if ((".readyState" in safe_str_convert(self.guard)) or
+            (len(safe_str_convert(self.guard).strip()) == 0)):
+            log.info("Limiting # of iterations of a .readyState or infinite loop.")
             max_loop_iters = 5
 
         # See if we can convert the loop to Python and directly emulate it.
