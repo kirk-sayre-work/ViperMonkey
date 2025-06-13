@@ -7095,6 +7095,9 @@ class Write(VbaLibraryFunc):
         # Success.
         return 0
 
+class WriteBytes(Put):
+    pass
+    
 class DefaultFilePath(VbaLibraryFunc):
     """Emulate Options.DefaultFilePath() property. Stubbed.
 
@@ -7222,7 +7225,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
                End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync,
                InstallProduct, BinaryGetURL, Read, ReadLine, AtEndOfStream, ReadAll,
-               Prompt, Confirm, InputBox, Now):
+               Prompt, Confirm, InputBox, Now, WriteBytes):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
