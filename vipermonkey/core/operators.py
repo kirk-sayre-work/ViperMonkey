@@ -50,7 +50,11 @@ __version__ = '0.03'
 
 #import sys
 import logging
-from collections import Iterable
+try:
+    from collections import Iterable
+except:
+    # Python > 3.9
+    from collections.abc import Iterable
 
 from core.vba_object import eval_args, VBA_Object
 from core.python_jit import to_python
