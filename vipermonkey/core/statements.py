@@ -1357,7 +1357,7 @@ class Let_Statement(VBA_Object):
         # Is this setting an interesting field in a COM object?
         if ((safe_str_convert(self.name).endswith(".Arguments")) or
             (safe_str_convert(self.name).endswith(".Path"))):
-            context.report_action(self.name, value, 'Possible Scheduled Task Setup', strip_null_bytes=True)
+            context.report_action(safe_str_convert(self.name), value, 'Possible Scheduled Task Setup', strip_null_bytes=True)
         if (safe_str_convert(self.name).endswith(".CommandLine")):
             context.report_action('Run Command', value, self.name, strip_null_bytes=True)
             
@@ -4534,7 +4534,7 @@ class Call_Statement(VBA_Object):
                         cmd = p
                 if (len(cmd) > 0):
                     tmp_call_params = cmd
-            context.report_action(self.name, tmp_call_params, 'Interesting Function Call', strip_null_bytes=True)
+            context.report_action(safe_str_convert(self.name), tmp_call_params, 'Interesting Function Call', strip_null_bytes=True)
 
         # Handle method calls inside a With statement.
         r = self._handle_with_calls(context)
