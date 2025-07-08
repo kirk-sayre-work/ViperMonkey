@@ -112,6 +112,7 @@ import expressions
 import vba_context
 import excel
 from utils import safe_str_convert
+from vba_constants import set_document_name
 
 # === FUNCTIONS ==============================================================
 
@@ -367,6 +368,9 @@ class ViperMonkey(StubbedEngine):
                                   '_Zoom',
                                   '_Scroll',
                                   '_BeforeDropOrPaste']
+        set_document_name(self.filename)
+
+                
                                   
     def set_metadata(self, dat):
         """Save Office metadata of the file being analyzed.
@@ -439,6 +443,7 @@ class ViperMonkey(StubbedEngine):
             if (isinstance(name, list)):
                 self.globals[name[0].lower()] = _var
                 self.types[name[0].lower()] = name[1]
+
         
     def add_module(self, vba_code):
         """Parse and then add the given VBA module.
@@ -612,7 +617,7 @@ class ViperMonkey(StubbedEngine):
             doc_words.append(word.strip())
         context.globals["ActiveDocument.Words".lower()] = doc_words
         context.globals["ThisDocument.Words".lower()] = doc_words
-            
+        
         # Fake up some comments if needed.
         if (self.comments is None):
             context.globals["ActiveDocument.Comments".lower()] = ["Comment 1", "Comment 2"]

@@ -1,4 +1,4 @@
-oletools
+oletools>=0.56.1 # oletools from 0.54.2 to 0.56 required cryptography, incompatible with PyPy. oletools 0.56.1+ does not require it anymore.
 olefile
 prettytable
 colorlog
@@ -6,5 +6,6 @@ colorama
 pyparsing==2.2.0 # pyparsing 2.4.0 triggers a MemoryError on some samples (issue #58). pyparsing 2.3.0 parses some constructs differently and breaks things.
 xlrd2
 xlrd
-unidecode
-regex
+unidecode==1.2.0
+# regex is not installable on PyPy+Windows, so we only require it if the platform is not Windows or not PyPy:
+regex ; platform_python_implementation!="PyPy" or platform_system!="Windows"

@@ -75,8 +75,9 @@ def _boilerplate_to_python(indent):
 
     """
     indent_str = " " * indent
-    boilerplate = indent_str + "import core.vba_library\n"
-    boilerplate = indent_str + "import core.vba_context\n"
+    boilerplate = indent_str + "import datetime\n"
+    boilerplate += indent_str + "import core.vba_library\n"
+    boilerplate += indent_str + "import core.vba_context\n"
     boilerplate += indent_str + "from core.utils import safe_print\n"
     boilerplate += indent_str + "from core.utils import safe_str_convert\n"
     boilerplate += indent_str + "from core.utils import plus\n"
@@ -91,6 +92,7 @@ def _boilerplate_to_python(indent):
     boilerplate += indent_str + "from core.vba_conversion import coerce_to_num\n"
     boilerplate += indent_str + "from core.vba_conversion import coerce_to_int\n"
     boilerplate += indent_str + "from core.vba_conversion import coerce_to_str\n"
+    boilerplate += indent_str + "from core.vba_conversion import coerce_to_ascii\n"
     boilerplate += indent_str + "from core.vba_conversion import coerce_to_int_list\n\n"
     boilerplate += indent_str + "try:\n"
     boilerplate += indent_str + " " * 4 + "vm_context\n"
@@ -306,7 +308,6 @@ def _get_var_vals(item, context, global_only=False):
     r = {}
     zero_arg_funcs = set()
     for var in var_names:
-
         # Don't try to convert member access expressions that involve
         # method calls to Python variables. These should be handled
         # later as actual calls.
@@ -598,12 +599,7 @@ def to_python(arg, context, params=None, indent=0, statements=False):
 
     # Some other literal?
     else:
-        arg_str = None
-        try:
-            arg_str = safe_str_convert(arg)
-        except UnicodeEncodeError:
-            arg_str = filter(isprint, arg)
-        r = " " * indent + arg_str
+        r = " " * indent + repr(arg)
 
     #print "--- to_python() ---"
     #print arg
@@ -813,7 +809,6 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
     be used.
 
     """
-    params = params # pylint
     
     # Are we actually doing this?
     if (not context.do_jit):
@@ -858,6 +853,7 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
                           code_python + "\n" + \
                           _check_for_iocs(loop, tmp_context, 0) + "\n" + \
                           _updated_vars_to_python(loop, tmp_context, 0)
+        logging.debug(code_python)
         if (log.getEffectiveLevel() == logging.DEBUG):
             safe_print("JIT CODE!!")
             safe_print(code_python)
@@ -877,8 +873,9 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
             non_ascii_pat1 = r'"[^"]*(?:\\x7f|\\x[89a-f][0-9a-f])[^"]*"'
             if ((re.search(non_ascii_pat1, code_python) is not None) or
                 (re.search(non_ascii_pat, code_python) is not None)):
-                log.warning("VBA code contains Microsoft specific extended ASCII strings. Not JIT emulating.")
-                return False
+                log.warning("VBA code contains Microsoft specific extended ASCII strings.")
+                # not doing JIT emulation in long loop causes ViperMonkey to become extremenly slow
+                #return False
 
         # Check for dynamic code execution in called functions.
         if (('"Execute", ' in code_python) or
@@ -888,7 +885,6 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
             return False
         
         # Run the Python code.
-        
         # Have we already run this exact loop?
         if (code_python in jit_cache):
             var_updates = jit_cache[code_python]
@@ -897,13 +893,11 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
             if (var_updates == "ERROR"):
                 log.error("Previous run of Python JIT loop emulation failed. Using fallback emulation for loop.")
                 return False
-
         # No cached results. Run the loop.
         elif (namespace is None):
 
             # JIT code execution goes not involve emulating VB GOTOs.
             context.goto_executed = False
-        
             # Magic. For some reason exec'ing in locals() makes the dynamically generated
             # code recognize functions defined in the dynamic code. I don't know why.
             if (not context.throttle_logging):
@@ -922,7 +916,7 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
 
         # Cache the loop results.
         jit_cache[code_python] = var_updates
-        
+
         # Update the context with the variable values from the JIT code execution.
         try:
             for updated_var in var_updates.keys():
@@ -931,7 +925,6 @@ def _eval_python(loop, context, params=None, add_boilerplate=False, namespace=No
                 context.set(updated_var, var_updates[updated_var])
         except (NameError, UnboundLocalError):
             log.warning("No variables set by Python JIT code.")
-
         # Update shellcode bytes from the JIT emulation.
         import vba_context
         vba_context.shellcode = var_updates["__shell_code__"]
@@ -977,7 +970,6 @@ def update_array(old_array, indices, val):
     @return (list) The updated array.
 
     """
-
     # Sanity check.
     if (not isinstance(old_array, list)):
         old_array = []

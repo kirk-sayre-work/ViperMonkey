@@ -126,6 +126,21 @@ file_pointer.setParseAction(lambda t: "#" + str(t[0]))
 file_pointer_loose = (decimal_literal ^ lex_identifier)
 file_pointer_loose.setParseAction(lambda t: "#" + str(t[0]))
 
+# --- Regex Result -------------------------------------------------
+
+class RegexResult(dict):
+
+    def __init__(self, match, first_index):
+        self.match = match
+        self.FirstIndex = int(first_index)
+        
+    def __repr__(self):
+        return str(self.match)
+
+    def __str__(self):
+        return str(self.match)
+
+
 # --- SIMPLE NAME EXPRESSION -------------------------------------------------
 
 missed_var_count = {}
@@ -730,6 +745,12 @@ class MemberAccessExpression(VBA_Object):
             return context.get(var_name)
         return None
     
+    def _handle_firstindex(self, context, tmp_lhs):
+        if ".FirstIndex" not in str(self): return None
+
+        if (isinstance(tmp_lhs, RegexResult)): return tmp_lhs.FirstIndex
+        return None
+
     def _handle_table_cell(self, context):
         """Handle reading a value from a table cell. Handles things like
         "ActiveDocument.Tables(1).Cell(1, 1).Range".
@@ -2088,12 +2109,12 @@ class MemberAccessExpression(VBA_Object):
             return None
 
         # Find all the regex matches in the string.
-        r = None
         try:
-            r = re.findall(pat, mod_str)
+            # create RegexResult so that ViperMonkey can access fields like FirstIndex
+            return [RegexResult(str(match), int(match.start())) for match in re.finditer(pat, mod_str)]
         except Exception as e:
             log.error("Regex.Execute() failed. " + safe_str_convert(e))
-        return r
+            return None
 
     def _handle_regex_test(self, context, tmp_lhs):
         """Handle application of a RegEx object to a string via the RegEx
@@ -2719,7 +2740,7 @@ class MemberAccessExpression(VBA_Object):
 
     def eval(self, context, params=None):
         params = params # pylint warning
-        
+
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("MemberAccess eval of " + safe_str_convert(self))
 
@@ -2740,6 +2761,10 @@ class MemberAccessExpression(VBA_Object):
 
         # Always emulate WScriptShell() Exec() methods.
         self._handle_exec(context)
+
+        call_retval = self._handle_firstindex(context, tmp_lhs)
+        if (call_retval is not None):
+            return call_retval
             
         # Excel UsedRange call?
         #print "HERE: 1"
@@ -3429,7 +3454,6 @@ class Function_Call(VBA_Object):
     
     def __init__(self, original_str, location, tokens, old_call=None):
         super(Function_Call, self).__init__(original_str, location, tokens)
-
         # Copy constructor?
         if (old_call is not None):
             self.name = old_call.name
@@ -3688,21 +3712,29 @@ class Function_Call(VBA_Object):
                 # Call function.
                 #print "WHERE: 5"
                 r = f.eval(context=context, params=params)                        
+                
                         
                 # Set the values of the arguments passed as ByRef parameters.
                 #print "WHERE: 6"
                 if (hasattr(f, "byref_params")):
                     for byref_param_info in f.byref_params.keys():
                         try:
-                            arg_var_name = safe_str_convert(self.params[byref_param_info[1]])
+                            # we can pass arguments with () at the end so we should remove it
+                            arg_var_name = (
+                               safe_str_convert(self.params[byref_param_info[1]])
+                                .replace("(", "")
+                                .replace(")", "")
+                                .replace("'", "")
+                                .replace("'", "")
+                            )
                             if (context.contains(arg_var_name)):
 
                                 # Don't overwrite functions.
-                                if (not isinstance(f, (VbaLibraryFunc, procedures.Function, procedures.Sub))):
+                                # Not sure how this prevents us to overwrite functions
+                                if (not isinstance(context.get(arg_var_name), (VbaLibraryFunc, procedures.Function, procedures.Sub))):
                                     context.set(arg_var_name, f.byref_params[byref_param_info])
                         except IndexError:
                             break
-
                 # We are out of the called function, so if we exited the called function early
                 # it does not apply to the current function.
                 context.exit_func = False

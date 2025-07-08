@@ -64,7 +64,7 @@ from pyparsing import CaselessKeyword, Combine, delimitedList, FollowedBy, \
     Forward, Group, LineStart, Literal, NotAny, OneOrMore, Optional, \
     ParseException, ParseResults, Regex, Suppress, White, ZeroOrMore, \
     CharsNotIn
-
+from vba_constants import get_constant
 from identifiers import identifier, lex_identifier, TODO_identifier_or_object_attrib, \
     TODO_identifier_or_object_attrib_loose, enum_val_id, unrestricted_name, \
     reserved_type_identifier, typed_name
@@ -96,6 +96,7 @@ from logger import log
 import sys
 import re
 import base64
+import os
 from curses_ascii import isprint
 import hashlib
 
@@ -959,7 +960,7 @@ class Let_Statement(VBA_Object):
                 index_str += i
             index_str = "[" + index_str + "]"
             if (op == "="):
-                r += py_var + " = update_array(" + py_var + ", " + index_str + ", " + val + ")"
+                r += py_var + " = update_array(" + py_var + ", " + index_str + ", " + val + ")\n"
             else:
                 r += py_var + "[" + index + "] " + op + " " + val
 
@@ -1356,7 +1357,7 @@ class Let_Statement(VBA_Object):
         # Is this setting an interesting field in a COM object?
         if ((safe_str_convert(self.name).endswith(".Arguments")) or
             (safe_str_convert(self.name).endswith(".Path"))):
-            context.report_action(self.name, value, 'Possible Scheduled Task Setup', strip_null_bytes=True)
+            context.report_action(safe_str_convert(self.name), value, 'Possible Scheduled Task Setup', strip_null_bytes=True)
         if (safe_str_convert(self.name).endswith(".CommandLine")):
             context.report_action('Run Command', value, self.name, strip_null_bytes=True)
             
@@ -2166,7 +2167,6 @@ class For_Statement(VBA_Object):
         return r
     
     def eval(self, context, params=None):
-
         # Exit if an exit function statement was previously called.
         if (context.exit_func):
             log.info("Exiting " + str(type(self)) + " due to explicit function exit.")
@@ -2212,7 +2212,6 @@ class For_Statement(VBA_Object):
         # See if we can convert the loop to Python and directly emulate it.
         if (_eval_python(self, context, params=params, add_boilerplate=True)):
             return
-        
         # Set end to valid values.
         if ((VBA_Object.loop_upper_bound > 0) and (end > VBA_Object.loop_upper_bound)):
 
@@ -2251,6 +2250,7 @@ class For_Statement(VBA_Object):
         context.clear_general_errors()
         while (((step > 0) and (context.get(self.name) <= end)) or
                ((step < 0) and (context.get(self.name) >= end))):
+
 
             # We have already handled any gotos from the previous loop iteration.
             context.goto_executed = False
@@ -4453,7 +4453,25 @@ class Call_Statement(VBA_Object):
         # Evaluate the fully qualified object method call.
         r = eval_arg(full_expr, context)
         return r
-        
+    
+    def _handle_get_file_read(self, context, start, end, file_path):
+        """
+            handle file reads through Get operator. Get #fileNumber, start, array_output.
+            
+            read the target file from the start to end. The return data is stored back into the context.
+        """
+        if (file_path.startswith("C:\\")): file_path = file_path.replace("C:\\", "/").replace("\\","/")
+
+        if not os.path.exists(file_path):
+            log.warning("File read for '"+file_path+"' failed, file not found")
+            return None
+
+        if start == "": start = 0
+
+        file = open(file_path, "rb")
+        file.seek(start)
+        return list(file.read(end))
+
     def eval(self, context, params=None):
 
         # pylint.
@@ -4516,7 +4534,7 @@ class Call_Statement(VBA_Object):
                         cmd = p
                 if (len(cmd) > 0):
                     tmp_call_params = cmd
-            context.report_action(self.name, tmp_call_params, 'Interesting Function Call', strip_null_bytes=True)
+            context.report_action(safe_str_convert(self.name), tmp_call_params, 'Interesting Function Call', strip_null_bytes=True)
 
         # Handle method calls inside a With statement.
         r = self._handle_with_calls(context)
@@ -4603,6 +4621,35 @@ class Call_Statement(VBA_Object):
                 # Try to handle that.
                 if (log.getEffectiveLevel() == logging.DEBUG):
                     log.debug("Did not find procedure.")
+                
+                # possible script locations for vbs
+                script_locs = ["range.text", "me.content", "activedocument.rage","me.range","me.content.text","me.range.text"]
+
+                if (("Get" in func_name) and ("#" in call_params[0])):
+                    handled_read = False
+                    for key, module in context.globals.items():
+                        if handled_read: 
+                            break
+                        if (key not in script_locs and "Sub" != type(module).__name__ ): 
+                            continue
+                        vba_code = module.statements if "Sub" in type(module).__name__ else module.splitlines()
+                        for line in vba_code:
+                            if "Open" not in str(line) or call_params[0] not in str(line): 
+                                continue
+                            tokens = str(line).split(" ")
+                            if len(tokens) < 2: 
+                                continue
+
+                            if "(" in tokens[1] and ")" in tokens[1]: tokens[1] = tokens[1][1:len(tokens[1])-1]
+                            variable_name = context.globals.get(tokens[1])
+                            if variable_name is None:
+                                variable_name = get_constant(tokens[1].lower())
+                                if variable_name is None: 
+                                    break
+                            new_content = self._handle_get_file_read(context, call_params[1], len(call_params[2]), variable_name)
+                            if new_content is not None: context.set(self.params[2], new_content)
+                            handled_read = True
+                                
                 if ((func_name == "Application.Run") or (func_name == "Run")):
 
                     # Pull the name of what is being run from the 1st arg.
