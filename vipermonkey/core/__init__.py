@@ -415,7 +415,12 @@ class ViperMonkey(StubbedEngine):
             return
         self.modules.append(m)
         for name, _sub in list(m.subs.items()):
-
+            if (not isinstance(name, str)):
+                try:
+                    name = name[0]
+                except:
+                    name = safe_str_convert(name)
+            
             # Append the stream name for duplicate subs
             if (name in self.globals):
                 new_name = safe_str_convert(stream) + "::" + safe_str_convert(name)
@@ -430,13 +435,24 @@ class ViperMonkey(StubbedEngine):
 
         # Functions.
         for name, _function in list(m.functions.items()):
+            if (not isinstance(name, str)):
+                try:
+                    name = name[0]
+                except:
+                    name = safe_str_convert(name)
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug('(1) storing function "%s" in globals' % name)
-            self.globals[name.lower()] = _function
             self.globals[name] = _function
+            self.globals[name.lower()] = _function
 
         # Properties.
         for name, _prop in list(m.functions.items()):
+            if (not isinstance(name, str)):
+                try:
+                    name = name[0]
+                except:
+                    name = safe_str_convert(name)
+                    
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug('(1) storing property let "%s" in globals' % name)
             self.globals[name.lower()] = _prop
@@ -444,6 +460,12 @@ class ViperMonkey(StubbedEngine):
 
         # External DLL functions.
         for name, _function in list(m.external_functions.items()):
+            if (not isinstance(name, str)):
+                try:
+                    name = name[0]
+                except:
+                    name = safe_str_convert(name)
+                    
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug('(1) storing external function "%s" in globals' % name)
             self.globals[name.lower()] = _function
@@ -451,6 +473,12 @@ class ViperMonkey(StubbedEngine):
 
         # Global variables.
         for name, _var in list(m.global_vars.items()):
+            if (not isinstance(name, str)):
+                try:
+                    name = name[0]
+                except:
+                    name = safe_str_convert(name)
+                    
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug('(1) storing global var "%s" = %s in globals (1)' % (name, safe_str_convert(_var)))
             if (isinstance(name, str)):
