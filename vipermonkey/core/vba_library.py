@@ -1354,7 +1354,21 @@ class Mid(VbaLibraryFunc):
         return r
             
 class MidB(Mid):
-    pass
+
+    def eval(self, context, params=None):
+
+        # MidB works on bytes rather than characters. Looks like maybe
+        # a character is 2 bytes. ViperMonkey is just working with
+        # strings, so cut start pos and # of characters to pull by
+        # half for MidB.
+        if ((len(params) == 3) and
+            isinstance(params[0], str),
+            isinstance(params[1], int),
+            isinstance(params[2], int)):
+            params = [params[0], int(params[1]/2) + 1, int(params[2]/2)]
+        
+        # See if we can emulate the added code.
+        return super(MidB, self).eval(context, params)
 
 class Left(VbaLibraryFunc):
     """Emulate Left() function.
