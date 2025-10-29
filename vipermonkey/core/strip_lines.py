@@ -2670,8 +2670,6 @@ def strip_comments(vba_code):
     # Return stripped code.
     return r
 
-
-defined_constants = set()
 def find_defined_constants(vba_code):
     """Get the names of all the defined constants in the given VB code.
 
@@ -2680,18 +2678,22 @@ def find_defined_constants(vba_code):
 
     @param vba_code (str) The VB code to check.
 
+    @return (set) The names of defined constants (str).
+
     """
 
     # Only do this if needed.
-    if ("Const " not in vba_code):
-        return
+    defined_constants = set()
+    if ("const " not in vba_code.lower()):
+        return defined_constants
 
     # Find the names of all the declared const variables in current VBA code chunk.
-    const_pat = r" Const +([\w_]+) "
+    const_pat = r" [Cc][Oo][Nn][Ss][Tt] +([%&\^!#@\$]?[\w_]+[%&\^!#@\$]?) "
     const_names = re.findall(const_pat, vba_code)
 
     # Save the names of the constants for later use.
     defined_constants.update(const_names)
+    return defined_constants
     
 def rename_constants(vba_code):
     """Make sure constants have unique names to avoid overlap with
@@ -2704,9 +2706,10 @@ def rename_constants(vba_code):
     """
 
     # Only do this if needed.
+    defined_constants = find_defined_constants(vba_code)
     if (len(defined_constants) == 0):
         return vba_code
-    #print defined_constants
+    print(defined_constants)
 
     # Punt if we have no const declarations.
     if (len(defined_constants) == 0):
@@ -2722,20 +2725,35 @@ def rename_constants(vba_code):
     # with unique names.
     for const_name in defined_constants:
 
+        # Skip vbSpaceConst, this is added by Vipermonkey.
+        if (const_name == "vbSpaceConst"):
+            continue
+        
         # Leave constants with short names alone, too much risk of
         # replacing improper things.
         if (len(const_name) < 5):
             continue
         
         # Regular reference as a variable.
-        rep_pat = const_name + r"(\s*[^\(^=^ ^\w^_])"
+        tmp = const_name.replace("$", "\\$").replace("^", "\\^")
+        rep_pat = tmp + r"(\s*[^\(^=^ ^\w^_])"
+        print(rep_pat)
         vba_code = re.sub(rep_pat, const_name + r"_CONST\1", vba_code)
 
         # Initial Const assignment.
         # Const foo = 12
-        rep_pat = r"Const\s+(" + const_name + r")[\s=]"
+        rep_pat = r"[Cc][Oo][Nn][Ss][Tt]\s+(" + tmp + r")[\s=]"
+        print(rep_pat)
         vba_code = re.sub(rep_pat, r"Const \1_CONST ", vba_code)
 
+        # Drop type hints on const name.
+        hints = ["%", "&", "^", "!", "#", "@", "$"]
+        for hint in hints:
+            if (hint in const_name):
+                old_const_name = const_name + "_CONST"
+                new_const_name = old_const_name.replace(hint, "")
+                vba_code = vba_code.replace(old_const_name, new_const_name)
+                        
     # Undo the hex replacement is needed.
     if changed:
         vba_code = vba_code.replace("__HEX_STR__", "&H")
