@@ -1114,6 +1114,18 @@ def fix_stupid_string_concats(vba_code):
     r = re.sub(r"&\s+\+", "& ", vba_code)
     return r
 
+def fix_bad_pos_neg_ints(vba_code):
+    """Change things like 'a = + 12' to 'a = +12'.
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+
+    """
+    pat = r"(\w) *= *([\+\-]) +(\d)"
+    vba_code = re.sub(pat, r"\1 = \2\3", vba_code)
+    return vba_code
+    
 def fix_bad_exponents(vba_code):
     """Change things like '2^2' to '2 ^ 2'.
 
@@ -2481,6 +2493,10 @@ def fix_difficult_code(vba_code):
     if debug_strip:
         print("??DBG::HERE: 2.6")
         print(vba_code)
+    vba_code = fix_bad_pos_neg_ints(vba_code)
+    if debug_strip:
+        print("??DBG::HERE: 2.6.0")
+        print(vba_code)        
     vba_code = fix_stupid_string_concats(vba_code)
     if debug_strip:
         print("??DBG::HERE: 2.6.1")
