@@ -2709,7 +2709,6 @@ def rename_constants(vba_code):
     defined_constants = find_defined_constants(vba_code)
     if (len(defined_constants) == 0):
         return vba_code
-    print(defined_constants)
 
     # Punt if we have no const declarations.
     if (len(defined_constants) == 0):
@@ -2737,13 +2736,11 @@ def rename_constants(vba_code):
         # Regular reference as a variable.
         tmp = const_name.replace("$", "\\$").replace("^", "\\^")
         rep_pat = tmp + r"(\s*[^\(^=^ ^\w^_])"
-        print(rep_pat)
         vba_code = re.sub(rep_pat, const_name + r"_CONST\1", vba_code)
 
         # Initial Const assignment.
         # Const foo = 12
         rep_pat = r"[Cc][Oo][Nn][Ss][Tt]\s+(" + tmp + r")[\s=]"
-        print(rep_pat)
         vba_code = re.sub(rep_pat, r"Const \1_CONST ", vba_code)
 
         # Drop type hints on const name.
