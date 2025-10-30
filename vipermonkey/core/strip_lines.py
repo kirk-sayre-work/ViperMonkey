@@ -77,6 +77,7 @@ https://github.com/decalage2/ViperMonkey
 from core.curses_ascii import isascii
 import logging
 import sys
+import regex
 import re
 try:
     # sudo pypy -m pip install rure
@@ -2060,24 +2061,25 @@ def reduce_chr_obfuscation1(vba_code):
     """
 
     # Resolve simple math. Just handling +/- of ints.
-    int_pat = r"\((?: *\-?\d+ *[\+\-] *)+\-?\d+ *\)"
+    int_pat = r"[Cc][Hh][Rr]\((?: *\-?\d+ *[\+\-] *)+\-?\d+ *\)"
     r = vba_code
     safe_globals = {}
     safe_locals = {}
-    for old_expr in re2.findall(int_pat, vba_code):
+    for old_expr in regex.findall(int_pat, vba_code):
 
         # We know these expressions are just integer +/- math, so it is
         # save to eval them to resolve them.
-        new_expr = "(" + str(eval(old_expr, {'__builtins__': safe_globals}, safe_locals)) + ")"
+        new_expr = "Chr(" + str(eval(old_expr.lower().replace("chr", ""), {'__builtins__': safe_globals}, safe_locals)) + ")"
         r = r.replace(old_expr, new_expr)
 
     # Resolve simple xor expressions.
     # ((129) Xor 139)
-    xor_pat = r"\( *\(? *\d+ *\)? *[Xx][Oo][Rr] *\(? *\d+ *\)? *\)"
-    xor_pat1 = r"\( *\(? *(\d+) *\)? *[Xx][Oo][Rr] *\(? *(\d+) *\)? *\)"
-    for old_expr in re2.findall(xor_pat, r):
-        int1, int2 = re2.findall(xor_pat1, old_expr)[0]
-        new_expr = "(" + str(int(int1) ^ int(int2)) + ")"
+    xor_pat = r"[Cc][Hh][Rr]\( *\(? *(?: *\-?\d+ *[\+\-] *)*\-?\d+ *\)? *[Xx][Oo][Rr] *\(? *(?: *\-?\d+ *[\+\-] *)*\-?\d+ *\)? *\)"
+    for old_expr in regex.findall(xor_pat, r):
+
+        # We know these expressions are just integer xor math, so it is
+        # save to eval them to resolve them.
+        new_expr = "Chr(" + str(eval(old_expr.lower().replace("chr", "").replace("xor", "^"), {'__builtins__': safe_globals}, safe_locals)) + ")"
         r = r.replace(old_expr, new_expr)
 
     # Done.
