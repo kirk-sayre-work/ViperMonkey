@@ -2018,7 +2018,71 @@ def reduce_str_concats(vba_code):
         vba_code = vba_code.replace(str_exp, '"' + new_str_exp + '"')
 
     return vba_code
-    
+
+def _char_code_to_vb_char(val):
+    """Convert an ASCII character code to an appropriate VB character
+    string. Handles char codes like 10 by converting them to " vbLf ",
+    etc.
+
+    @param val (int) ASCII character code.
+
+    @return (str) VB string for the char code.
+
+    """
+    curr_char = ' "' + chr(val) + '" '
+    if (val == 13):
+        curr_char = " vbCr "
+    elif (val == 12):
+        curr_char = " vbFormFeed "
+    elif (val == 10):
+        curr_char = " vbLf "
+    elif (val == 0):
+        curr_char = " vbNullChar "
+    elif (val == 9):
+        curr_char = " vbTab "
+    elif (val == 11):
+        curr_char = " vbVerticalTab "
+    elif (val == 34):
+        curr_char = ' """" '
+    elif (val == 32):
+        # Use synthetic constant for " " here to make subsequent
+        # code modifications easier.
+        curr_char = " vbSpaceConst "
+    return curr_char
+
+def reduce_chr_obfuscation1(vba_code):
+    """Replace Chr() expressions like 'chr(10 + 40)' to 'chr(50)'.
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+
+    """
+
+    # Resolve simple math. Just handling +/- of ints.
+    int_pat = r"\((?: *\-?\d+ *[\+\-] *)+\-?\d+ *\)"
+    r = vba_code
+    safe_globals = {}
+    safe_locals = {}
+    for old_expr in re2.findall(int_pat, vba_code):
+
+        # We know these expressions are just integer +/- math, so it is
+        # save to eval them to resolve them.
+        new_expr = "(" + str(eval(old_expr, {'__builtins__': safe_globals}, safe_locals)) + ")"
+        r = r.replace(old_expr, new_expr)
+
+    # Resolve simple xor expressions.
+    # ((129) Xor 139)
+    xor_pat = r"\( *\(? *\d+ *\)? *[Xx][Oo][Rr] *\(? *\d+ *\)? *\)"
+    xor_pat1 = r"\( *\(? *(\d+) *\)? *[Xx][Oo][Rr] *\(? *(\d+) *\)? *\)"
+    for old_expr in re2.findall(xor_pat, r):
+        int1, int2 = re2.findall(xor_pat1, old_expr)[0]
+        new_expr = "(" + str(int(int1) ^ int(int2)) + ")"
+        r = r.replace(old_expr, new_expr)
+
+    # Done.
+    return r
+
 def reduce_chr_obfuscation(vba_code):
     """Replace Chr() expressions like 'chr(3662922/CLng("&H8c47"))' with
     the resolved character string.
@@ -2031,6 +2095,11 @@ def reduce_chr_obfuscation(vba_code):
     # Sanity check.
     if ("chr(" not in vba_code.lower()):
         return vba_code
+
+    # Do some initial chr() deobfuscation.
+    vba_code = reduce_chr_obfuscation1(vba_code)
+
+    # Do more complicated deobfuscation.
     
     # Find chr() expressions we can reduce.
     # chr(-123 + CLng("&H1E1"))
@@ -2075,26 +2144,7 @@ def reduce_chr_obfuscation(vba_code):
         # Replace the chr() expression with the resolved character.
         if ((val < 0) or (val > 255)):
             continue
-        curr_char = ' "' + chr(val) + '" '
-        if (val == 13):
-            curr_char = " vbCr "
-        elif (val == 12):
-            curr_char = " vbFormFeed "
-        elif (val == 10):
-            curr_char = " vbLf "
-        elif (val == 0):
-            curr_char = " vbNullChar "
-        elif (val == 9):
-            curr_char = " vbTab "
-        elif (val == 11):
-            curr_char = " vbVerticalTab "
-        elif (val == 34):
-            curr_char = ' """" '
-        elif (val == 32):
-            # Use synthetic constant for " " here to make subsequent
-            # code modifications easier.
-            curr_char = " vbSpaceConst "
-
+        curr_char = _char_code_to_vb_char(val)
         vba_code = vba_code.replace(chr_exp, curr_char)
         
     # We may have string concats we can simplify now that the chr()
