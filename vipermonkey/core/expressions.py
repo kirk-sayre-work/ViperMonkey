@@ -2184,9 +2184,9 @@ class MemberAccessExpression(VBA_Object):
         # Compute the hash of the data being written.
         raw_data = None
         if isinstance(val, bytes):
-            raw_data = array.array('B', val).tostring()
+            raw_data = val
         else:
-            raw_data = array.array('B', bytes(val, "latin-1")).tostring()
+            raw_data = (str(val)).encode("latin-1")
         h = sha256()
         h.update(raw_data)
         file_hash = h.hexdigest()
