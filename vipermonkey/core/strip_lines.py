@@ -1655,7 +1655,13 @@ def convert_colons_to_linefeeds(vba_code):
             continue
         tmp_r += line + "\n"
     r = tmp_r
-        
+
+    # Fix end function statements that appear in single line ":"
+    # statements.
+    if ((": end function" in r.lower()) or (":end function" in r.lower())):
+        pat = r': *[Ee][Nn][Dd] +[Ff][Uu][Nn][Cc][Tt][Ii][Oo][Nn] *\r?\n'
+        r = re.sub(pat, "\nEnd Function\n", r)
+    
     # Done
     #print("******************")
     #print(r)
