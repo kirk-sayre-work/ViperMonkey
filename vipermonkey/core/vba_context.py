@@ -516,8 +516,11 @@ class Context(object):
 
         # Fake script name.
         if self.filename:
-            self.globals["WSCRIPT.SCRIPTFULLNAME".lower()] = "C:\\Windows\\system32\\" + self.filename
-            self.globals["['WSCRIPT'].SCRIPTFULLNAME".lower()] = "C:\\Windows\\system32\\" + self.filename
+            tmp_fname = self.filename
+            if ("/" in tmp_fname):
+                tmp_fname = tmp_fname[tmp_fname.rindex("/")+1:]
+            self.globals["WSCRIPT.SCRIPTFULLNAME".lower()] = "C:\\Windows\\system32\\" + tmp_fname
+            self.globals["['WSCRIPT'].SCRIPTFULLNAME".lower()] = "C:\\Windows\\system32\\" + tmp_fname
         
     def __repr__(self):
         r = ""

@@ -1013,8 +1013,11 @@ class FileExists(VbaLibraryFunc):
             return True
         if ("explorer.exe" in fname.lower()):
             return True
-        # The current file being analyzed by definition always exists.
-        if (fname == context.globals["WSCRIPT.SCRIPTFULLNAME".lower()]):
+        # The current file being analyzed by definition always
+        # exists. We strip the path off scriptfullname and fname may
+        # have the whole path, so check to see if fname is in
+        # scriptfullname rather than checking for equality.
+        if (context.globals["WSCRIPT.SCRIPTFULLNAME".lower()] in fname):
             return True
         
         # Since we don't know whether the interesting behavior depends
