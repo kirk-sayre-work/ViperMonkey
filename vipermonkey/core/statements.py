@@ -4803,7 +4803,7 @@ class Call_Statement(VBA_Object):
             return r
                 
         # Generate the Python function call to a local function.
-        r = func_name + "("
+        r = func_name.lower() + "("
         first = True
         for p in py_params:
             if (not first):
