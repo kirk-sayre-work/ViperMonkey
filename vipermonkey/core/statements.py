@@ -4673,6 +4673,11 @@ class Call_Statement(VBA_Object):
 
         # Save the call info.
         self.name = tokens.name
+        if (isinstance(self.name, ParseResults)):
+            tmp_name = ""
+            for i in self.name:
+                tmp_name += safe_str_convert(i)
+            self.name = tmp_name            
         if (safe_str_convert(self.name).endswith("@")):
             self.name = safe_str_convert(self.name).replace("@", "")
         if (safe_str_convert(self.name).endswith("!")):
@@ -5008,6 +5013,8 @@ class Call_Statement(VBA_Object):
         if (is_external):
             context.report_action("External Call", self.name + "(" + safe_str_convert(call_params) + ")", self.name, strip_null_bytes=True)
         # pylint: disable=protected-access
+        print(self.name)
+        print(type(self.name))
         if ((self.name.lower() in context._log_funcs) or
             (any(self.name.lower().endswith(func.lower()) for func in Function_Call.log_funcs))):
             tmp_call_params = call_params
