@@ -190,7 +190,7 @@ class Attribute_Statement(VBA_Object):
     def __init__(self, original_str, location, tokens):
         super(Attribute_Statement, self).__init__(original_str, location, tokens)
         self.gloss = None
-        self.name = tokens.name
+        self.name = utils.parseresults_to_str(tokens.name)
         self.value = tokens.value
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug('parsed %r' % self)
@@ -232,7 +232,7 @@ class Option_Statement(VBA_Object):
     def __init__(self, original_str, location, tokens):
         super(Option_Statement, self).__init__(original_str, location, tokens)
         self.gloss = None
-        self.name = tokens.name
+        self.name = utils.parseresults_to_str(tokens.name)
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug('parsed %r as Option_Statement' % self)
 
@@ -296,7 +296,7 @@ class Parameter(VBA_Object):
     def __init__(self, original_str, location, tokens):
         super(Parameter, self).__init__(original_str, location, tokens)
         self.gloss = None
-        self.name = tokens.name
+        self.name = utils.parseresults_to_str(tokens.name)
         self.my_type = tokens.type
         self.init_val = tokens.init_val
         self.is_array = False
@@ -940,7 +940,7 @@ class Let_Statement(VBA_Object):
             return
 
         # We are making a Let_Statement from parse results.
-        self.name = tokens.name
+        self.name = utils.parseresults_to_str(tokens.name)
         string_ops = set(["mid", "mid$"])
         self.string_op = None
         # Assigning to a string operation call like Mid()?
@@ -1935,7 +1935,7 @@ class For_Statement(VBA_Object):
         super(For_Statement, self).__init__(original_str, location, tokens)
         self.gloss = None
         self.is_loop = True
-        self.name = tokens.name
+        self.name = utils.parseresults_to_str(tokens.name)
         self.start_value = tokens.start_value
         self.end_value = tokens.end_value
         self.step_value = tokens.get('step_value', 1)
@@ -4672,12 +4672,7 @@ class Call_Statement(VBA_Object):
             return
 
         # Save the call info.
-        self.name = tokens.name
-        if (isinstance(self.name, ParseResults)):
-            tmp_name = ""
-            for i in self.name:
-                tmp_name += safe_str_convert(i)
-            self.name = tmp_name            
+        self.name = utils.parseresults_to_str(tokens.name)
         if (safe_str_convert(self.name).endswith("@")):
             self.name = safe_str_convert(self.name).replace("@", "")
         if (safe_str_convert(self.name).endswith("!")):
@@ -5013,8 +5008,6 @@ class Call_Statement(VBA_Object):
         if (is_external):
             context.report_action("External Call", self.name + "(" + safe_str_convert(call_params) + ")", self.name, strip_null_bytes=True)
         # pylint: disable=protected-access
-        print(self.name)
-        print(type(self.name))
         if ((self.name.lower() in context._log_funcs) or
             (any(self.name.lower().endswith(func.lower()) for func in Function_Call.log_funcs))):
             tmp_call_params = call_params
@@ -6209,7 +6202,7 @@ class External_Function(VBA_Object):
     def __init__(self, original_str, location, tokens):
         super(External_Function, self).__init__(original_str, location, tokens)
         self.gloss = None
-        self.name = safe_str_convert(tokens.function_name)
+        self.name = safe_str_convert(utils.parseresults_to_str(tokens.function_name))
         self.params = tokens.params
         self.lib_name = safe_str_convert(tokens.lib_info.lib_name)
         # normalize lib name: remove quotes, lowercase, add .dll if no extension
@@ -6626,7 +6619,7 @@ class EnumStatement(VBA_Object):
     def __init__(self, original_str, location, tokens):
         super(EnumStatement, self).__init__(original_str, location, tokens)
         self.gloss = None
-        self.name = safe_str_convert(tokens[0])
+        self.name = safe_str_convert(utils.parseresults_to_str(tokens[0]))
         self.values = []
         enum_vals = tokens[1]
         last_val = -1

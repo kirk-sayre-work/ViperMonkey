@@ -90,7 +90,7 @@ class Sub(VBA_Object):
     def __init__(self, original_str, location, tokens):
         super(Sub, self).__init__(original_str, location, tokens)
         self.gloss = None
-        self.name = tokens.sub_name
+        self.name = utils.parseresults_to_str(tokens.sub_name)
         self.params = tokens.params
         self.min_param_length = len(self.params)
         for param in self.params:
@@ -472,7 +472,7 @@ class Function(VBA_Object):
         self.return_type = None
         if (hasattr(tokens, "return_type")):
             self.return_type = tokens.return_type
-        self.name = tokens.function_name
+        self.name = utils.parseresults_to_str(tokens.function_name)
         self.params = tokens.params
         self.min_param_length = len(self.params)
         for param in self.params:
@@ -909,7 +909,7 @@ class PropertyLet(Sub):
     def __init__(self, original_str, location, tokens):
         super(PropertyLet, self).__init__(original_str, location, tokens)
         self.gloss = None
-        self.name = tokens.property_name
+        self.name = utils.parseresults_to_str(tokens.property_name)
         self.params = tokens.params
         self.min_param_length = len(self.params)
         for param in self.params:
@@ -958,7 +958,7 @@ class PropertyGet(Function):
     def __init__(self, original_str, location, tokens):
         super(PropertyGet, self).__init__(original_str, location, tokens)
         self.gloss = None
-        self.name = tokens.property_name
+        self.name = utils.parseresults_to_str(tokens.property_name)
         self.params = tokens.params
         self.min_param_length = len(self.params)
         for param in self.params:

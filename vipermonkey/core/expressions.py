@@ -177,7 +177,7 @@ class SimpleNameExpression(VBA_Object):
         if (name is not None):
             self.name = name
         else:
-            self.name = tokens.name
+            self.name = utils.parseresults_to_str(tokens.name)
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug('parsed "%r" as SimpleNameExpression' % self)
 
@@ -3894,7 +3894,7 @@ class NamedArgument(VBA_Object):
         super(NamedArgument, self).__init__(original_str, location, tokens)
 
         self.gloss = None        
-        self.name = tokens.name
+        self.name = utils.parseresults_to_str(tokens.name)
         self.value = tokens.value
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug('parsed "%r" as NamedArgument' % self)
@@ -4143,7 +4143,7 @@ class Function_Call(VBA_Object):
             return
 
         # Making a new one.
-        self.name = safe_str_convert(tokens.name)
+        self.name = safe_str_convert(utils.parseresults_to_str(tokens.name))
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug('Function_Call.name = %r' % self.name)
         assert isinstance(self.name, str)

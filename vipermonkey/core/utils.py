@@ -43,8 +43,9 @@ from core.curses_ascii import isascii, isprint
 import base64
 import string
 
-import logging
+from pyparsing import ParseResults
 
+import logging
 # for logging
 try:
     from core.logger import log
@@ -826,4 +827,12 @@ def _unhide_strings(s, str_map):
             r = r.replace('"' + str_name + '"', str_map[str_name])
         else:
             r = r.replace(str_name, str_map[str_name])
+    return r
+
+def parseresults_to_str(v):
+    r = v
+    if (isinstance(v, ParseResults)):
+        r = ""
+        for i in v:
+            r += safe_str_convert(i)
     return r
