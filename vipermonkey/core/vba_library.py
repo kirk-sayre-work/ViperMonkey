@@ -3207,7 +3207,44 @@ class SaveAs(VbaLibraryFunc):
 
 class SaveAs2(SaveAs):
     pass
-    
+
+num_appended_chunks = 0
+class AppendChunk(VbaLibraryFunc):
+    """Fake up the ActiveX object AppendChunk method by just saving the
+    chunk to a file artifact..
+
+    """
+
+    def eval(self, context, params=None):
+
+        global num_appended_chunks        
+        
+        # Sanity check.
+        if ((params is None) or (len(params) == 0)):
+            return 0
+
+        # Use an arbitrary file name.
+        num_appended_chunks += 1
+        fname = "appended_chunk_" + str(num_appended_chunks) + ".dat"
+
+        # Save the chunk data to a file.
+        doc_txt = utils.safe_str_convert(params[0])
+
+        # Open the fake chunk file.
+        opener = CreateTextFile()
+        opener.eval(context, [fname])
+
+        # Write the data.
+        writer = WriteLine()
+        writer.eval(context, [doc_txt])
+
+        # Close the file.
+        closer = Close()
+        closer.eval(context, [])
+
+        # Done.
+        return 1        
+
 class LoadXML(VbaLibraryFunc):
     """Emulate LoadXML() MSXML2.DOMDocument.3.0 method.
 
@@ -7242,7 +7279,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
                End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync,
                InstallProduct, BinaryGetURL, Read, ReadLine, AtEndOfStream, ReadAll,
-               Prompt, Confirm, InputBox, Now, WriteBytes):
+               Prompt, Confirm, InputBox, Now, WriteBytes, AppendChunk):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
