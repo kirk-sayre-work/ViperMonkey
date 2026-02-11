@@ -1401,25 +1401,30 @@ def hide_colons_in_ifs(vba_code):
     
     # Find single line If statements and hide their colons. We can parse
     # these so leave them alone.
-    if ("If " not in vba_code):
+    if ("if " not in vba_code.lower()):
         return vba_code
     r = ""
     pos = 0
     vba_code += "\n"
-    while ("If " in vba_code[pos:]):
+    while ("if " in vba_code[pos:].lower()):
 
         # Add in unchanged code.
-        if_index = vba_code[pos:].index("If ") + pos
+        if_index = vba_code[pos:].lower().index("if ") + pos
         r += vba_code[pos:if_index]
 
         # Hide colons in If line.
         end_pos = vba_code[if_index:].index("\n") + if_index
-        endif_pat = r"End +If"
+        endif_pat = r"[Ee][Nn][Dd] +[Ii][Ff]"
         endif_match = re.search(endif_pat, vba_code[if_index:end_pos+1])
         if (endif_match is not None):
             end_pos = endif_match.span()[1] + if_index
-        r += vba_code[if_index:end_pos+1].replace(":", "__COLON__")
-        pos = end_pos+1
+        if_chunk = vba_code[if_index:end_pos+1]
+        next_pos = end_pos + 1
+        if if_chunk.endswith(":"):
+            next_pos = next_pos - 1
+            if_chunk = if_chunk[:-1]
+        r += if_chunk.replace(":", "__COLON__")
+        pos = next_pos
     r += vba_code[pos:]
     return r
 
@@ -1532,21 +1537,21 @@ def convert_colons_to_linefeeds(vba_code):
         for marker, end_marker, not_marker in marker_chars:
 
             # Do we have an unchangeable block?
-            if (marker in vba_code[pos:]):                    
+            if (marker.lower() in vba_code[pos:].lower()):
                 
                 # Is this the most recent marker found?
-                curr_marker_pos1 = vba_code[pos:].index(marker) + pos
+                curr_marker_pos1 = vba_code[pos:].lower().index(marker.lower()) + pos
                 if (curr_marker_pos1 < marker_pos1):
 
                     # Make sure this is not a disallowed marker.
                     if ((not_marker is not None) and (len(not_marker) < curr_marker_pos1)):
                         prev_text = vba_code[curr_marker_pos1 - (len(not_marker) - len(marker) + 1):curr_marker_pos1 + 2]
-                        if (prev_text == not_marker):
+                        if (prev_text.lower() == not_marker.lower()):
                             continue
 
                     found_marker = True
                     marker_pos1 = curr_marker_pos1
-                    use_end_marker = end_marker
+                    use_end_marker = end_marker                    
 
         # Did we find a marker?
         if (found_marker):
@@ -1568,8 +1573,8 @@ def convert_colons_to_linefeeds(vba_code):
             # Find the chunk of text to leave alone.
             marker_pos2a = len(vba_code)
             marker_pos2b = len(vba_code)
-            if (use_end_marker in vba_code[marker_pos1+1:]):
-                marker_pos2a = vba_code[marker_pos1+1:].index(use_end_marker) + marker_pos1 + 2
+            if (use_end_marker.lower() in vba_code[marker_pos1+1:].lower()):
+                marker_pos2a = vba_code[marker_pos1+1:].lower().index(use_end_marker.lower()) + marker_pos1 + 2
                 
             # New lines can't appear in any of the unchangeable blocks.
             if ("\n" in vba_code[marker_pos1+1:]):
@@ -1617,13 +1622,13 @@ def convert_colons_to_linefeeds(vba_code):
     # Ugh. '&' in Dim statements can now be messed up. Fix them. Also
     # fix "." With references in If statements.
     tmp_r = ""
-    if_pat = r"[Ii][Ff] +.*?\. +(?:(?:[^=]+=)|(?:[^<]+<>)) *[\"']?\w+[\"']?.*?Then$"
+    if_pat = r"[Ii][Ff] +.*?\. +(?:(?:[^=]+=)|(?:[^<]+<>)) *[\"']?\w+[\"']?.*?[Tt][Hh][Ee][Nn]$"
     with_pat = r"\. +(?:(?:[^=]+=)|(?:[^<]+<>)) *[\"']?\w+[\"']?"
     for line in r.split("\n"):
 
         # Handling a Dim statement?
-        if ((not line.strip().startswith("Dim")) and
-            (not line.strip().startswith("ReDim"))):
+        if ((not line.strip().lower().startswith("dim")) and
+            (not line.strip().lower().startswith("redim"))):
 
             # No Dim statement. How about a "." With access in an If
             # statement?
