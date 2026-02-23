@@ -80,11 +80,16 @@ import sys
 import regex
 import re
 try:
-    # sudo pypy -m pip install rure
-    import rure as re2
+    import regex as re2
 except ImportError:
-    # pylint: disable=reimported
-    import re as re2
+    print("FAIL: regex import")
+    try:
+        # sudo pypy -m pip install rure
+        import rure as re2
+    except ImportError:
+        print("FAIL: rure import")
+        # pylint: disable=reimported
+        import re as re2
 from core.logger import log
 from core import vba_context
 from random import randint
@@ -686,22 +691,22 @@ def fix_unbalanced_quotes(vba_code):
     # Fix invalid string assignments.
     if debug_strip:
         print("??DBG::UNBALANCED_QUOTES: 1")
-        print(vba_code)
+        print(vba_code[:500])
     if (re2.search("\r?\n\s*(?:Set)?\s*(\w+)\s+=\s+\"\r?\n", vba_code) is not None):
         vba_code = re.sub(r"\r?\n\s*(?:Set)?\s*(\w+)\s+=\s+\"\r?\n", r'\n\1 = ""\n', vba_code)
         if debug_strip:
             print("??DBG::UNBALANCED_QUOTES: 2")
-            print(vba_code)
+            print(vba_code[:500])
     if (re2.search("(\w+\s+=\s+\")(:[^\"]+)\r?\n", vba_code) is not None):
         vba_code = re.sub(r"(\w+\s+=\s+\")(:[^\"]+)\r?\n", r'\1"\2\n', vba_code)
         if debug_strip:
             print("??DBG::UNBALANCED_QUOTES: 2")
-            print(vba_code)
+            print(vba_code[:500])
     if (re2.search("^\"[^=]*([=>])\s*\"\s+[Tt][Hh][Ee][Nn]", vba_code) is not None):
         vba_code = re.sub(r"^\"[^=]*([=>])\s*\"\s+[Tt][Hh][Ee][Nn]", r'\1 "" Then', vba_code)
         if debug_strip:
             print("??DBG::UNBALANCED_QUOTES: 3")
-            print(vba_code)
+            print(vba_code[:500])
         
     # Fix ambiguous EOL comment lines like ".foo '' A comment". "''" could be parsed as
     # an argument to .foo or as an EOL comment. Here we change things like ".foo '' A comment"
@@ -710,7 +715,7 @@ def fix_unbalanced_quotes(vba_code):
     vba_code = re.sub(r"'('[^'^\"]+\n)", r"\1", vba_code, re.DOTALL)
     if debug_strip:
         print("??DBG::UNBALANCED_QUOTES: 4")
-        print(vba_code)
+        print(vba_code[:500])
     
     # More ambiguous EOL comments. Something like "a = 12 : 'stuff 'more stuff" could have
     # 'stuff ' potentially parsed as a string. Just wipe out the comments in this case
@@ -718,13 +723,13 @@ def fix_unbalanced_quotes(vba_code):
     vba_code = re.sub(r"(\n[^'^\n]+)'[^'^\"^\n]+'[^'^\"^\s]+\n", r"\1\n", vba_code, re.DOTALL)
     if debug_strip:
         print("??DBG::UNBALANCED_QUOTES: 5")
-        print(vba_code)
+        print(vba_code[:500])
     
     # Fix Execute statements with no space between the execute and the argument.
     vba_code = re.sub(r"\n\s*([Ee][Xx][Ee][Cc][Uu][Tt][Ee])\"", r'\nExecute "', vba_code)
     if debug_strip:
         print("??DBG::UNBALANCED_QUOTES: 6")
-        print(vba_code)
+        print(vba_code[:500])
     
     # See if we have lines with unbalanced double quotes.
     r = ""
@@ -789,7 +794,7 @@ def fix_unbalanced_quotes(vba_code):
     # Return the balanced code.
     if debug_strip:
         print("??DBG::UNBALANCED_QUOTES: 7")
-        print(r)
+        print(r[:500])
     return r
 
 
@@ -1775,21 +1780,21 @@ def fix_weird_copyhere(vba_code):
     # foo.NameSpace(bar).CopyHere(baz), fubar
     if debug_strip:
         print("??DBG::HERE: 4")
-        print(vba_code)
+        print(vba_code[:500])
     namespace_pat = r"(\w+\.NameSpace\(.+\)\.CopyHere\(.+\)),\s*[^\n]+"
     if (re2.search(str(namespace_pat), vba_code) is not None):
         vba_code = re.sub(namespace_pat, r"\1", vba_code)
     # CreateObject(foo).Namespace(bar).CopyHere baz, fubar
     if debug_strip:
         print("??DBG::HERE: 5")
-        print(vba_code)
+        print(vba_code[:500])
     namespace_pat = r"(CreateObject\(.+\).[Nn]ame[Ss]pace\(.+\)\.CopyHere\s+.+),\s*[^\n]+"
     if (re2.search(str(namespace_pat), vba_code) is not None):
         vba_code = re.sub(namespace_pat, r"\1", vba_code)
     # foo.Run(bar) & baz, fubar    
     if debug_strip:
         print("??DBG::HERE: 6")
-        print(vba_code)
+        print(vba_code[:500])
     # TODO: Does not handle the following:
     # K015_indirectAssign K015_callFunction, Application.Run(strFileRef & "!" & strFunctionName, varArgv(lngIndex + 0), varArgv(lngIndex + 1))
     # Match result:
@@ -1804,7 +1809,7 @@ def fix_weird_copyhere(vba_code):
         vba_code = re.sub(namespace_pat, r"\1", vba_code)
         if debug_strip:
             print("??DBG::HERE: 6.1")
-            print(vba_code)
+            print(vba_code[:500])
 
     # Done.
     return vba_code
@@ -1822,7 +1827,7 @@ def fix_comments_after_else(vba_code):
     # Get rid of them.
     if debug_strip:
         print("??DBG::HERE: 8")
-        print(vba_code)
+        print(vba_code[:500])
     bad_else_pat = r"\n\s*Else\s*'.*\n"
     if (re2.search(str(bad_else_pat), vba_code) is not None):
         bad_exps = re.findall(bad_else_pat, vba_code)
@@ -1845,7 +1850,7 @@ def break_out_labels(vba_code):
     # Break out labels that are not on their own line.
     if debug_strip:
         print("??DBG::HERE: 11")
-        print(vba_code)
+        print(vba_code[:500])
     if (":" in vba_code):
         label_pat = r"(\n\s*\w+:)([^\n])"
         vba_code = re.sub(label_pat, r'\1\n\2', vba_code)
@@ -1878,7 +1883,7 @@ def hide_strings(vba_code):
     # to handle tracking '#...#' delimited date strings in the next loop.
     if debug_strip:
         print("??DBG::HERE: 12")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = vba_code.replace("#if", "HASH__if")
     vba_code = vba_code.replace("#If", "HASH__if")
     vba_code = vba_code.replace("#else", "HASH__else")    
@@ -1889,7 +1894,7 @@ def hide_strings(vba_code):
     # Same thing with Put and Close of file descriptors.
     if debug_strip:
         print("??DBG::HERE: 13")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = re.sub(r"[Aa]s\s+#", "as__HASH", vba_code)
     vba_code = re.sub(r"[Pp]ut\s+#", "put__HASH", vba_code)
     vba_code = re.sub(r"[Pp]rint\s+#", "print__HASH", vba_code)    
@@ -1913,7 +1918,7 @@ def fix_weird_single_line_ifs(vba_code):
     # If utc_NegativeOffset Then: utc_Offset = -utc_Offset
     if debug_strip:
         print("??DBG::HERE: 14")
-        print(vba_code)
+        print(vba_code[:500])
     pat = r"(?i)If\s+.{1,100}\s+Then\s*:[^\n]{1,100}\n"
     if (re2.search(str(pat), vba_code) is not None):
         for curr_if in re.findall(pat, vba_code):
@@ -1942,7 +1947,7 @@ def hide_colons(vba_code):
     # If op < OLen Then Out(op) = o1: op = op + 1
     if debug_strip:
         print("??DBG::HERE: 15")
-        print(vba_code)
+        print(vba_code[:500])
     pat = r"(?i)\n\s*If\s+.{1,100}\s+Then.{1,100}:.{1,100}(?:\s*Else.{1,100})?\n"
     single_line_ifs = []
     if (re2.search(str(pat), vba_code) is not None):
@@ -1956,7 +1961,7 @@ def hide_colons(vba_code):
     # Replace ':=' so they don't get modified.
     if debug_strip:
         print("??DBG::HERE: 16")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = vba_code.replace(":=", "__COLON_EQUAL__")    
 
     # Done.
@@ -2196,7 +2201,7 @@ def replace_bad_chars(vba_code):
     pos = -1
     if debug_strip:
         print("??DBG::HERE: 18")
-        print(vba_code)
+        print(vba_code[:500])
     while (pos < (len(vba_code) - 1)):
 
         #print("DONE: " + safe_str_convert((0.0 + pos)/len(vba_code)*100))
@@ -2523,69 +2528,69 @@ def fix_difficult_code(vba_code):
     # Targeted fix for some maldocs.
     if debug_strip:
         print("??DBG::HERE: 1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = vba_code.replace("\n" + chr(0x85), "\n")
     vba_code = vba_code.replace("spli.tt.est", "splittest").replace("Mi.d", "Mid")
     vba_code = vba_code.replace("msgbox\"", "msgbox \"")
     vba_code = fix_unhandled_array_assigns(vba_code)
     if debug_strip:
         print("??DBG::HERE: 2.0")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_class_constructor_calls(vba_code)
     if debug_strip:
         print("??DBG::HERE: 2.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_unhandled_event_statements(vba_code)
     if debug_strip:
         print("??DBG::HERE: 2.2")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_unhandled_raiseevent_statements(vba_code)
     if debug_strip:
         print("??DBG::HERE: 2.3")
-        print(vba_code)
+        print(vba_code[:500])
     # TODO: Looks like we handle this now. Remove when confirmed.
     #vba_code = fix_unhandled_named_params(vba_code)
     #if debug_strip:
     #    print("??DBG::HERE: 2.4")
-    #    print(vba_code)
+    #    print(vba_code[:500])
     vba_code = fix_bad_var_names(vba_code)
     if debug_strip:
         print("??DBG::HERE: 2.5")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_bad_exponents(vba_code)
     if debug_strip:
         print("??DBG::HERE: 2.6")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_bad_pos_neg_ints(vba_code)
     if debug_strip:
         print("??DBG::HERE: 2.6.0")
-        print(vba_code)        
+        print(vba_code[:500])        
     vba_code = fix_stupid_string_concats(vba_code)
     if debug_strip:
         print("??DBG::HERE: 2.6.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_items_ref(vba_code)
     if debug_strip:
         print("??DBG::HERE: 2.6.2")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_bad_next_statements(vba_code)
     if debug_strip:
         print("??DBG::HERE: 2.7")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_varptr_calls(vba_code)
     if debug_strip:
         print("??DBG::HERE: 2.7.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_unclosed_parens(vba_code)
 
     # Precompute certain Chr() results that are just there for obfuscation.
     if debug_strip:
         print("??DBG::HERE: 2.7.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = reduce_chr_obfuscation(vba_code)
     if debug_strip:
         print("??DBG::HERE: 2.7.2")
-        print(vba_code)
+        print(vba_code[:500])
     
     # Not handling this weird CopyHere() call.
     # foo.NameSpace(bar).CopyHere(baz), fubar    
@@ -2602,7 +2607,7 @@ def fix_difficult_code(vba_code):
     # Skip the rest if it is not needed.
     if debug_strip:
         print("??DBG::HERE: 9")
-        print(vba_code)
+        print(vba_code[:500])
     marker_strs = r"[!:&\^]|ElseIf|Rem|rem|REM|MultiByteToWideChar"
     if ((re2.search(marker_strs, vba_code) is None) and
         (re2.search(r".*[^\x00-\x7e].*", vba_code, re.DOTALL) is None) and
@@ -2617,7 +2622,7 @@ def fix_difficult_code(vba_code):
     # Now just do a general replace for StrPtr()
     if debug_strip:
         print("??DBG::HERE: 10")
-        print(vba_code)
+        print(vba_code[:500])
     if ("StrPtr" in vba_code):
         strptr_pat = r"(StrPtr\s*\(\s*)(\w+)(\s*\))"
         vba_code = re.sub(strptr_pat, r'\1"&\2"\3', vba_code)
@@ -2625,7 +2630,7 @@ def fix_difficult_code(vba_code):
     # Break out labels that are not on their own line.
     if debug_strip:
         print("??DBG::HERE: 10.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = break_out_labels(vba_code)
 
     # Temporarily replace macro #if, etc. with more unique strings. This is needed
@@ -2634,45 +2639,45 @@ def fix_difficult_code(vba_code):
     # Same thing with Put and Close of file descriptors.
     if debug_strip:
         print("??DBG::HERE: 10.2")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = hide_strings(vba_code)
 
     # Rewrite some weird single line if statements.
     # If utc_NegativeOffset Then: utc_Offset = -utc_Offset    
     if debug_strip:
         print("??DBG::HERE: 10.3")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_weird_single_line_ifs(vba_code)
 
     # Replace bad characters unless they appear in a string.
     if debug_strip:
         print("??DBG::HERE: 10.4")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = replace_bad_chars(vba_code)
     
     # Replace the ':' in single line if statements so they don't get broken up.
     # Replace ':=' so they don't get modified.    
     if debug_strip:
         print("??DBG::HERE: 10.5")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code, single_line_ifs = hide_colons(vba_code)    
 
     # Replace 'Rem fff' style comments with "' fff" comments.    
     if debug_strip:
         print("??DBG::HERE: 10.6")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = replace_rem_comments(vba_code)
 
     # Replace ':' with new lines.
     if debug_strip:
         print("??DBG::HERE: 17")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = convert_colons_to_linefeeds(vba_code)
 
     # Break up while statements like 'While(a>b)c = c+1'.
     if debug_strip:
         print("??DBG::HERE: 17.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = break_up_whiles(vba_code)
 
     # We have just broken up single line statements seperated by ":" into
@@ -2680,11 +2685,11 @@ def fix_difficult_code(vba_code):
     # "ElseIf c >= 65 And c <= 90 Then f = 65"
     if debug_strip:
         print("??DBG::HERE: 17.2")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_elseif_lines(vba_code)
     if debug_strip:
         print("??DBG::HERE: 17.3")
-        print(vba_code)
+        print(vba_code[:500])
     
     # Put the #if macros back.
     r = vba_code
@@ -3007,7 +3012,7 @@ def delete_bracket_constructs(vba_code):
     # TODO: Actually handle these things.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 9")
-        print(vba_code)
+        print(vba_code[:500])
     brackets = re.findall(r"\(\[[^\]]+\]\)", vba_code, re.DOTALL)
     if (len(brackets) > 0):
         log.warning("([a1]) style constructs are not currently handled. Rewriting them...")
@@ -3106,7 +3111,7 @@ def fix_vba_code(vba_code):
     # Strip comment lines from the code.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = strip_comments(vba_code)
 
     # Remove the last line of code if it looks bad.
@@ -3127,45 +3132,45 @@ def fix_vba_code(vba_code):
     # a function call (ex. e:=12).
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 1.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_orphan_named_params(vba_code)
             
     # Fix dumb typo in some maldocs VBA.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 2")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = vba_code.replace("End SubPrivate", "End Sub\nPrivate")
 
     # Fix code that uses 'Endif' rather than 'End If'.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 2.1")
-        print(vba_code)
+        print(vba_code[:500])
     if ("endif" in vba_code.lower()):
         vba_code = re.sub(r"[Ee]nd[Ii]f\r?\n", r"End If\n", vba_code)
     
     # Strip empty multi-statement lines like "::" from the VB.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 2.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = _remove_empty_multistatement_lines(vba_code)
 
     # Strip ubiquitous multi-statement lines like "foo:bar:baz" from the VB.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 2.2")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = _remove_cruft_multistatement_lines(vba_code)
 
     # No null bytes in VB to process.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 3")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = vba_code.replace("\x00", "")
     
     # Make "End Try" in try/catch blocks easier to parse.
     vba_code = re.sub(r"End\s+Try", "##End ##Try", vba_code)
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 4")
-        print(vba_code)
+        print(vba_code[:500])
     
     # Super specific. Some malicious VBScript has a floating '\n}\n'
     # in the code. Remove it if needed.
@@ -3176,7 +3181,7 @@ def fix_vba_code(vba_code):
     # TODO: Actually handle Line Input consructs.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 5")
-        print(vba_code)
+        print(vba_code[:500])
     linputs = re.findall(r"Line\s+Input\s+#\d+\s*,\s*\w+", vba_code, re.DOTALL)
     if (len(linputs) > 0):
         log.warning("VB Line Input constructs are not currently handled. Stripping them from code...")
@@ -3187,7 +3192,7 @@ def fix_vba_code(vba_code):
     # TODO: Figure out if we need to worry about Implements.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 7")
-        print(vba_code)
+        print(vba_code[:500])
     implements = re.findall(r"Implements \w+", vba_code, re.DOTALL)
     if (len(implements) > 0):
         log.warning("VB Implements constructs are not currently handled. Stripping them from code...")
@@ -3211,7 +3216,7 @@ def fix_vba_code(vba_code):
     # Clear out lines broken up on multiple lines.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 10")
-        print(vba_code)
+        print(vba_code[:500])
     #vba_code = re.sub(r" _ *\r?\n", "", vba_code)
     #vba_code = re.sub(r"&_ *\r?\n", "&", vba_code)
     #vba_code = re.sub(r"\(_ *\r?\n", "(", vba_code)
@@ -3223,7 +3228,7 @@ def fix_vba_code(vba_code):
     # Comment those out.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 11")
-        print(vba_code)
+        print(vba_code[:500])
     dumb_member_exps = re.findall(r"\n(?:\w+\.)+\n", vba_code)
     for dumb_exp in dumb_member_exps:
         log.warning("Commenting out bad line '" + dumb_exp.replace("\n", "") + "'.")
@@ -3233,7 +3238,7 @@ def fix_vba_code(vba_code):
     # How about maldocs with Subs with spaces in their names?
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 12")
-        print(vba_code)
+        print(vba_code[:500])
     space_subs = re.findall(r"\n *Sub *\w+ +\w+ *\(", vba_code)
     for space_sub in space_subs:
         start = space_sub.index("Sub") + len("Sub")
@@ -3246,7 +3251,7 @@ def fix_vba_code(vba_code):
     # Clear out some garbage characters.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 13")
-        print(vba_code)
+        print(vba_code[:500])
     if (vba_code.count('\x0b') > 20):
         vba_code = vba_code.replace('\x0b', '')
     if (vba_code.count('\x88') > 20):
@@ -3259,86 +3264,86 @@ def fix_vba_code(vba_code):
     # Break up lines with multiple statements onto their own lines.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 14")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_difficult_code(vba_code)
 
     # Fix lines with double quotes escaped like '" "' rather than
     # '""'.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 14.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_bogus_escaped_quotes(vba_code)
     
     # Fix function calls with a skipped 1st argument.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 15.0")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_skipped_1st_arg1(vba_code)
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 15.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_skipped_1st_arg2(vba_code)
 
     # Fix lines with missing double quotes.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 16")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_unbalanced_quotes(vba_code)
 
     # Fix some hard to parse Put calls.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 16.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_bad_puts(vba_code)
     
     # Fix things like "Call Shell^(...)".
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 16.1.0")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_caret_calls(vba_code)
 
     # Fix things like "WordBasic.[MacroFileName$]".
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 16.1.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_weird_dollar_signs(vba_code)
 
     # Fix things like "a < 10 > 0".
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 16.1.1.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = fix_shorthand_bool_exprs(vba_code)    
 
     # Hide some weird hard to parse array accesses.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 16.1.2")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = hide_some_array_accesses(vba_code)
     
     # For each const integer defined, replace it inline in the code to reduce lookups
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 17")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = replace_constant_int_inline(vba_code)
 
     # Rename existing constants to avoid name overlaps with functions.
     # Why does VB allow that? GRRRR.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 17.5")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = rename_constants(vba_code)
 
     # Rename user defined subs/functions that overlap with ActiveX
     # method names.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 17.5.1")
-        print(vba_code)
+        print(vba_code[:500])
     vba_code = rename_activex_method_overlaps(vba_code)
 
     # Fix bogus calls like 'foo"ARG STR"'.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 17.6")
-        print(vba_code)
+        print(vba_code[:500])
     bad_call_pat = "(\r?\n\s*[\w_]{2,50})\""
     if (re2.search(str(bad_call_pat), vba_code)):
         vba_code = re.sub(bad_call_pat, r'\1 "', vba_code)
@@ -3352,7 +3357,7 @@ def fix_vba_code(vba_code):
     # Skip the next part if unnneeded.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 18")
-        print(vba_code)
+        print(vba_code[:500])
     got_multassign = (re2.search("(?:\w+\s*=\s*){2}", vba_code) is not None)
     if ((" if+" not in vba_code) and
         (" If+" not in vba_code) and
@@ -3365,7 +3370,7 @@ def fix_vba_code(vba_code):
     r = ""
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 19")
-        print(vba_code)
+        print(vba_code[:500])
     for line in vba_code.split("\n"):
 
         # Fix up assignments like 'cat = dog = frog = 12'.
@@ -3415,7 +3420,7 @@ def fix_vba_code(vba_code):
     # Return the updated code.
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 20")
-        print(r)
+        print(r[:500])
     return r
 
 def replace_constant_int_inline(vba_code):
