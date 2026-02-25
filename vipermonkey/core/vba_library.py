@@ -7025,14 +7025,14 @@ class CreateElement(VbaLibraryFunc):
         return "Microsoft.XMLDOM"
 
 class Send(VbaLibraryFunc):
-    """Faked emulation of HTTP send(). Always returns 200.
+    """Faked emulation of HTTP send(). Always returns ** MATCH ANY **.
 
     """
 
     def eval(self, context, params=None):
         context = context # pylint
         params = params # pylint
-        return 200
+        return "**MATCH ANY**"
 
 class SetTimeouts(VbaLibraryFunc):
     """Emulate ServerXMLHTTP SetTimeouts() method (stubbed).

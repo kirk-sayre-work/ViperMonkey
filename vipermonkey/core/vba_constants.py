@@ -6368,7 +6368,7 @@ class VbaConstants(object):
         self.globals["NumberOfLogicalProcessors".lower()] = 4
         self.globals[".NumberOfLogicalProcessors".lower()] = 4
         self.globals["ActiveWorkbook.Name".lower()] = "**MATCH ANY**"
-        self.globals["me.Status".lower()] = 200
+        self.globals["me.Status".lower()] = "**MATCH ANY**"
         self.globals["BackColor".lower()] = "**MATCH ANY**"
         self.globals["me.BackColor".lower()] = "**MATCH ANY**"
         self.globals["Empty".lower()] = "NULL"

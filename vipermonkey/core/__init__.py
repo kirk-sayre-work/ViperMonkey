@@ -89,6 +89,7 @@ import sys
 import logging
 import string
 import re
+import copy
 
 from pyparsing import ParseException
 import prettytable
@@ -562,9 +563,9 @@ class ViperMonkey(StubbedEngine):
         vba_context.shellcode = {}
         
         # Create the global context for the engine
-        context = vba_context.Context(_globals=self.globals,
+        context = vba_context.Context(_globals=copy.deepcopy(self.globals),
                                       engine=self,
-                                      doc_vars=self.doc_vars,
+                                      doc_vars=copy.deepcopy(self.doc_vars),
                                       loaded_excel=self.loaded_excel,
                                       filename=self.filename,
                                       metadata=self.metadata)
