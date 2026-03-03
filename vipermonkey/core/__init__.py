@@ -563,9 +563,17 @@ class ViperMonkey(StubbedEngine):
         vba_context.shellcode = {}
         
         # Create the global context for the engine
-        context = vba_context.Context(_globals=copy.deepcopy(self.globals),
+        try:
+            globals_copy = copy.deepcopy(self.globals)
+        except:
+            globals_copy = self.globals
+        try:
+            docvars_copy = copy.deepcopy(self.doc_vars)
+        except:
+            docvars_copy = self.doc_vars
+        context = vba_context.Context(_globals=globals_copy,
                                       engine=self,
-                                      doc_vars=copy.deepcopy(self.doc_vars),
+                                      doc_vars=docvars_copy,
                                       loaded_excel=self.loaded_excel,
                                       filename=self.filename,
                                       metadata=self.metadata)
