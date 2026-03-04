@@ -74,6 +74,8 @@ https://github.com/decalage2/ViperMonkey
 # TODO later:
 # - add VBS support (two modes?)
 
+#from time_profiler import timer
+
 from core.curses_ascii import isascii
 import logging
 import sys
@@ -100,6 +102,7 @@ from core.utils import safe_str_convert
 #debug_strip = True
 debug_strip = False
 
+#@timer()
 def _get_declared_vars(line):
     """Get the variable names declared in a given Dim line.
 
@@ -126,6 +129,7 @@ def _get_declared_vars(line):
         r.append(v.strip())
     return r
     
+#@timer()
 def is_useless_dim(line, vba_code):
     """See if we can skip this Dim statement and still successfully
     emulate.  We only use Byte type information when emulating.
@@ -203,6 +207,7 @@ def is_useless_dim(line, vba_code):
     return True
 
 aggressive_strip = False
+#@timer()
 def is_interesting_call(line, external_funcs, local_funcs):
     """Check to see if an interesting function is called on the given code
     line. An interesting function is a function imported from a DLL, a
@@ -251,6 +256,7 @@ def is_interesting_call(line, external_funcs, local_funcs):
     # Not a call we are tracking.
     return False
 
+#@timer()
 def is_useless_call(line):
     """See if the given line contains a useless do-nothing function call.
 
@@ -281,6 +287,7 @@ def is_useless_call(line):
             return True
     return False
 
+#@timer()
 def collapse_macro_if_blocks(vba_code):
     """When emulating we only pick a single block from a #if
     statement. Speed up parsing by picking the largest block and strip
@@ -379,6 +386,7 @@ def collapse_macro_if_blocks(vba_code):
     # Return the stripped VBA.
     return final_r
 
+#@timer()
 def hide_some_array_accesses(vba_code):
     """Hide function call/array access mixes like 'a = cat("dog")(12)(0)',
     we can't parse these.
@@ -410,6 +418,7 @@ def hide_some_array_accesses(vba_code):
     # Done.
     return r
 
+#@timer()
 def fix_orphan_named_params(vba_code):
     """Fix orphaned named parameter expressions floating around not in
     a function call (ex. e:=12).
@@ -479,6 +488,7 @@ def fix_orphan_named_params(vba_code):
     #print("---")
     return r
 
+#@timer()
 def fix_caret_calls(vba_code):
     """Change things like 'Call Shell^(...)' to 'Call Shell(...)' (delete
     the caret).
@@ -506,6 +516,7 @@ def fix_caret_calls(vba_code):
     # Done.
     return vba_code
 
+#@timer()
 def fix_shorthand_bool_exprs(vba_code):
     """Change boolean expressions like 'a < 10 > 0' to 'a < 10 And a >
     0'.
@@ -557,6 +568,7 @@ def fix_shorthand_bool_exprs(vba_code):
     # Done.
     return vba_code
     
+#@timer()
 def fix_weird_dollar_signs(vba_code):
     """Change things like 'WordBasic.[MacroFileName$]' to 'WordBasic.[MacroFileName]' (delete
     the dollar sign).
@@ -583,6 +595,7 @@ def fix_weird_dollar_signs(vba_code):
     # Done.
     return vba_code
     
+#@timer()
 def fix_bad_puts(vba_code):
     """Change file Put statements like 'Put #foo(1,2,3) ...' to 'Put
     foo(1,2,3)'.
@@ -608,6 +621,7 @@ def fix_bad_puts(vba_code):
     vba_code = re.sub(r"([^A-Za-z])Close +#([A-Za-z_])", r"\1Close \2", vba_code)
     return vba_code
 
+#@timer()
 def fix_bogus_escaped_quotes(vba_code):
     """Fix lines with double quotes escaped like '" "' rather than '""'.
 
@@ -642,6 +656,7 @@ def fix_bogus_escaped_quotes(vba_code):
     
     return r
 
+#@timer()
 def fix_unbalanced_parens(vba_code):
     """Last ditch attempt to fix unbalanced parentheses in the given
     code. This just adds missing ')' to the end of the code or missing
@@ -679,6 +694,7 @@ def fix_unbalanced_parens(vba_code):
     # Done.
     return r
         
+#@timer()
 def fix_unbalanced_quotes(vba_code):
     """Fix lines with missing double quotes.
 
@@ -799,6 +815,7 @@ def fix_unbalanced_quotes(vba_code):
 
 
 MULT_ASSIGN_RE = r"((?:\w+\s*=\s*){3,})(.+)"
+#@timer()
 def fix_multiple_assignments(line):
     """Break up multiple assignment lines like 'a = b = c = 1' into
     multiple seperate assignment lines.
@@ -867,6 +884,7 @@ def fix_multiple_assignments(line):
     r.replace('IN_STR_EQUAL', '=')
     return r
 
+#@timer()
 def fix_skipped_1st_arg1(vba_code):
     """Replace calls like foo(, 1, ...) with foo(SKIPPED_ARG, 1, ...).
 
@@ -934,6 +952,7 @@ def fix_skipped_1st_arg1(vba_code):
     # Return the modified code.
     return vba_code
 
+#@timer()
 def fix_skipped_1st_arg2(vba_code):
     """Replace calls like \nfoo, 1, ... with \nfoo SKIPPED_ARG, 1,
     ... . Also fix things like 'a + + b + "ff"' (double pluses).
@@ -1067,6 +1086,7 @@ def fix_skipped_1st_arg2(vba_code):
     # Return the modified code.
     return vba_code
 
+#@timer()
 def fix_bad_next_statements(vba_code):
     """Change things like "Next x,y" to "Next x\nNext y".
 
@@ -1086,6 +1106,7 @@ def fix_bad_next_statements(vba_code):
             r = r.replace(bad_next, new_nexts)
     return r
 
+#@timer()
 def fix_items_ref(vba_code):
     """Change Scripting.Dictionary.Items() references to
     Scripting.Dictionary.Items.
@@ -1102,6 +1123,7 @@ def fix_items_ref(vba_code):
     r = vba_code.replace(".Items()(", ".Items(")
     return r
 
+#@timer()
 def fix_stupid_string_concats(vba_code):
     """Change garbage string concatentations like 's1 & s2 & + "foo"' to
     's1 & s2 & "foo"'.
@@ -1120,6 +1142,7 @@ def fix_stupid_string_concats(vba_code):
     r = re.sub(r"&\s+\+", "& ", vba_code)
     return r
 
+#@timer()
 def fix_bad_pos_neg_ints(vba_code):
     """Change things like 'a = + 12' to 'a = +12'.
 
@@ -1132,6 +1155,7 @@ def fix_bad_pos_neg_ints(vba_code):
     vba_code = re.sub(pat, r"\1 = \2\3", vba_code)
     return vba_code
     
+#@timer()
 def fix_bad_exponents(vba_code):
     """Change things like '2^2' to '2 ^ 2'.
 
@@ -1176,6 +1200,7 @@ def fix_bad_exponents(vba_code):
 
     return r
 
+#@timer()
 def fix_bad_var_names(vba_code):
     """Change things like a& = b& + 1 to a = b + 1.
 
@@ -1195,6 +1220,7 @@ def fix_bad_var_names(vba_code):
     #return vba_code
 
 # TODO: Looks like we handle this now. Remove when confirmed.
+#@timer()
 def fix_unhandled_named_params(vba_code):
     """Currently things like 'foo(a:=1, b:=2)' are not handled, Comment
     them out.
@@ -1267,6 +1293,7 @@ def fix_unhandled_named_params(vba_code):
                 
     return vba_code
 
+#@timer()
 def fix_unhandled_array_assigns(vba_code):
     """Currently things like 'foo(1, 2, 3) = 1' are not handled, Comment
     them out.
@@ -1283,6 +1310,7 @@ def fix_unhandled_array_assigns(vba_code):
         vba_code = re.sub(fix_pat, r"Mid(", vba_code)
     return vba_code
 
+#@timer()
 def fix_unhandled_event_statements(vba_code):
     """Currently things like 'Event ...' are not handled, Comment them
     out.
@@ -1298,6 +1326,7 @@ def fix_unhandled_event_statements(vba_code):
         vba_code = re.sub(pat, r"\n' UNHANDLED EVENT STATEMENT \1", vba_code) + "\n"
     return vba_code
 
+#@timer()
 def fix_unhandled_raiseevent_statements(vba_code):
     """Currently things like 'RaiseEvent ...' are not handled, Comment
     them out.
@@ -1314,6 +1343,7 @@ def fix_unhandled_raiseevent_statements(vba_code):
         vba_code = re.sub(pat, r"\n' UNHANDLED RAISEEVENT STATEMENT \1", vba_code) + "\n"
     return vba_code
 
+#@timer()
 def hide_string_content(s):
     """Hide string contents by replacing contents of string literals with
     '____'.
@@ -1347,6 +1377,7 @@ def hide_string_content(s):
 
     return r
 
+#@timer()
 def is_in_string(line, s):
     """Check to see if s appears in a quoted string in line.
 
@@ -1394,6 +1425,7 @@ def is_in_string(line, s):
     # s is not in any quoted string.
     return False
 
+#@timer()
 def hide_colons_in_ifs(vba_code):
     """Replace ':' that appear in single line VB If statements with
     '__COLON__'.
@@ -1433,6 +1465,7 @@ def hide_colons_in_ifs(vba_code):
     r += vba_code[pos:]
     return r
 
+#@timer()
 def move_endifs(vba_code):
     """Sometimes 'end if' winds up on the end of a line with code. Put
     these on their own line.
@@ -1507,6 +1540,7 @@ def move_endifs(vba_code):
     # Done.
     return r
         
+#@timer()
 def convert_colons_to_linefeeds(vba_code):
     """Convert things like 'a=1:b=2' to 'a=1\n:b=2'; Also change things
     like 'a&"ff"' to 'a & "ff"'
@@ -1679,6 +1713,7 @@ def convert_colons_to_linefeeds(vba_code):
     #sys.exit(0)
     return r
 
+#@timer()
 def fix_varptr_calls(vba_code):
     """Change calls like VarPtr(foo(0)) to VarPtr(foo) so we can report
     on the whole byte array.
@@ -1695,6 +1730,7 @@ def fix_varptr_calls(vba_code):
     vba_code = re.sub(r"(VarPtr\(\w+)\(0\)\)", r'\1)', vba_code)
     return vba_code
 
+#@timer()
 def break_up_whiles(vba_code):
     """Break up while statements like 'While(a>b)c = c+1'.
 
@@ -1766,6 +1802,7 @@ def break_up_whiles(vba_code):
     # Done.
     return r
 
+#@timer()
 def fix_weird_copyhere(vba_code):
     """Rewrite things like 'CreateObject(foo).Namespace(bar).CopyHere
     baz, fubar' and 'foo.Run(bar) & baz, fubar'.
@@ -1814,6 +1851,7 @@ def fix_weird_copyhere(vba_code):
     # Done.
     return vba_code
 
+#@timer()
 def fix_comments_after_else(vba_code):
     """Get rid of comments at the ends of ElseIf code lines.
 
@@ -1837,6 +1875,7 @@ def fix_comments_after_else(vba_code):
     # Done.
     return vba_code
 
+#@timer()
 def break_out_labels(vba_code):
     """Break out labels like 'foo: a = 1' onto their own line of code
     ('foo:\na = 1').
@@ -1868,6 +1907,7 @@ def break_out_labels(vba_code):
     # Done.
     return vba_code
 
+#@timer()
 def hide_strings(vba_code):
     """Hide various code strings by rewriting them. This rewrites any VB
     keyword with a '#' to something there the '#' is replaced with
@@ -1904,6 +1944,7 @@ def hide_strings(vba_code):
     # Done.
     return vba_code
 
+#@timer()
 def fix_weird_single_line_ifs(vba_code):
     """Rewrite odd single line If statements like 'If utc_NegativeOffset
     Then: utc_Offset = -utc_Offset'.
@@ -1928,6 +1969,7 @@ def fix_weird_single_line_ifs(vba_code):
     # Done.
     return vba_code
 
+#@timer()
 def hide_colons(vba_code):
     """Hide the colons in single line If statements by replacing each
     single line If statement with "HIDE_THIS_IF_NNN".
@@ -1967,6 +2009,7 @@ def hide_colons(vba_code):
     # Done.
     return vba_code, single_line_ifs
 
+#@timer()
 def replace_rem_comments(vba_code):
     """Standardize the comment keyword used from various Rem flavors to
     "'".
@@ -1988,6 +2031,7 @@ def replace_rem_comments(vba_code):
     # Done.
     return vba_code
 
+#@timer()
 def fix_elseif_lines(vba_code):
     """Break up single line ElseIf statements onto multiple lines.
 
@@ -2006,6 +2050,7 @@ def fix_elseif_lines(vba_code):
     # Done.
     return vba_code
 
+#@timer()
 def reduce_str_concats(vba_code):
     """Replace things like '"c" & "at" & "s"' with '"cats"'. PEG grammars
     have a TERRIBLE slow time parsing things like this, so replace them
@@ -2036,6 +2081,7 @@ def reduce_str_concats(vba_code):
 
     return vba_code
 
+#@timer()
 def _char_code_to_vb_char(val):
     """Convert an ASCII character code to an appropriate VB character
     string. Handles char codes like 10 by converting them to " vbLf ",
@@ -2067,6 +2113,7 @@ def _char_code_to_vb_char(val):
         curr_char = " vbSpaceConst "
     return curr_char
 
+#@timer()
 def reduce_chr_obfuscation1(vba_code):
     """Replace Chr() expressions like 'chr(10 + 40)' to 'chr(50)'.
 
@@ -2101,6 +2148,7 @@ def reduce_chr_obfuscation1(vba_code):
     # Done.
     return r
 
+#@timer()
 def reduce_chr_obfuscation(vba_code):
     """Replace Chr() expressions like 'chr(3662922/CLng("&H8c47"))' with
     the resolved character string.
@@ -2174,6 +2222,7 @@ def reduce_chr_obfuscation(vba_code):
     # Done.
     return vba_code
     
+#@timer()
 def replace_bad_chars(vba_code):
     """Replace/modify certain hard to parse characters (unless the
     character constructs appear in a string).
@@ -2407,6 +2456,7 @@ def replace_bad_chars(vba_code):
     # Done.
     return r
 
+#@timer()
 def fix_unclosed_parens(vba_code):
     """It looks like VBA accepts lines line 'Call foo(' (no matching
     ')'). Comment these lines out.
@@ -2433,6 +2483,7 @@ def fix_unclosed_parens(vba_code):
     # Done.
     return r
     
+#@timer()
 def fix_class_constructor_calls(vba_code):
     """
     Rename Default functions in defined classes to
@@ -2487,6 +2538,7 @@ def fix_class_constructor_calls(vba_code):
     # Done.
     return r
 
+#@timer()
 def strip_nonprint_vbs_comments(vba_code):    
     """Strip out VBS comments like "'FFFFF" where F is a non-printable
     character.
@@ -2506,6 +2558,7 @@ def strip_nonprint_vbs_comments(vba_code):
     r = re.sub(pat, "\n", vba_code)
     return r
 
+#@timer()
 def fix_difficult_code(vba_code):
     """Replace characters whose ordinal value is > 128 with dNNN, where
     NNN is the ordinal value.
@@ -2726,6 +2779,7 @@ def fix_difficult_code(vba_code):
     
     return r
 
+#@timer()
 def strip_comments(vba_code):
     """Strip comment lines from the VBA code.
 
@@ -2754,6 +2808,7 @@ def strip_comments(vba_code):
     # Return stripped code.
     return r
 
+#@timer()
 def find_defined_constants(vba_code):
     """Get the names of all the defined constants in the given VB code.
 
@@ -2779,6 +2834,7 @@ def find_defined_constants(vba_code):
     defined_constants.update(const_names)
     return defined_constants
     
+#@timer()
 def rename_constants(vba_code):
     """Make sure constants have unique names to avoid overlap with
     function names.
@@ -2842,6 +2898,7 @@ def rename_constants(vba_code):
     # Done.
     return vba_code
 
+#@timer()
 def rename_activex_method_overlaps(vba_code):
     """Rename user defined functions or subs that overlap with ActiveX
     method names. Differentiating the 2 is hard when emulating.
@@ -2871,6 +2928,7 @@ def rename_activex_method_overlaps(vba_code):
     # Returned the modified code.
     return r
     
+#@timer()
 def resolve_simple_exprs(vba_code):
     """Compute simple expressions like '364 - &H148' and replace them
     with their values to make parsing easier.
@@ -2908,6 +2966,7 @@ def resolve_simple_exprs(vba_code):
     # Done.
     return vba_code
 
+#@timer()
 def eliminate_duplicate_assigns(vba_code):
     """Simplify blocks of assignments like 'cat = 12\ncat = 12\ncat =
     12....' to 'cat = 12'
@@ -2944,6 +3003,7 @@ def eliminate_duplicate_assigns(vba_code):
     # Done.
     return vba_code
         
+#@timer()
 def unwrap_nested_evals(vba_code):
     """Unwrap Eval() statements like 'Eval("Eval(""a"")")' to 'Eval(a)'.
 
@@ -2999,6 +3059,7 @@ def unwrap_nested_evals(vba_code):
     # Done.
     return vba_code
     
+#@timer()
 def delete_bracket_constructs(vba_code):
     """We don't handle constructs like ([a1]), so remove them.
 
@@ -3048,6 +3109,7 @@ def delete_bracket_constructs(vba_code):
     # Done.
     return vba_code
 
+#@timer()
 def _remove_empty_multistatement_lines(vba_code):
     """Strip empty multi-statement lines like "::" from the VB.
 
@@ -3066,6 +3128,7 @@ def _remove_empty_multistatement_lines(vba_code):
     r = re.sub(pat, "\n", vba_code)
     return r
 
+#@timer()
 def _remove_cruft_multistatement_lines(vba_code):
     """Strip repeated multi-statement lines like "foo:bar:baz" from the VB.
 
@@ -3093,6 +3156,7 @@ def _remove_cruft_multistatement_lines(vba_code):
         r = r.replace(s.strip(), "\n")
     return r
 
+#@timer()
 def fix_vba_code(vba_code):
     """Fix up some substrings that ViperMonkey has problems parsing.
 
@@ -3423,6 +3487,7 @@ def fix_vba_code(vba_code):
         print(r[:500])
     return r
 
+#@timer()
 def replace_constant_int_inline(vba_code):
     """Replace constant integer definitions inline in the given code, but
     leave the definition behind in case the regex fails.
@@ -3450,6 +3515,7 @@ def replace_constant_int_inline(vba_code):
         vba_code = re.sub(this_const, safe_str_convert(d_const[const]), vba_code)
     return(vba_code)
 
+#@timer()
 def strip_line_nums(line):
     """Strip line numbers from the start of a line.
 
@@ -3471,6 +3537,7 @@ def strip_line_nums(line):
         pos += 1
     return line[pos:]
 
+#@timer()
 def strip_attribute_lines(vba_code):
     """Strip all Attribute statements from the code.
 
@@ -3489,6 +3556,7 @@ def strip_attribute_lines(vba_code):
         r += line + "\n"
     return r
 
+#@timer()
 def is_assign_line(line, line_num, local_funcs, bool_statements):
     """Figure out if the given line is an assignment line.
 
@@ -3632,6 +3700,7 @@ def is_assign_line(line, line_num, local_funcs, bool_statements):
     # Might be an assignment line.
     return True
     
+#@timer()
 def find_var_assigns(vba_code, change_callbacks, local_funcs):
     """Find all assigned variables and track what line the variable was
     assigned on.
@@ -3755,6 +3824,7 @@ def find_var_assigns(vba_code, change_callbacks, local_funcs):
     # Done.
     return assigns
 
+#@timer()
 def strip_difficult_tuple_lines(vba_code):
     """Strip all calls like "foo.bar.baz (1,2)-(3,4),5" from the code.
     They are awful to parse with PyParsing.
@@ -3795,6 +3865,7 @@ def strip_difficult_tuple_lines(vba_code):
 
     
 external_funcs = []
+#@timer()
 def strip_useless_code(vba_code, local_funcs):
     """(Main Top Level Function) Strip statements that have no useful
     effect from the given VB and fix hard to parse code
