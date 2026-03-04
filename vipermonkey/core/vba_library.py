@@ -60,7 +60,7 @@ import random
 from core.from_unicode_str import from_unicode_str
 import decimal
 import urllib.parse
-#import sys
+import sys
 #import traceback
 
 from pyparsing import ParseException
@@ -1970,7 +1970,8 @@ class Execute(VbaLibraryFunc):
 
         # Fix invalid string assignments.        
         full_orig_command = command
-        command = strip_lines.fix_vba_code(command)
+        #command = strip_lines.fix_vba_code(command)
+        command = strip_lines.strip_useless_code(command, set())
         
         # Save original command string.
         orig_command = command
@@ -1978,7 +1979,7 @@ class Execute(VbaLibraryFunc):
         # We are executing a string, so any "" in the string are really '"' when
         # we execute the string.
         command = command.replace('""', '"')
-
+        
         # Have we already parsed this?
         obj = None
         if (orig_command in parse_cache):

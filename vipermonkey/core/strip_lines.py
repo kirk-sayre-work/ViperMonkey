@@ -631,6 +631,10 @@ def fix_bogus_escaped_quotes(vba_code):
 
     """
 
+    # This wipes out legitimate things like '"c" & " " & "a"', so skip
+    # for now.
+    return vba_code
+    
     # Do we have any badly escaped quotes?
     pat = r'" +"'
     if (not re2.search(pat, vba_code)):
@@ -2064,24 +2068,30 @@ def reduce_str_concats(vba_code):
     # Do we have any potential str concats to resolve?
     if (('"' not in vba_code) or ("&" not in vba_code)):
         return vba_code
-    concat_pat = r'"[^"]+" * (?:& *"[^"]+" *)+'
-    str_pat = '"([^"])+"'
+    concat_pat = r'"[^"]+" *(?:& *"[^"]+" *)+'
+    str_pat = '"([^"]+)"'
     if (re2.search(concat_pat, vba_code) is None):
         return vba_code
     
     # Find the string literal concat expressions to resolve.
-    for str_exp in re2.findall(concat_pat, vba_code):
+    r = vba_code
+    str_exps = re2.findall(concat_pat, vba_code)
+    str_exps.sort(key=len)
+    str_exps = str_exps[::-1]
+    for str_exp in str_exps:
         strs = []
         new_str_exp = ""
         str_exp = str_exp.replace('""', '__ESCAPED_QUOTE__')
         for i in re2.findall(str_pat, str_exp):
             new_str_exp += i
         new_str_exp = new_str_exp.replace('__ESCAPED_QUOTE__', '""')
-        vba_code = vba_code.replace(str_exp, '"' + new_str_exp + '"')
+        #print("++++++++++++")
+        #print(str_exp)
+        #print(new_str_exp)
+        r = r.replace(str_exp, '"' + new_str_exp + '"')
+        
+    return r
 
-    return vba_code
-
-#@timer()
 def _char_code_to_vb_char(val):
     """Convert an ASCII character code to an appropriate VB character
     string. Handles char codes like 10 by converting them to " vbLf ",
@@ -2123,18 +2133,32 @@ def reduce_chr_obfuscation1(vba_code):
 
     """
 
+    # Sanity check.
+    if ("chr(" not in vba_code.lower()):
+        return vba_code
+    
     # Resolve simple math. Just handling +/- of ints.
     int_pat = r"[Cc][Hh][Rr]\((?: *\-?\d+ *[\+\-] *)+\-?\d+ *\)"
     r = vba_code
     safe_globals = {}
     safe_locals = {}
+    changed = False
     for old_expr in regex.findall(int_pat, vba_code):
 
         # We know these expressions are just integer +/- math, so it is
         # save to eval them to resolve them.
-        new_expr = "Chr(" + str(eval(old_expr.lower().replace("chr", ""), {'__builtins__': safe_globals}, safe_locals)) + ")"
-        r = r.replace(old_expr, new_expr)
+        char_code = eval(old_expr.lower().replace("chr", ""), {'__builtins__': safe_globals}, safe_locals)
 
+        # Just directly add in the character if the char code is valid.
+        try:
+            new_expr = _char_code_to_vb_char(char_code)
+        except:            
+            # Not valid char code. Just leave as VB Chr() expression.
+            new_expr = "Chr(" + str(char_code) + ")"
+        r = r.replace(old_expr, new_expr)
+    if (r != vba_code):
+        changed = True
+        
     # Resolve simple xor expressions.
     # ((129) Xor 139)
     xor_pat = r"[Cc][Hh][Rr]\( *\(? *(?: *\-?\d+ *[\+\-] *)*\-?\d+ *\)? *[Xx][Oo][Rr] *\(? *(?: *\-?\d+ *[\+\-] *)*\-?\d+ *\)? *\)"
@@ -2142,9 +2166,18 @@ def reduce_chr_obfuscation1(vba_code):
 
         # We know these expressions are just integer xor math, so it is
         # save to eval them to resolve them.
-        new_expr = "Chr(" + str(eval(old_expr.lower().replace("chr", "").replace("xor", "^"), {'__builtins__': safe_globals}, safe_locals)) + ")"
-        r = r.replace(old_expr, new_expr)
+        char_code = eval(old_expr.lower().replace("chr", "").replace("xor", "^"), {'__builtins__': safe_globals}, safe_locals)
 
+        # Just directly add in the character if the char code is valid.
+        try:
+            new_expr = _char_code_to_vb_char(char_code)
+        except:            
+            # Not valid char code. Just leave as VB Chr() expression.
+            new_expr = "Chr(" + str(char_code) + ")"
+        r = r.replace(old_expr, new_expr)
+    if (r != vba_code):
+        changed = True
+        
     # Done.
     return r
 
@@ -2213,12 +2246,6 @@ def reduce_chr_obfuscation(vba_code):
         curr_char = _char_code_to_vb_char(val)
         vba_code = vba_code.replace(chr_exp, curr_char)
         
-    # We may have string concats we can simplify now that the chr()
-    # obfuscation has been removed.
-    if (not changed):
-        return vba_code
-    vba_code = reduce_str_concats(vba_code)
-    
     # Done.
     return vba_code
     
@@ -3863,6 +3890,21 @@ def strip_difficult_tuple_lines(vba_code):
     # Done
     return r
 
+#@timer()
+def strip_empty_function(vba_code):
+    """Strip out empty Sub/Functions from the code so they don't need to
+    be parsed.
+
+    @param vba_code (str) The VB code to check and modify.
+
+    @return (str) The modified VB code.
+
+    """
+    if (("Sub " not in vba_code) and ("Function " not in vba_code)):
+        return vba_code
+    empty_sub_pat = r'\n\s*(?:Sub|Function) +\w+ *\([^\)]*\) *\r?\n\s*End +(?:Sub|Function)'
+    r = re2.sub(empty_sub_pat, "", vba_code)
+    return r
     
 external_funcs = []
 #@timer()
@@ -3889,6 +3931,14 @@ def strip_useless_code(vba_code, local_funcs):
     
     # No hard to parse calls with tuple arguments.
     vba_code = strip_difficult_tuple_lines(vba_code)
+
+    # No empty Subs/Functions.
+    vba_code = strip_empty_function(vba_code)
+
+    # Change '"C" & "a" & "t"' to '"Cat"'.
+    # Concat spaces also.
+    vba_code = vba_code.replace("vbSpaceConst", '" "')
+    vba_code = reduce_str_concats(vba_code)
     
     # Don't strip lines if Execute() is called since the stripped variables
     # could be used in the execed code strings.
@@ -3907,6 +3957,8 @@ def strip_useless_code(vba_code, local_funcs):
                 log.warning("Classes not handled. Stripping '" + line.strip() + "'.")
                 continue
             final_r += line + "\n"
+
+        # Done.
         return final_r
     
     # Track data change callback function names.
@@ -4077,4 +4129,5 @@ def strip_useless_code(vba_code, local_funcs):
     # Now collapse down #if blocks.
     r = collapse_macro_if_blocks(r)
 
+    # Done.
     return r
