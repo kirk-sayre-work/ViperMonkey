@@ -423,7 +423,7 @@ def load_excel_pyxlsb2(data):
                     # Add the sheet to the workbook.
                     vm_book.sheets.append(vm_sheet)
                             
-    except (AttributeError, IndexError) as e:
+    except (AttributeError, IndexError, TypeError) as e:
         # Delete the temporary Excel file.
         if os.path.isfile(out_dir):
             os.remove(out_dir)
