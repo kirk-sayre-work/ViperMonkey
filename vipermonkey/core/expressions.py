@@ -4531,7 +4531,7 @@ class Function_Call(VBA_Object):
         if (dll_func_name is not None):
             is_external = True
             func_name = dll_func_name
-        func_name = func_name.lower()
+        func_name = utils.fix_python_overlap(func_name.lower())
             
         # Get a list of the Python expressions for each parameter.
         py_params = []

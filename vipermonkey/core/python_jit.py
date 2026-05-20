@@ -404,7 +404,7 @@ def _get_var_vals(item, context, global_only=False):
 
         # Rename some vars that overlap with python builtins.
         var = utils.fix_python_overlap(var)
-            
+        
         # Save the variable value.
         if isinstance(val, bytes):
             val = safe_str_convert(val)
