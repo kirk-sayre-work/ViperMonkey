@@ -317,7 +317,12 @@ def safe_gt(x,y):
     wildcards = ["CURRENT_FILE_NAME", "SOME_FILE_NAME", "**MATCH ANY**"]
     if ((x in wildcards) or (y in wildcards)):
         return True
-        
+
+    # Handle character comparisons.
+    if (isinstance(x, str) and isinstance(y, str) and
+        (len(x) == 1) and (len(y) == 1)):
+        return (x > y)
+    
     # Since we are doing > both values should be numbers.
     try:
         from core.vba_conversion import coerce_to_num
