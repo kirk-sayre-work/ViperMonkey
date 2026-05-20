@@ -3721,6 +3721,7 @@ class CLng(VbaLibraryFunc):
         val = params[0]
         if (isinstance(val, str) and
             (not val.lower().startswith("&h")) and
+            (not val.lower().startswith("&o")) and
             (val.startswith("&"))):
             return val
 
@@ -3733,6 +3734,11 @@ class CLng(VbaLibraryFunc):
                 if (tmp.lower().startswith("&h")):
                     tmp = tmp.lower().replace("&h", "0x")
                     tmp = int(tmp, 16)
+                elif (tmp.lower().startswith("&o")):
+                    oct_pat = r"&o_?([0-7]+)"
+                    if (re.match(oct_pat, tmp.lower()) is not None):
+                        oct_str = re.findall(oct_pat, tmp.lower())[0]
+                        tmp = int(oct_str, 8)
                 elif (len(tmp) == 1):
                     tmp = ord(tmp)
             r = round(vba_conversion.coerce_to_num(tmp))

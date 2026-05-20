@@ -329,6 +329,12 @@ def coerce_to_num(obj):
         if (re.match(hex_pat, obj.lower()) is not None):
             return int(obj.lower().replace("&h", "0x"), 16)
 
+        # Octal string?
+        oct_pat = r"&o_?([0-7]+)"
+        if (re.match(oct_pat, obj.lower()) is not None):
+            oct_str = re.findall(oct_pat, obj.lower())[0]
+            return int(oct_str, 8)
+
     # Is this an Excel cell dict?
     if (isinstance(obj, dict) and ("value" in obj)):
 
