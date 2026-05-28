@@ -3786,7 +3786,7 @@ def find_var_assigns(vba_code, change_callbacks, local_funcs):
         tmp_line = line
         if ("=" in line):
             tmp_line = line[:line.index("=") + 1]
-        match = assign_re2.findall(tmp_line)
+        match = assign_re.findall(tmp_line)
         if ((len(match) > 0) and
             is_assign_line(line, line_num, local_funcs, bool_statements)):
             
