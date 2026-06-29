@@ -5315,6 +5315,15 @@ class Exec(VbaLibraryFunc):
             fake_var = "0.StdOut.ReadAll"
             fake_stdout = "Caption                 SerialNumber\nAwesomeDisk 7642 SATA 1024GB  69372017327X"
             context.set(fake_var, fake_stdout)
+            fake_var = "stdout.readall()"
+            context.set(fake_var, fake_stdout)
+        if cmd.strip().startswith("ping "):
+            fake_var = "0.StdOut.ReadAll"
+            domain = cmd[cmd.index(" "):].strip()
+            fake_stdout = "ping: " + domain + ": Name or service not known"
+            context.set(fake_var, fake_stdout)
+            fake_var = "stdout.readall()"
+            context.set(fake_var, fake_stdout)
             
         # Say it was successful.
         return 0
@@ -5358,11 +5367,15 @@ class ExecQuery(VbaLibraryFunc):
             return r
             
         # Return some data for some queries.
-        if (cmd.lower() == "select * from win32_process"):
-            return [{"name" : "wscript.exe"},
-                    {"name" : "cscript.exe"},
-                    {"name" : "word.exe"},
-                    {"name" : "excel.exe"},]
+        if (cmd.lower().strip().startswith("select * from win32_process")):
+            return [{"name" : "wscript.exe",
+                     "path_" : "C:\\Windows\\System32\\wscript.exe"},
+                    {"name" : "cscript.exe",
+                     "path_" : "C:\\Windows\\System32\\cscript.exe"},
+                    {"name" : "word.exe",
+                     "path_" : "C:\\Windows\\System32\\word.exe"},
+                    {"name" : "excel.exe",
+                     "path_" : "C:\\Windows\\System32\\excel.exe"},]
         if (cmd.lower() == "Select * from Win32_Processor".lower()):
             return [{"NumberOfCores" : 4},
                     {"NumberOfCores" : 4},
