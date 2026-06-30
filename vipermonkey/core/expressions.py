@@ -858,6 +858,7 @@ class MemberAccessExpression(VBA_Object):
                 lhs_str = to_python(self.lhs, context, params)
                 if (lhs_str == safe_str_convert(self.lhs).lower()):
                     lhs_str = safe_str_convert(self.lhs)
+                lhs_str = lhs_str.lower()
                 last_rhs = "core.vba_library.member_access(" + lhs_str + ", \"" + last_rhs + "\", globals())"
 
                 # Special handling for things like Range(...).Column. The Range() operator
