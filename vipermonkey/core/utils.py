@@ -439,7 +439,7 @@ def b64_decode(value, binary=False):
             conv_val = base64.b64decode(tmp_str)
             if binary:
                 return conv_val
-            return safe_str_convert(conv_val)
+            return conv_val.decode()
     
     # Base64 conversion error.
     except Exception:
