@@ -6895,6 +6895,9 @@ class Timer(VbaLibraryFunc):
         seconds_since_midnight = time.time() - time.mktime(today.timetuple())
         return int(seconds_since_midnight + time_slept)
 
+    def num_args(self):
+        return 0
+    
 class Unescape(VbaLibraryFunc):
     """Emulate Unescape() string unescaping method (stubbed).
 

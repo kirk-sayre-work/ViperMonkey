@@ -210,7 +210,7 @@ class SimpleNameExpression(VBA_Object):
         
         # Is this a 0 argument builtin function call? Make sure this is not a
         # local variable shadowing the name of a VBA builtin.
-        from core import vba_library
+        from core import vba_library        
         if ((self.name.lower() in vba_library.VBA_LIBRARY) and
             (isinstance(value, VbaLibraryFunc)) and
             (value.num_args() == 0)):
