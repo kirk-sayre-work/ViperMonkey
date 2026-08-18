@@ -3036,7 +3036,7 @@ class MemberAccessExpression(VBA_Object):
         child_folder = ""
         if (isinstance(self.rhs, list) and (len(self.rhs) > 1)):
             child_folder = safe_str_convert(eval_arg(self.rhs[-2], context))
-        return child_folder + "\.."
+        return child_folder + "\\.."
 
     def _handle_customdocproperty(self, context):
         """Handle getting document peperty field values with

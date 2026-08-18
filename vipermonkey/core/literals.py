@@ -79,13 +79,13 @@ boolean_literal.setParseAction(lambda t: bool(t[0].lower() == 'true'))
 # MS-GRAMMAR: hex-digit = decimal-digit / %x0041-0046 / %x0061-0066 ;A-F / a-f
 
 # here Combine() is required to avoid spaces between elements:
-decimal_literal = Regex(re.compile('(?P<value>[+\-]?\d+)[%&^]?[!#@]?'))
+decimal_literal = Regex(re.compile(r'(?P<value>[+\-]?\d+)[%&^]?[!#@]?'))
 decimal_literal.setParseAction(lambda t: int(t.value))
 
-octal_literal = Regex(re.compile('&o?(?P<value>[0-7]+)[%&^]?', re.IGNORECASE))
+octal_literal = Regex(re.compile(r'&o?(?P<value>[0-7]+)[%&^]?', re.IGNORECASE))
 octal_literal.setParseAction(lambda t: int(t.value, base=8))
 
-hex_literal = Regex(re.compile('&h(?P<value>[0-9a-f]+)[%&^]?', re.IGNORECASE))
+hex_literal = Regex(re.compile(r'&h(?P<value>[0-9a-f]+)[%&^]?', re.IGNORECASE))
 hex_literal.setParseAction(lambda t: int(t.value, base=16))
 
 integer = decimal_literal | octal_literal | hex_literal
@@ -106,8 +106,8 @@ integer = decimal_literal | octal_literal | hex_literal
 # MS-GRAMMAR: exponent-letter = %x0044 / %x0045 / %x0064 / %x0065
 # MS-GRAMMAR: floating-point-type-suffix = "!" / "#" / "@"
 
-float_literal = Regex(re.compile('(?P<value>[+\-]?\d+\.\d*([eE][+\-]?\d+)?)[!#@]?')) | \
-                Regex(re.compile('(?P<value>[+\-]?\d+[eE][+\-]?\d+)[!#@]?'))
+float_literal = Regex(re.compile(r'(?P<value>[+\-]?\d+\.\d*([eE][+\-]?\d+)?)[!#@]?')) | \
+                Regex(re.compile(r'(?P<value>[+\-]?\d+[eE][+\-]?\d+)[!#@]?'))
 float_literal.setParseAction(lambda t: float(t.value))
 # --- QUOTED STRINGS ---------------------------------------------------------
 

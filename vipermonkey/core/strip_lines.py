@@ -398,7 +398,7 @@ def hide_some_array_accesses(vba_code):
     """
 
     # Do we have any of these constructs?
-    pat = "[a-zA-Z0-9_](?:\([^\)]{1,100}\)){3}"
+    pat = r"[a-zA-Z0-9_](?:\([^\)]{1,100}\)){3}"
     if (re2.search(pat, vba_code) is None):
         return vba_code
 
@@ -505,12 +505,12 @@ def fix_caret_calls(vba_code):
 
     # Do a tighter check to see if this is needed.
     # Call Shell^("wscript " + koaksodkasd)
-    pat = "Call {1,50}[a-zA-Z0-9_\.]{1,200} {0,4}\^ {0,4}\("
+    pat = r"Call {1,50}[a-zA-Z0-9_\.]{1,200} {0,4}\^ {0,4}\("
     if (re2.search(pat, vba_code) is None):
         return vba_code
 
     # This is needed. Remove the carets.
-    pat = "(Call {1,50}[a-zA-Z0-9_\.]{1,200} {0,4})\^( {0,4}\()"
+    pat = r"(Call {1,50}[a-zA-Z0-9_\.]{1,200} {0,4})\^( {0,4}\()"
     vba_code = re2.sub(pat, r"\1\2", vba_code)
 
     # Done.
@@ -584,12 +584,12 @@ def fix_weird_dollar_signs(vba_code):
         return vba_code
 
     # Do a tighter check to see if this is needed.
-    pat = "\[[a-zA-Z_]{1,30}\$\]"
+    pat = r"\[[a-zA-Z_]{1,30}\$\]"
     if (re2.search(pat, vba_code) is None):
         return vba_code
 
     # This is needed. Remove the carets.
-    pat = "(\[[a-zA-Z_]{1,30})\$(\])"
+    pat = r"(\[[a-zA-Z_]{1,30})\$(\])"
     vba_code = re2.sub(pat, r"\1\2", vba_code)
 
     # Done.
@@ -712,17 +712,17 @@ def fix_unbalanced_quotes(vba_code):
     if debug_strip:
         print("??DBG::UNBALANCED_QUOTES: 1")
         print(vba_code[:500])
-    if (re2.search("\r?\n\s*(?:Set)?\s*(\w+)\s+=\s+\"\r?\n", vba_code) is not None):
+    if (re2.search(r"\r?\n\s*(?:Set)?\s*(\w+)\s+=\s+\"\r?\n", vba_code) is not None):
         vba_code = re2.sub(r"\r?\n\s*(?:Set)?\s*(\w+)\s+=\s+\"\r?\n", r'\n\1 = ""\n', vba_code)
         if debug_strip:
             print("??DBG::UNBALANCED_QUOTES: 2")
             print(vba_code[:500])
-    if (re2.search("(\w+\s+=\s+\")(:[^\"]+)\r?\n", vba_code) is not None):
+    if (re2.search(r"(\w+\s+=\s+\")(:[^\"]+)\r?\n", vba_code) is not None):
         vba_code = re2.sub(r"(\w+\s+=\s+\")(:[^\"]+)\r?\n", r'\1"\2\n', vba_code)
         if debug_strip:
             print("??DBG::UNBALANCED_QUOTES: 2")
             print(vba_code[:500])
-    if (re2.search("^\"[^=]*([=>])\s*\"\s+[Tt][Hh][Ee][Nn]", vba_code) is not None):
+    if (re2.search(r"^\"[^=]*([=>])\s*\"\s+[Tt][Hh][Ee][Nn]", vba_code) is not None):
         vba_code = re2.sub(r"^\"[^=]*([=>])\s*\"\s+[Tt][Hh][Ee][Nn]", r'\1 "" Then', vba_code)
         if debug_strip:
             print("??DBG::UNBALANCED_QUOTES: 3")
@@ -1099,10 +1099,10 @@ def fix_bad_next_statements(vba_code):
     @return (str) The modified VB code.
 
     """
-    pat = "Next +(?:\w+ *, *)+\w+ *\n"
+    pat = r"Next +(?:\w+ *, *)+\w+ *\n"
     r = vba_code
     if (re2.search(str(pat), vba_code) is not None):
-        index_pat = "(?:(\w+) *, *)+(\w+)"
+        index_pat = r"(?:(\w+) *, *)+(\w+)"
         for bad_next in re2.findall(pat, vba_code):
             new_nexts = ""
             for index in re2.findall(index_pat, bad_next)[0]:
@@ -1170,9 +1170,9 @@ def fix_bad_exponents(vba_code):
     """
 
     # Do we have possible bad exponents?
-    pat = '([\w\(\)])\^([\w\(\)])'
+    pat = r'([\w\(\)])\^([\w\(\)])'
     r = ""
-    hex_pat = "&h[0-9a-f]{1,25}\^"
+    hex_pat = r"&h[0-9a-f]{1,25}\^"
     if (re2.search(pat, vba_code) is not None):
 
         # Now look line by line through the code so as not to modify these constructs
@@ -1235,7 +1235,7 @@ def fix_unhandled_named_params(vba_code):
 
     """
 
-    pat = "\n([^\n]*\w+\([^\n]*\w+:=)"
+    pat = r"\n([^\n]*\w+\([^\n]*\w+:=)"
     if (re2.search(str(pat), vba_code) is not None):
 
         # Pull out the lines containing ':=',
@@ -1307,7 +1307,7 @@ def fix_unhandled_array_assigns(vba_code):
     @return (str) The modified VB code.
 
     """
-    pat = "\n(\s*\w+\((?:\w+\s*,\s*){2,}\w+\)\s*=)"
+    pat = r"\n(\s*\w+\((?:\w+\s*,\s*){2,}\w+\)\s*=)"
     if (re2.search(pat, vba_code) is not None):
         vba_code = re2.sub(pat, r"\n' UNHANDLED ARRAY ASSIGNMENT \1", vba_code) + "\n"
         fix_pat = r"' UNHANDLED ARRAY ASSIGNMENT\s+Mid\("
@@ -2469,9 +2469,9 @@ def replace_bad_chars(vba_code):
 
     # We could have messed up hex literals like "&Hff00^" by changing them to
     # "&Hff00 ^". Fix this here.
-    hex_pat = "&H[0-9A-F]{1,25} \^"
+    hex_pat = r"&H[0-9A-F]{1,25} \^"
     if (re2.search(hex_pat, r) is not None):
-        hex_pat = "(&H[0-9A-F]{1,25}) \^"
+        hex_pat = r"(&H[0-9A-F]{1,25}) \^"
         r = re2.sub(hex_pat, r"\1^", r)
 
     # Unhide the strings.
@@ -3435,7 +3435,7 @@ def fix_vba_code(vba_code):
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 17.6")
         print(vba_code[:500])
-    bad_call_pat = "(\r?\n\s*[\w_]{2,50})\""
+    bad_call_pat = r"(\r?\n\s*[\w_]{2,50})\""
     if (re2.search(str(bad_call_pat), vba_code)):
         vba_code = re2.sub(bad_call_pat, r'\1 "', vba_code)
 
@@ -3449,7 +3449,7 @@ def fix_vba_code(vba_code):
     if debug_strip:
         print("??DBG::FIX_VBA_CODE: 18")
         print(vba_code[:500])
-    got_multassign = (re2.search("(?:\w+\s*=\s*){2}", vba_code) is not None)
+    got_multassign = (re2.search(r"(?:\w+\s*=\s*){2}", vba_code) is not None)
     if ((" if+" not in vba_code) and
         (" If+" not in vba_code) and
         ("\nif+" not in vba_code) and
@@ -3525,7 +3525,7 @@ def replace_constant_int_inline(vba_code):
 
     """
 
-    const_pattern = re2.compile("(?i)const +([a-zA-Z][a-zA-Z0-9]{0,20})\s?=\s?(\d+(?:\.\d+)?)")
+    const_pattern = re2.compile(r"(?i)const +([a-zA-Z][a-zA-Z0-9]{0,20})\s?=\s?(\d+(?:\.\d+)?)")
     d_const = dict()
 
     for const in re2.findall(const_pattern, vba_code):
@@ -3538,7 +3538,7 @@ def replace_constant_int_inline(vba_code):
         dim_pat = re2.compile(r'\n *Dim [^\n]{0,500}' + const)
         if (re2.search(dim_pat, vba_code) is not None):
             continue
-        this_const = re2.compile('(?i)(?<=(?:[(), ]))(?<!Const )(?<!Const  )(?<!Const   )' + safe_str_convert(const) + '(?=(?:[(), \\n]))(?!\s*=)')
+        this_const = re2.compile(r'(?i)(?<=(?:[(), ]))(?<!Const )(?<!Const  )(?<!Const   )' + safe_str_convert(const) + r'(?=(?:[(), \\n]))(?!\s*=)')
         vba_code = re2.sub(this_const, safe_str_convert(d_const[const]), vba_code)
     return(vba_code)
 

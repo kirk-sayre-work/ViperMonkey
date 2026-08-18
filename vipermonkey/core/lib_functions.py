@@ -112,7 +112,7 @@ class Chr(VBA_Object):
 
 # Chr, Chr$, ChrB, ChrW()
 full_chr_ = (
-    Suppress(Regex(re.compile('Chr[BW]?\$?', re.IGNORECASE)))
+    Suppress(Regex(re.compile(r'Chr[BW]?\$?', re.IGNORECASE)))
     + Suppress('(')
     + expression
     + Suppress(')')
@@ -155,7 +155,7 @@ def quick_parse_simple_chr(tokens):
     return r
 
 # Fast parsing for things like ChrW(a210) & ... with a bunch of Chr() calls.
-simple_chr = Regex(re.compile("Chr[BW]?\$?\s*\(\s*&?\w+\s*\)(?:\s*&\s*Chr[BW]?\$?\s*\(\s*&?\w+\s*\))+"))
+simple_chr = Regex(re.compile(r"Chr[BW]?\$?\s*\(\s*&?\w+\s*\)(?:\s*&\s*Chr[BW]?\$?\s*\(\s*&?\w+\s*\))+"))
 simple_chr.setParseAction(quick_parse_simple_chr)
 
 chr_ = simple_chr | full_chr_

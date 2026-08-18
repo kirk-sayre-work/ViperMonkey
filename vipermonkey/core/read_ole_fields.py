@@ -2806,7 +2806,7 @@ def get_ole_textbox_values(obj, vba_code):
     # Clear out some troublesome byte sequences.
     data = data.replace(b"R\x00o\x00o\x00t\x00 \x00E\x00n\x00t\x00r\x00y", b"")
     data = data.replace(b"o" + b"\x00" * 40, b"\x00" * 40)
-    data = re.sub(b"Tahoma\w{0,5}", b"\x00", data)
+    data = re.sub(br"Tahoma\w{0,5}", b"\x00", data)
 
     # Try a method specific to a certain maldoc campaign first.
     r = get_ole_text_method_1(vba_code, data, debug=debug)
@@ -2838,7 +2838,7 @@ def get_ole_textbox_values(obj, vba_code):
 
     # Make sure some special fields are seperated.
     data = data.replace(b"c\x00o\x00n\x00t\x00e\x00n\x00t\x00s", b"\x00c\x00o\x00n\x00t\x00e\x00n\x00t\x00s\x00")
-    data = re.sub(b"(_(?:\x00\d){10})", b"\x00" + br"\1", data)
+    data = re.sub(br"(_(?:\x00\d){10})", b"\x00" + br"\1", data)
 
     # Normalize Page object naming.
     # Page1M3A
@@ -3971,7 +3971,7 @@ def _read_custom_doc_props(fname):
         if (data is None):
             ole.close()
             return []
-        strs = re.findall("([\w\.\:/]{4,})", safe_str_convert(data))
+        strs = re.findall(r"([\w\.\:/]{4,})", safe_str_convert(data))
         
         # Treat each wide character string as a potential variable that has a value
         # of the string 1 positions ahead on the current string. This introduces "variables"

@@ -6551,7 +6551,7 @@ def quick_parse_simple_call(tokens):
     return r
 
 
-simple_call_list = Regex(re.compile("(?:\w+(?:\s*\((?:\w+\s*,\s*)*\s*\w+\))?\n){100,}"))
+simple_call_list = Regex(re.compile(r"(?:\w+(?:\s*\((?:\w+\s*,\s*)*\s*\w+\))?\n){100,}"))
 simple_call_list.setParseAction(quick_parse_simple_call)
 
 # --- Orphaned Statement Closing Markers ----------------------------------------------------------
