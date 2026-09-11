@@ -7057,6 +7057,39 @@ class Send(VbaLibraryFunc):
         params = params # pylint
         return "**MATCH ANY**"
 
+class SetTimeout(VbaLibraryFunc):
+    """Emulate window.SetTimeout() method.
+
+    """
+
+    def eval(self, context, params=None):
+
+        # The 1st parameter should be the name of the function to call
+        # when the timeout expires.
+        if ((len(params) == 0) or (not isinstance(params[0], str))):
+            log.warning("No valid callback given to SetTimeout().")
+            return
+        callback_name = utils.safe_str_convert(params[0])
+        if ("(" in callback_name):
+            callback_name = callback_name[:callback_name.index("(")]
+        
+        # Is this function defined?
+        callback = None
+        try:
+            callback = context.get(callback_name)
+        except KeyError:
+            log.warning("SetTimeout() callback function '" + callback_name + "' not found.")
+            return
+        from core import procedures
+        if (not isinstance(callback, procedures.Function) and
+            not isinstance(callback, procedures.Sub)):
+            log.warning("SetTimeout() callback function '" + callback_name + "' found, but not a function.")
+            return
+
+        # Emulate the callback function.
+        log.info("Running SetTimeout() callback function '" + callback_name + "'.")
+        return eval_arg(callback, context=context)        
+
 class SetTimeouts(VbaLibraryFunc):
     """Emulate ServerXMLHTTP SetTimeouts() method (stubbed).
 
@@ -7302,7 +7335,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
                End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync,
                InstallProduct, BinaryGetURL, Read, ReadLine, AtEndOfStream, ReadAll,
-               Prompt, Confirm, InputBox, Now, WriteBytes, AppendChunk):
+               Prompt, Confirm, InputBox, Now, WriteBytes, AppendChunk, SetTimeout):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
