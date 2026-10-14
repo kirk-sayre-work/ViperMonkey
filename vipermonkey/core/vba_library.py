@@ -6897,6 +6897,19 @@ class Timer(VbaLibraryFunc):
 
     def num_args(self):
         return 0
+
+class TimeSerial(VbaLibraryFunc):
+    """NOOP version of TimeSerial() (stubbed).
+
+    """
+
+    def eval(self, context, params=None):
+        context = context # pylint
+        params = params # pylint
+        return "???"
+
+    def num_args(self):
+        return 3
     
 class Unescape(VbaLibraryFunc):
     """Emulate Unescape() string unescaping method (stubbed).
@@ -7335,7 +7348,7 @@ for _class in (MsgBox, Shell, Len, Mid, MidB, Left, Right,
                Words, EncodeScriptFile, CustomDocumentProperties, CDec, InsertLines,
                End, __End, Keys, CustomXMLParts, Text, SelectSingleNode, ExecuteCmdAsync,
                InstallProduct, BinaryGetURL, Read, ReadLine, AtEndOfStream, ReadAll,
-               Prompt, Confirm, InputBox, Now, WriteBytes, AppendChunk, SetTimeout):
+               Prompt, Confirm, InputBox, Now, WriteBytes, AppendChunk, SetTimeout, TimeSerial):
     name = _class.__name__.lower()
     VBA_LIBRARY[name] = _class()
 
