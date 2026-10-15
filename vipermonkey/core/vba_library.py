@@ -1297,11 +1297,20 @@ class Mid(VbaLibraryFunc):
             return s[start-1:]
         length = 0
         try:
-            length = vba_conversion.int_convert(params[2])
+            # Guess length is 1 if length not given.
+            if (params[2] == "NULL"):
+                length = 1
+            else:
+                length = vba_conversion.int_convert(params[2])
         except Exception as e:
             if (log.getEffectiveLevel() == logging.DEBUG):
                 log.debug("Mid() exception: " + utils.safe_str_convert(e))
 
+        # What to do when length<=0 is not specified. Lets assume
+        # length is 1 in this case.
+        if length <= 0:
+            length = 1
+                
         # "If omitted or if there are fewer than Length characters in the text
         # (including the character at start), all characters from the start
         # position to the end of the string are returned."
@@ -1311,10 +1320,6 @@ class Mid(VbaLibraryFunc):
             if is_vbs_str(context, s):
                 return s[start-1:]
             return vb_s.get_chunk(start - 1, vb_s.len()).to_python_str()
-
-        # What to do when length<=0 is not specified:
-        if length <= 0:
-            return ''
 
         # Regular Mid().
         if is_vbs_str(context, s):

@@ -1015,6 +1015,13 @@ def _report_analysis_results(vm, data, display_int_iocs, orig_filename, out_file
             safe_print("  " + s)
         safe_print('')
 
+    # Report env var sets.
+    if (len(vm.env_vars) > 0):
+        safe_print("Environment Variable Assignments (" + str(len(vm.env_vars)) + "):")
+        for name in vm.env_vars:
+            safe_print("  " + name + "\t:\t'" + vm.env_vars[name] + "'")
+        safe_print('')
+        
     # Done printing results.
     safe_print('Finished analyzing ' + safe_str_convert(orig_filename) + " .\n")
 
@@ -1038,7 +1045,8 @@ def _report_analysis_results(vm, data, display_int_iocs, orig_filename, out_file
             "shellcode" : shellcode_bytes,
             "vba_builtins": vm.external_funcs,
             "actions": actions_data,
-            "decoded_strs": list(vm.decoded_strs)
+            "decoded_strs": list(vm.decoded_strs),
+            "env_vars" : vm.env_vars
         }
 
         # Write out the results as JSON.

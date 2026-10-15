@@ -91,6 +91,28 @@ import string
 import re
 import copy
 
+# pyparsing versions greater than 2.2.0 made changes that change the
+# results of parsing that would require significant Vipermonkey
+# rewrites. For this reason Vipermonkey is requiring this specific
+# version of pyparsing. However, this old version of pyparsing no
+# longer works in modern Python 3.X versions due to subpackages of
+# collections being moved. The following lines set up modern versions
+# of collections to match the package structure of older collections
+# of versions so that the old version of pyparsing can be used.
+import collections
+try:
+    import collections.MutableMapping
+except ModuleNotFoundError:
+    # Newer version of Python 3.X.
+    from collections import abc
+    collections.MutableMapping = abc.MutableMapping
+try:
+    import collections.Iterable
+except ModuleNotFoundError:
+    # Newer version of Python 3.X.
+    from collections import abc
+    collections.Iterable = abc.Iterable
+
 from pyparsing import ParseException
 import prettytable
 
@@ -716,6 +738,9 @@ class ViperMonkey(StubbedEngine):
 
         # Track decoded strings.
         self.decoded_strs = set()
+
+        # Track env var assigns.
+        self.env_vars = {}
         
         # First emulate any Visual Basic that appears outside of subs/funcs.
         if (regular_emulation):

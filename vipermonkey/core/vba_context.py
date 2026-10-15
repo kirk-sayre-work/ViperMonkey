@@ -349,6 +349,9 @@ class Context(object):
 
         # Allow user to determine whether to expand environment variables.
         self.expand_env_vars = expand_env_vars
+
+        # Track environment variable assignments.
+        self.env_vars = {}
         
         # Track callback functions that should not be called. This is to handle
         # recusive change handler calls caused by modifying the element handled
@@ -2291,6 +2294,18 @@ class Context(object):
         if (".." in name):
             self.set(name.replace("..", "."), value, var_type, do_with_prefix, force_local, force_global, no_conversion=no_conversion)
 
+        # Track this if this looks like setting an env var.
+        env_var_pat = r'\.Environment\([^\)]+\)\.Item\(([^\)]+)\)'
+        env_var_name = re.findall(env_var_pat, name)
+        if env_var_name:
+            env_var_name = env_var_name[0].replace('"', '')
+            if (self.engine is not None):
+                self.engine.env_vars[env_var_name] = value
+            short_val = safe_str_convert(value)
+            if (len(short_val) > 100):
+                short_val = short_val[:101] + " ..."
+            self.report_action('Set Env Var', env_var_name + " = '" + short_val + "'", "WScript.Shell")
+            
         # Skip this if this variable is already set and we are not allowing value overwrites.
         if (no_overwrite and self.contains(name)):
             return
