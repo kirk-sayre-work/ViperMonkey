@@ -4453,6 +4453,8 @@ class UCase(VbaLibraryFunc):
     def eval(self, context, params=None):
         context = context # pylint
 
+        if (utils.safe_str_convert(params[0]).strip() == "['**MATCH ANY**']"):
+            return "**MATCH ANY**"
         r = utils.safe_str_convert(params[0]).upper()
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("UCase: %r returns %r" % (self, r))
@@ -4469,6 +4471,8 @@ class LCase(VbaLibraryFunc):
     def eval(self, context, params=None):
         context = context # pylint
 
+        if (utils.safe_str_convert(params[0]).strip() == "['**MATCH ANY**']"):
+            return "**MATCH ANY**"
         r = utils.safe_str_convert(params[0]).lower()
         if (log.getEffectiveLevel() == logging.DEBUG):
             log.debug("LCase: %r returns %r" % (self, r))
@@ -5298,7 +5302,8 @@ class Arguments(VbaLibraryFunc):
         # Sanity check.
         if ((params is None) or (len(params) == 0)):
             return "NULL"
-        return "_COMMAND_LINE_ARG_" + utils.safe_str_convert(params[0])
+        return ["**MATCH ANY**"]
+        #return "_COMMAND_LINE_ARG_" + utils.safe_str_convert(params[0])
             
 class Exec(VbaLibraryFunc):
     """Emulate Application.Exec() function.
